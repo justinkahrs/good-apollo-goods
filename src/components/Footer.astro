@@ -1,0 +1,22 @@
+---
+import Brand from './Brand.astro';
+---
+<footer class="site-footer">
+  <div class="container footer-main">
+    <div><Brand large /><p class="footer-note">Good things, made at home.</p></div>
+    <div class="footer-links"><a href="/#collection">The collection</a><a href="/#our-story">Our story</a><a href="https://www.goodapollogarden.com/" target="_blank" rel="noopener noreferrer">Visit the garden <span aria-hidden="true">↗</span></a></div>
+    <p class="footer-aside">A little of this.<br />A little of that.<br /><em>A lot of heart.</em></p>
+  </div>
+  <div class="container footer-bottom"><span>© {new Date().getFullYear()} Good Apollo</span><span>An independent home for handmade things.</span><a href="/design-system/">Design system</a></div>
+</footer>
+<style>
+  .site-footer { background: var(--color-cream-200); padding-top: var(--space-16); }
+  .footer-main { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-12); padding-bottom: var(--space-16); align-items: start; }
+  .footer-note { font-size: var(--text-sm); margin-top: var(--space-6); }
+  .footer-links { display: grid; gap: var(--space-3); justify-self: center; padding-top: var(--space-2); }
+  .footer-links a { font-size: var(--text-sm); text-decoration: none; }
+  .footer-links a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .footer-aside { justify-self: end; font-family: var(--font-display); font-size: var(--text-xl); line-height: 1.35; }
+  .footer-bottom { border-top: 1px solid var(--color-border); display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-5); font-size: var(--text-xs); color: var(--color-muted); }
+  @media(max-width: 700px) { .footer-main { grid-template-columns: 1fr 1fr; gap: var(--space-10); } .footer-main > div:first-child { grid-column: 1/-1; } .footer-links { justify-self: start; } .footer-aside { font-size: 1.3rem; } .footer-bottom span:nth-child(2) { display: none; } }
+</style>

@@ -1,0 +1,63 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Button from '../components/Button.astro';
+import Brand from '../components/Brand.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { products } from '../data/products';
+import tokenSource from '../styles/tokens.css?raw';
+const colors = [
+  { name: 'Plum ink', token: '--color-plum-950', inverse: true, use: 'Headings & body text' },
+  { name: 'Good Apollo plum', token: '--color-plum-800', inverse: true, use: 'Primary actions & brand' },
+  { name: 'Warm paper', token: '--color-cream-50', use: 'Page background' },
+  { name: 'Natural linen', token: '--color-cream-100', use: 'Quiet section surfaces' },
+  { name: 'Butter', token: '--color-butter-300', use: 'Small moments of warmth' },
+  { name: 'Garden olive', token: '--color-olive-700', inverse: true, use: 'A subtle nod to our roots' },
+];
+const rawValue = (token: string) => tokenSource.match(new RegExp(`${token}:\\s*([^;]+);`))?.[1] ?? '';
+const spaceScale = [1, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24];
+---
+<Layout title="Design system — Good Apollo" description="The visual foundations and reusable components of Good Apollo: colors, type, spacing, and patterns.">
+  <div class="container system-page">
+    <header class="system-intro"><p class="eyebrow">Good Apollo · Design system · v0.1</p><h1>A home for<br />the little <em>details.</em></h1><p>Warm, a little eclectic, and quietly considered. These are the foundations that keep Good Apollo feeling like itself, wherever it grows.</p></header>
+    <nav class="system-nav" aria-label="Design system sections"><a href="#brand">Brand</a><a href="#color">Color</a><a href="#type">Typography</a><a href="#spacing">Spacing</a><a href="#components">Components</a><a href="#guidelines">Guidelines</a></nav>
+    <section id="brand" class="system-section"><div class="section-label"><span class="eyebrow">01 / Brand</span><h2>Familiar, with a little character.</h2><p>An expressive serif wordmark and a plainspoken descriptor. Give the wordmark room to breathe; keep it in plum or ink on a light surface.</p></div><div class="brand-example"><Brand large /></div></section>
+    <section id="color" class="system-section"><div class="section-label"><span class="eyebrow">02 / Color</span><h2>Paper, plum, and a pat of butter.</h2><p>Primitive colors feed semantic tokens such as <code>--color-brand</code> and <code>--color-page</code>. Change a role once in <code>src/styles/tokens.css</code> to update the whole storefront.</p></div><div class="swatch-grid">{colors.map((color) => <div><div class:list={['swatch', { inverse: color.inverse }]} style={{ background: `var(${color.token})` }}><span>{rawValue(color.token)}</span></div><h3 class="swatch-name">{color.name}</h3><p>{color.use}</p><code>{color.token}</code></div>)}</div></section>
+    <section id="type" class="system-section"><div class="section-label"><span class="eyebrow">03 / Typography</span><h2>A little expression.<br />A lot of clarity.</h2><p>Fraunces brings warmth to the headlines. DM Sans keeps the practical things easy to read. Both are variable fonts, served locally.</p></div><div class="type-examples"><div><span class="eyebrow muted">Display / Fraunces / Fluid hero scale</span><p class="type-display">Good things,<br /><em>made at home.</em></p></div><div><span class="eyebrow muted">Heading / Fraunces / Section scale</span><p class="display-heading font-serif">The good things.</p></div><div><span class="eyebrow muted">Body / DM Sans / 16px · 1.6 leading</span><p>A crochet project on the couch. Fabric across the table. A pair of knitting needles never too far away.</p></div><div><span class="eyebrow muted">Label / DM Sans / 13px · Tracked</span><p class="eyebrow">From our home, with love</p></div></div></section>
+    <section id="spacing" class="system-section"><div class="section-label"><span class="eyebrow">04 / Space & shape</span><h2>Room to settle in.</h2><p>A 4px base rhythm, generous section spacing, and fluid page gutters. Small corners for photography. Full rounds for buttons. The arch is reserved for editorial images.</p></div><div class="spacing-list">{spaceScale.map((step) => <div><code>--space-{step}</code><span class="space-bar" style={{ width: `var(--space-${step})` }}></span><span>{step * 4}px</span></div>)}</div></section>
+    <section id="components" class="system-section"><div class="section-label"><span class="eyebrow">05 / Components</span><h2>The useful little things.</h2><p>These are the same Astro components used by the storefront. They inherit the foundations, including hover, focus, and reduced-motion behavior.</p></div><div class="component-examples"><div class="button-examples"><Button href="/#collection" arrow>Meet the good things</Button><Button href="/#our-story" variant="secondary" arrow>Our story</Button><Button disabled>Opening soon</Button></div><div class="flex flex-wrap items-center gap-6"><span class="badge">Sample piece</span><a href="/#our-story" class="text-link">A little about us <span aria-hidden="true">↗</span></a></div><div class="sample-card"><ProductCard product={products[1]} /></div></div></section>
+    <section id="guidelines" class="system-section"><div class="section-label"><span class="eyebrow">06 / Putting it together</span><h2>Make it feel like us.</h2></div><div class="guidelines"><div><h3>Let the work be the detail.</h3><p>Use natural light, visible texture, and honest product photographs. Keep the interface quiet enough to let individual pieces have their own character.</p></div><div><h3>Talk like a person.</h3><p>Warm, specific, and unhurried. Say what a piece is, how it was made, and what makes it special. Leave out urgency, inflated claims, and sales tricks.</p></div><div><h3>Keep comfort practical.</h3><p>Readable contrast, visible keyboard focus, roomy touch targets, and layouts that work from small phones up. Motion should be subtle and respect reduced-motion preferences.</p></div><div><h3>Change the foundation first.</h3><p>Colors, font families, type scales, spacing, radii, and motion live in <code>src/styles/tokens.css</code>. Product content lives separately in <code>src/data/products.ts</code>. See <code>docs/design-system.md</code> for the full editing guide.</p></div></div></section>
+  </div>
+</Layout>
+<style>
+  .system-page { padding-bottom: var(--space-section); }
+  .system-intro { padding-block: var(--space-16); max-width: 800px; }
+  .system-intro h1 { font-size: var(--text-hero); margin-block: var(--space-6); }
+  .system-intro > p:last-child { max-width: 55ch; color: var(--color-muted); font-size: var(--text-lg); }
+  .system-nav { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-8); border-block: 1px solid var(--color-border); padding-block: var(--space-5); }
+  .system-nav a { text-decoration: none; font-size: var(--text-sm); padding-block: var(--space-2); }
+  .system-nav a:hover { text-decoration: underline; text-underline-offset: 5px; }
+  .system-section { display: grid; grid-template-columns: 1fr 1.6fr; gap: var(--space-16); padding-top: var(--space-section); }
+  .section-label h2 { font-size: var(--text-2xl); margin-top: var(--space-5); margin-bottom: var(--space-6); }
+  .section-label p,.guidelines p { font-size: var(--text-sm); color: var(--color-muted); }
+  code { font-size: var(--text-xs); overflow-wrap: anywhere; }
+  .brand-example { display: grid; place-items: center; background: var(--color-surface); padding: var(--space-12) var(--space-6); border-radius: var(--radius-md); }
+  .swatch-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: var(--space-8) var(--space-5); }
+  .swatch { aspect-ratio: 1.2; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3); display: flex; align-items: end; font-size: var(--text-xs); }
+  .swatch.inverse { color: var(--color-page); }
+  .swatch-name { font-family: var(--font-body); font-size: var(--text-sm); letter-spacing: 0; font-weight: 600; margin-block: var(--space-3) var(--space-2); }
+  .swatch-grid p { font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-2); }
+  .swatch-grid code { font-size: .75rem; }
+  .type-examples { display: grid; gap: var(--space-10); }
+  .type-examples > div > p { margin-top: var(--space-4); }
+  .type-display { font-family: var(--font-display); font-size: clamp(2.8rem, 5vw, 4.5rem); line-height: 1.08; letter-spacing: -.045em; }
+  .spacing-list { display: grid; gap: var(--space-3); }
+  .spacing-list > div { display: grid; grid-template-columns: 100px 1fr 45px; gap: var(--space-4); align-items: center; font-size: var(--text-xs); }
+  .space-bar { display: block; height: 18px; max-width: 100%; background: var(--color-brand); border-radius: 2px; }
+  .component-examples { display: grid; gap: var(--space-8); }
+  .button-examples { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+  .sample-card { max-width: 350px; }
+  .guidelines { display: grid; gap: var(--space-8); }
+  .guidelines h3 { font-size: var(--text-xl); margin-bottom: var(--space-3); }
+  @media(max-width: 900px) { .system-section { grid-template-columns: 1fr; gap: var(--space-8); } }
+  @media(max-width: 500px) { .swatch-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .spacing-list > div { grid-template-columns: 85px 1fr 35px; } }
+</style>

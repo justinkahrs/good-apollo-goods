@@ -1,0 +1,42 @@
+---
+import { Image } from 'astro:assets';
+import Layout from '../../layouts/Layout.astro';
+import Button from '../../components/Button.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { products, formatPrice, type Product } from '../../data/products';
+export function getStaticPaths() { return products.map((product) => ({ params: { slug: product.slug }, props: { product } })); }
+interface Props { product: Product; }
+const { product } = Astro.props;
+const others = products.filter((piece) => piece.slug !== product.slug);
+---
+<Layout title={`${product.name} — Collection preview · Good Apollo`} description={`A sample design from Good Apollo. ${product.description} Not yet available to purchase.`}>
+  <div class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/#collection">The collection</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav></div>
+  <section class="container piece-grid" aria-labelledby="piece-title">
+    <figure class="piece-photo"><Image src={product.image} alt={product.imageAlt} widths={[600, 900, 1200]} sizes="(max-width: 800px) 90vw, 50vw" width={1200} height={1320} fit="cover" format="webp" loading="eager" style={{ objectPosition: product.imagePosition ?? 'center' }} /><figcaption>Illustrative concept image · Real product photos coming at launch</figcaption></figure>
+    <div class="piece-copy"><p class="eyebrow">Collection preview · {product.craft}</p><h1 id="piece-title">{product.name}</h1><p class="piece-color">{product.color}</p><div class="piece-price"><span>{formatPrice(product.samplePrice)}</span><span>Illustrative price · USD</span></div><p class="piece-description">{product.description}</p><p class="piece-detail">{product.detail}</p><div class="preview-notice"><span class="badge">A sample, for now</span><p>This is a sample design, with an AI-created image and an illustrative price. It isn’t an item for sale. Finished pieces, materials, measurements, and final prices will be shared at launch.</p></div><Button href="/#opening" arrow>About the first collection</Button><p class="piece-footnote">Handmade. Finished before it’s listed. Never made to order.</p></div>
+  </section>
+  <section class="container related" aria-labelledby="related-title"><div class="related-heading"><h2 id="related-title" class="display-heading">A few more good things.</h2><a href="/#collection" class="text-link">The whole preview <span aria-hidden="true">↗</span></a></div><div class="related-grid">{others.map((piece) => <ProductCard product={piece} />)}</div></section>
+</Layout>
+<style>
+  .breadcrumb { display: flex; flex-wrap: wrap; gap: var(--space-3); padding-top: var(--space-6); padding-bottom: var(--space-8); color: var(--color-muted); font-size: var(--text-sm); }
+  .breadcrumb a { text-underline-offset: 4px; }
+  .piece-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(2rem, 6vw, 6rem); align-items: center; padding-bottom: var(--space-section); }
+  .piece-photo { margin: 0; min-width: 0; }
+  .piece-photo img { width: 100%; aspect-ratio: 1 / 1.1; object-fit: cover; border-radius: var(--radius-md); }
+  .piece-photo figcaption { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-3); }
+  .piece-copy h1 { font-size: var(--text-3xl); margin-top: var(--space-5); }
+  .piece-color { color: var(--color-muted); font-size: var(--text-sm); margin-top: var(--space-3); }
+  .piece-price { display: flex; gap: var(--space-4); align-items: baseline; margin-block: var(--space-6); }
+  .piece-price span:first-child { font-size: var(--text-xl); }
+  .piece-price span:last-child { font-size: var(--text-xs); color: var(--color-muted); }
+  .piece-description { font-size: var(--text-lg); }
+  .piece-detail { color: var(--color-muted); margin-top: var(--space-5); }
+  .preview-notice { background: var(--color-surface); padding: var(--space-5); margin-block: var(--space-8); border-radius: var(--radius-md); }
+  .preview-notice p { font-size: var(--text-sm); color: var(--color-muted); margin-top: var(--space-3); }
+  .piece-footnote { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-5); }
+  .related { border-top: 1px solid var(--color-border); padding-block: var(--space-section); }
+  .related-heading { display: flex; justify-content: space-between; gap: var(--space-5); align-items: baseline; margin-bottom: var(--space-10); }
+  .related-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: var(--space-8); max-width: 900px; }
+  @media(max-width: 800px) { .piece-grid { grid-template-columns: 1fr; } .related-heading { display: block; } .related-heading a { margin-top: var(--space-5); } }
+  @media(max-width: 600px) { .related-grid { grid-template-columns: 1fr; } }
+</style>

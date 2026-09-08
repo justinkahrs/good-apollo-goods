@@ -1,0 +1,41 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Button from '../components/Button.astro';
+import { Image } from 'astro:assets';
+import heroImage from '../assets/sunlit-cream-throw.png';
+import Collection from '../components/Collection.astro';
+import OurStory from '../components/OurStory.astro';
+import Opening from '../components/Opening.astro';
+---
+<Layout>
+  <section class="hero container" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow">From our home, with love</p>
+      <h1 id="hero-title">Little things.<br />Made to mean<br /><em>something.</em></h1>
+      <p class="hero-description">A wonderfully eclectic collection of handmade goods. For the everyday, the just-because, and the feeling of being home.</p>
+      <Button href="#collection" arrow>Meet the good things</Button>
+      <p class="hero-footnote">Crocheted. Knitted. Sewn. Always made by hand.</p>
+    </div>
+    <div class="hero-textile"><Image class="hero-image" src={heroImage} alt="A sample cream throw on a wooden chair, yarn and flowers nearby, in warm afternoon sunlight" widths={[600, 900, 1200]} sizes="(max-width: 800px) 90vw, 48vw" width={1200} height={1260} fit="cover" format="webp" loading="eager" fetchpriority="high" /><div class="maker-seal"><span>SMALL BATCHES</span><strong>big<br /><em>heart.</em></strong><span>GOOD APOLLO</span></div></div>
+  </section>
+  <div class="values-strip container"><span>Made slowly, by hand</span><span aria-hidden="true">✳︎</span><span>A little different, every time.</span><span aria-hidden="true">✳︎</span><span>Good things worth keeping</span></div>
+  <Collection />
+  <OurStory />
+  <Opening />
+</Layout>
+<style>
+  .hero { display: grid; grid-template-columns: 1fr 1.12fr; gap: clamp(2rem, 6vw, 6rem); padding-top: var(--space-6); padding-bottom: var(--space-16); align-items: center; }
+  .hero-copy { padding-block: var(--space-10); }
+  .hero h1 { font-size: var(--text-hero); line-height: 1.04; margin-top: var(--space-6); font-weight: 430; }
+  .hero h1 em { color: var(--color-brand); font-weight: 420; }
+  .hero-description { color: var(--color-muted); max-width: 35ch; margin-top: var(--space-6); margin-bottom: var(--space-8); font-size: var(--text-base); line-height: 1.75; }
+  .hero-footnote { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-6); }
+  .hero-textile { position: relative; min-width: 0; aspect-ratio: 1 / 1.05; border-radius: 46% 46% var(--radius-sm) var(--radius-sm); background: var(--color-cream-200); }
+  .hero-textile :global(.hero-image) { width: 100%; height: 100%; aspect-ratio: 1 / 1.05; object-fit: cover; object-position: 65% center; border-radius: inherit; }
+  .maker-seal { position: absolute; bottom: 2.5rem; left: -2.5rem; width: 132px; height: 132px; border-radius: 50%; background: var(--color-accent); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; transform: rotate(-10deg); }
+  .maker-seal span { font-size: .56rem; font-weight: 650; letter-spacing: .14em; }
+  .maker-seal strong { font-family: var(--font-display); font-size: 2rem; line-height: .87; text-align: center; font-weight: 500; }
+  .values-strip { display: flex; align-items: center; justify-content: space-around; gap: var(--space-4); padding-block: var(--space-6); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); font-size: var(--text-sm); }
+  .values-strip [aria-hidden] { color: var(--color-brand); font-size: 1.4rem; }
+  @media(max-width: 800px) { .hero { grid-template-columns: 1fr; gap: var(--space-8); padding-top: 0; } .hero-copy { padding-block: var(--space-6); } .hero h1 { font-size: clamp(3.3rem, 11vw, 5rem); } .hero-textile { aspect-ratio: 1.1; margin-left: var(--space-4); } .maker-seal { width: 112px; height: 112px; left: -1rem; bottom: 1.5rem; } .values-strip { flex-wrap: wrap; justify-content: center; gap: var(--space-3) var(--space-6); } .values-strip span:last-child { display: none; } .values-strip [aria-hidden]:nth-child(4) { display: none; } }
+</style>

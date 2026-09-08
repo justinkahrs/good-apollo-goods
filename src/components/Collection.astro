@@ -1,0 +1,58 @@
+---
+import { products, categories } from '../data/products';
+import ProductCard from './ProductCard.astro';
+---
+<section id="collection" class="container collection" aria-labelledby="collection-title">
+  <div class="collection-heading"><div><p class="eyebrow">A peek at what’s to come</p><h2 id="collection-title" class="display-heading">The good things.</h2></div><p>For you, for someone you love,<br />for no particular reason at all.</p></div>
+  <div class="collection-toolbar" data-filter-toolbar hidden>
+    <div class="collection-filters" role="group" aria-label="Filter sample pieces by craft">{categories.map((category) => <button type="button" class="filter-button" data-filter={category.id} aria-pressed={category.id === 'all'} aria-controls="product-grid">{category.label}</button>)}</div>
+    <span class="collection-count" aria-live="polite" aria-atomic="true" data-collection-count>3 sample pieces</span>
+  </div>
+  <div id="product-grid" class="product-grid">{products.map((product) => <ProductCard product={product} />)}</div>
+  <p class="collection-disclosure">A little window into our world. These are sample designs, AI-created images, and illustrative prices; our real pieces are still to come.</p>
+</section>
+<script>
+  const toolbar = document.querySelector<HTMLElement>('[data-filter-toolbar]');
+  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('#product-grid [data-category]'));
+  const count = document.querySelector<HTMLElement>('[data-collection-count]');
+  if (toolbar && count) {
+    toolbar.hidden = false;
+    const applyFilter = (category: string) => {
+      const selected = buttons.some((button) => button.dataset.filter === category) ? category : 'all';
+      buttons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.filter === selected)));
+      let visible = 0;
+      cards.forEach((card) => {
+        card.hidden = selected !== 'all' && card.dataset.category !== selected;
+        if (!card.hidden) visible += 1;
+      });
+      count.textContent = `${visible} sample ${visible === 1 ? 'piece' : 'pieces'}`;
+    };
+    buttons.forEach((button) => button.addEventListener('click', () => {
+      const category = button.dataset.filter ?? 'all';
+      applyFilter(category);
+      const url = new URL(window.location.href);
+      if (category === 'all') url.searchParams.delete('craft');
+      else url.searchParams.set('craft', category);
+      window.history.replaceState({}, '', url);
+    }));
+    applyFilter(new URL(window.location.href).searchParams.get('craft') ?? 'all');
+    window.addEventListener('popstate', () => applyFilter(new URL(window.location.href).searchParams.get('craft') ?? 'all'));
+  }
+</script>
+<style>
+  .collection { padding-block: var(--space-section); }
+  .collection-heading { display: flex; align-items: end; justify-content: space-between; gap: var(--space-6); }
+  .collection-heading h2 { margin-top: var(--space-3); }
+  .collection-heading > p { font-size: var(--text-sm); color: var(--color-muted); line-height: 1.7; }
+  .collection-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); margin-top: var(--space-10); margin-bottom: var(--space-8); }
+  .collection-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .filter-button { min-height: 44px; padding: var(--space-2) var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-pill); font-size: var(--text-sm); background: transparent; color: var(--color-text); transition: background var(--duration-fast); }
+  .filter-button[aria-pressed='true'] { color: var(--color-page); background: var(--color-brand); border-color: var(--color-brand); }
+  .filter-button:hover:not([aria-pressed='true']) { background: var(--color-surface); }
+  .collection-count { color: var(--color-muted); font-size: var(--text-xs); white-space: nowrap; }
+  .product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); margin-top: var(--space-8); }
+  .collection-disclosure { max-width: 74ch; font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-8); }
+  @media(max-width: 1000px) { .product-grid { grid-template-columns: repeat(2, minmax(0,1fr)); row-gap: var(--space-10); } .collection-count { display: none; } }
+  @media(max-width: 700px) { .collection-heading { display: block; } .collection-heading > p { margin-top: var(--space-5); } .collection-heading br { display: none; } .product-grid { grid-template-columns: 1fr; } .filter-button { padding-inline: var(--space-4); } .collection-toolbar { margin-top: var(--space-6); } }
+</style>

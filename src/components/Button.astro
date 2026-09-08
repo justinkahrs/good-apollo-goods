@@ -1,0 +1,9 @@
+---
+type Props = {
+  variant?: 'primary' | 'secondary';
+  arrow?: boolean;
+} & ({ href: string; disabled?: never } | { href?: never; disabled?: boolean });
+const { href, variant = 'primary', arrow = false, disabled = false } = Astro.props;
+const classes = ['button', `button--${variant}`];
+---
+{href ? <a href={href} class:list={classes}><slot />{arrow && <span aria-hidden="true">↗</span>}</a> : <button type="button" disabled={disabled} class:list={classes}><slot />{arrow && <span aria-hidden="true">↗</span>}</button>}

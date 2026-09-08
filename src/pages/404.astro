@@ -1,0 +1,12 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Button from '../components/Button.astro';
+---
+<Layout title="A little off the path — Good Apollo">
+  <section class="container missing-page"><p class="eyebrow">404 / A little off the path</p><h1>This corner is<br />still <em>unraveled.</em></h1><p>We couldn’t find that page. There are a few good things waiting back at home.</p><Button href="/" arrow>Back to the good things</Button></section>
+</Layout>
+<style>
+  .missing-page { padding-block: var(--space-section); }
+  h1 { font-size: var(--text-hero); margin-top: var(--space-6); }
+  p:not(.eyebrow) { color: var(--color-muted); max-width: 45ch; margin-block: var(--space-6) var(--space-8); }
+</style>

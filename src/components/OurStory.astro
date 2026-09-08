@@ -1,0 +1,21 @@
+---
+import { Image } from 'astro:assets';
+import bagImage from '../assets/patchwork-tote.png';
+---
+<section id="our-story" class="story-section" aria-labelledby="story-title">
+  <div class="container story-grid">
+    <div class="story-photo"><Image src={bagImage} alt="A concept patchwork bag, with garden-inspired colors and tiny floral prints" widths={[480, 720, 960]} sizes="(max-width: 800px) 90vw, 43vw" width={960} height={1040} fit="cover" format="webp" loading="lazy" /><span class="photo-note">A little bit of the garden, in everything.</span></div>
+    <div class="story-copy"><p class="eyebrow">The same roots. A new little branch.</p><h2 id="story-title" class="display-heading">From the garden.<br />Into the <em>home.</em></h2><p>Good Apollo started with a garden we share, and a love for making things grow. Somewhere between the planting and the picking, there was always something being made inside, too.</p><p>A crochet project on the couch. Fabric across the table. A pair of knitting needles never too far away.</p><p>This is a little home for those things. An eclectic, ever-changing collection, made by our hands and sent out into the world when each piece is ready.</p><a href="https://www.goodapollogarden.com/" class="text-link" target="_blank" rel="noopener noreferrer">Meet Good Apollo Garden <span aria-hidden="true">↗</span><span class="sr-only"> (opens in a new tab)</span></a></div>
+  </div>
+</section>
+<style>
+  .story-section { background: var(--color-surface); padding-block: var(--space-section); }
+  .story-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(3rem, 8vw, 8rem); align-items: center; }
+  .story-photo { position: relative; margin-inline: var(--space-8); padding-bottom: var(--space-6); }
+  .story-photo img { width: 100%; aspect-ratio: 1 / 1.08; object-fit: cover; border-radius: 40% 40% var(--radius-sm) var(--radius-sm); }
+  .photo-note { display: block; font-family: var(--font-display); font-size: var(--text-lg); font-style: italic; text-align: center; margin-top: var(--space-5); transform: rotate(-3deg); }
+  .story-copy h2 { margin-block: var(--space-5) var(--space-8); }
+  .story-copy > p:not(.eyebrow) { color: var(--color-muted); margin-bottom: var(--space-5); line-height: 1.8; }
+  .story-copy .text-link { margin-top: var(--space-4); }
+  @media(max-width: 800px) { .story-grid { grid-template-columns: 1fr; } .story-photo { max-width: 470px; margin-inline: auto; } }
+</style>
