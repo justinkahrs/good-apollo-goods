@@ -1,0 +1,7 @@
+.env
+.env.*
+.openai/
+.astro/
+node_modules/
+dist/
+.git/

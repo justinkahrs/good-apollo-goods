@@ -16,6 +16,7 @@ const { title = 'Good Apollo — Homemade & heartfelt', description = 'An eclect
     <meta name="theme-color" content="#543543" />
     <meta name="description" content={description} />
     <meta name="robots" content="noindex, nofollow" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>

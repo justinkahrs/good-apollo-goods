@@ -4,7 +4,7 @@ A prelaunch storefront for handmade crochet, knitwear, and sewn goods, built wit
 
 ## Development
 
-Requires Node.js 22.12+ and npm.
+Requires Node.js 22.12 or newer within the 22.x release line, and npm.
 
 ```sh
 npm ci
@@ -35,4 +35,14 @@ Replace sample data/photos and choose a commerce provider before enabling purcha
 
 ## Deployment
 
-The output is portable static HTML and assets in `dist/`. `.openai/hosting.json` points to the private Sites preview. Deploying elsewhere only requires a static host; an Astro server adapter is not needed.
+Production hosting uses Vercel project `good-apollo-goods` in `justinkahrs-projects`. The working production URL is https://good-apollo-goods.vercel.app/. The primary domain is `goodapollogoods.com`; `www.goodapollogoods.com` redirects to it with HTTP 308 after DNS is configured.
+
+`vercel.json` configures Astro, `npm ci`, `npm run build`, the `dist/` output directory, and trailing slashes. Vercel builds with Node.js 22.x. After authenticating to Vercel, deploy future changes with:
+
+```sh
+npx vercel --prod --scope justinkahrs-projects
+```
+
+The local `.vercel/` link is ignored by Git. `.vercelignore` excludes `.env` files and the earlier Sites configuration from uploads. `VERCEL_TOKEN` is only a local deployment credential; it is not a site runtime variable. The old `.openai/hosting.json` is retained as a record of the unsuccessful Sites preview setup, not the production host.
+
+See `docs/deployment.md` for the exact GoDaddy DNS records and verification steps. The output remains portable static HTML and assets in `dist/`; an Astro server adapter is not needed.
