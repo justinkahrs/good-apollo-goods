@@ -1,30 +1,49 @@
 ---
 import Brand from './Brand.astro';
+
+const pathname = Astro.url.pathname;
+const navigation = [
+  { label: 'Shop', href: '/shop/' },
+  { label: 'About', href: '/about/' },
+  { label: 'Sizing & Care', href: '/sizing-care/' },
+  { label: 'Wholesale', href: '/wholesale/' },
+];
+const isActive = (href: string) => pathname === href || pathname.startsWith(href) || (href === '/shop/' && pathname.startsWith('/pieces/'));
 ---
-<div class="announcement">A few good things are on their way. <a href="/#collection">Take a little peek <span aria-hidden="true">↗</span></a></div>
+<div class="announcement">Handmade in Grand Rapids, Michigan <span aria-hidden="true">·</span> Small batches, one maker</div>
 <header class="container site-header">
-  <nav aria-label="Main navigation" class="primary-nav">
-    <a href="/#collection">The collection</a>
-    <a href="/#our-story">Our story</a>
-  </nav>
   <Brand />
-  <a class="opening-link" href="/#opening"><span class="status-dot" aria-hidden="true"></span>Shop opening soon <span aria-hidden="true">↗</span></a>
+  <nav aria-label="Main navigation" class="primary-nav">
+    {navigation.map((item) => <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>{item.label}</a>)}
+  </nav>
+  <a class="cart-link" href="/cart/" aria-current={pathname === '/cart/' ? 'page' : undefined}>Cart <span aria-hidden="true">(</span><span data-cart-count>0</span><span aria-hidden="true">)</span></a>
 </header>
+<script>
+  const updateCartCount = () => {
+    let count = 0;
+    try {
+      const cart = JSON.parse(localStorage.getItem('good-apollo-cart') ?? '[]');
+      count = Array.isArray(cart) ? cart.reduce((total, item) => total + (Number(item.quantity) || 0), 0) : 0;
+    } catch { count = 0; }
+    document.querySelectorAll<HTMLElement>('[data-cart-count]').forEach((element) => { element.textContent = String(count); });
+  };
+  updateCartCount();
+  window.addEventListener('storage', updateCartCount);
+  window.addEventListener('good-apollo:cart-updated', updateCartCount);
+</script>
 <style>
-  .announcement { background: var(--color-brand); color: var(--color-page); text-align: center; font-size: var(--text-xs); padding: .6rem var(--space-4); }
-  .announcement a:focus-visible { outline-color: var(--color-focus-inverse); }
-  .primary-nav { display: flex; align-items: center; gap: var(--space-8); }
-  .announcement a { margin-left: .35rem; text-underline-offset: 3px; }
-  .site-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 118px; gap: var(--space-6); }
-  .primary-nav a,.opening-link { text-decoration: none; font-size: var(--text-sm); }
-  .primary-nav a:hover { text-decoration: underline; text-underline-offset: 5px; }
-  .opening-link { justify-self: end; display: flex; align-items: center; gap: var(--space-3); }
-  .status-dot { height: 6px; width: 6px; background: var(--color-olive-700); border-radius: 50%; }
-  @media(max-width: 800px) {
-    .site-header { grid-template-columns: 1fr auto; min-height: 100px; }
-    .primary-nav { grid-row: 2; grid-column: 1 / -1; justify-content: center; padding-bottom: var(--space-5); }
-    .site-header :global(.brand) { grid-column: 1; grid-row: 1; margin-top: var(--space-5); }
-    .opening-link { grid-column: 2; grid-row: 1; margin-top: var(--space-5); font-size: var(--text-xs); }
+  .announcement { background: var(--color-brand); color: var(--color-page); text-align: center; font-size: var(--text-xs); letter-spacing: .03em; padding: .58rem var(--space-4); }
+  .announcement span { margin-inline: .45rem; color: var(--color-accent); }
+  .site-header { display: grid; grid-template-columns: minmax(190px, 1fr) auto minmax(80px, 1fr); align-items: center; min-height: 116px; gap: var(--space-8); }
+  .primary-nav { display: flex; align-items: center; justify-content: center; gap: clamp(1.15rem, 2.5vw, 2.5rem); }
+  .primary-nav a,.cart-link { position: relative; text-decoration: none; font-size: var(--text-sm); white-space: nowrap; }
+  .primary-nav a::after,.cart-link::after { content: ''; position: absolute; left: 0; right: 100%; bottom: -.4rem; height: 1px; background: currentColor; transition: right var(--duration-fast) var(--ease-out); }
+  .primary-nav a:hover::after,.primary-nav a[aria-current='page']::after,.cart-link:hover::after,.cart-link[aria-current='page']::after { right: 0; }
+  .cart-link { justify-self: end; font-weight: 550; }
+  @media(max-width: 850px) {
+    .site-header { grid-template-columns: 1fr auto; min-height: auto; padding-top: var(--space-6); }
+    .primary-nav { grid-row: 2; grid-column: 1 / -1; justify-content: flex-start; overflow-x: auto; padding-block: var(--space-5) var(--space-6); }
+    .cart-link { grid-column: 2; grid-row: 1; }
   }
-  @media(max-width: 420px) { .opening-link .status-dot { display: none; } .opening-link { gap: var(--space-2); } .site-header :global(.brand-name) { font-size: 2rem; } }
+  @media(max-width: 480px) { .announcement { font-size: .72rem; } .site-header :global(.brand-name) { font-size: 2rem; } .primary-nav { gap: var(--space-6); } }
 </style>

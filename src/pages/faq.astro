@@ -1,0 +1,22 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHero from '../components/PageHero.astro';
+---
+<Layout title="FAQ — Good Apollo Goods" description="Frequently asked questions about Good Apollo Goods hats, sizing, materials, and orders.">
+  <PageHero eyebrow="Help / FAQ" title="A few useful answers." intro="The practical details about fit, making, care, and what is coming next." />
+  <section class="container faq-list">
+    <article><h2>How do I choose a child size?</h2><p>Measure the child’s actual head circumference and use the Child chart. Age is not the primary fit method.</p></article>
+    <article><h2>Are the hats lined?</h2><p>Yes. Hats include cotton lining; exact outer and lining materials appear on every product page.</p></article>
+    <article><h2>What does made to order mean?</h2><p>The hat is sewn after your order is placed. The current production window appears alongside the availability status.</p></article>
+    <article><h2>How should I wash a hat?</h2><p>Machine wash cold on a gentle cycle, air dry only, and reshape while damp if needed. Avoid high heat.</p></article>
+    <article><h2>Do you offer wholesale?</h2><p>Good Apollo Goods welcomes inquiries from independent retailers and boutiques while the wholesale program develops.</p></article>
+    <article><h2>Where are the hats made?</h2><p>Every piece is cut, sewn, and finished by one maker in Grand Rapids, Michigan.</p></article>
+  </section>
+</Layout>
+<style>
+  .faq-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 var(--space-16); padding-block: var(--space-section); }
+  article { padding-block: var(--space-8); border-bottom: 1px solid var(--color-border); }
+  h2 { font-size: var(--text-xl); margin-bottom: var(--space-4); }
+  p { color: var(--color-muted); line-height: 1.8; }
+  @media(max-width: 700px) { .faq-list { grid-template-columns: 1fr; } }
+</style>

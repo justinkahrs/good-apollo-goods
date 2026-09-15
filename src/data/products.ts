@@ -1,56 +1,101 @@
 import type { ImageMetadata } from 'astro';
-import blanketImage from '../assets/sunlit-cream-throw.png';
-import bagImage from '../assets/patchwork-tote.png';
-import scarfImage from '../assets/plum-striped-scarf.png';
+import comingSoonImage from '../assets/good-apollo-coming-soon.png';
 
-export const categories = [
-  { id: 'all', label: 'All the good things' },
-  { id: 'crochet', label: 'Crochet' },
-  { id: 'knitwear', label: 'Knitwear' },
-  { id: 'sewn', label: 'Sewn goods' },
+export const shopCategories = [
+  { id: 'all', label: 'All hats', href: '/shop/' },
+  { id: 'adult', label: 'Adult', href: '/shop/adult/' },
+  { id: 'child', label: 'Child', href: '/shop/child/' },
 ] as const;
 
-export type Category = Exclude<(typeof categories)[number]['id'], 'all'>;
+export type Audience = Exclude<(typeof shopCategories)[number]['id'], 'all'>;
+export type ProductStatus = 'Ready to ship' | 'Made to order';
+
+export interface ProductImage {
+  src: ImageMetadata;
+  alt: string;
+  position?: string;
+}
+
 export interface Product {
   slug: string;
   name: string;
-  category: Category;
-  craft: string;
+  audience: Audience;
+  price: number;
   color: string;
-  samplePrice: number;
+  materials: string[];
+  lining: string;
+  sizes: string[];
+  status: ProductStatus;
+  productionTime?: string;
   description: string;
   detail: string;
-  image: ImageMetadata;
-  imageAlt: string;
-  imagePosition?: string;
+  images: ProductImage[];
 }
 
-/** Illustrative prelaunch content only: these are not real inventory or offers. */
+const placeholder = (name: string): ProductImage => ({
+  src: comingSoonImage,
+  alt: `${name} photography coming soon`,
+});
+
+/** Initial hat collection. Replace placeholders as finished photography arrives. */
 export const products: Product[] = [
   {
-    slug: 'sunday-blanket', name: 'The Sunday blanket', category: 'crochet',
-    craft: 'Crocheted comfort', color: 'Oat milk', samplePrice: 185,
-    description: 'For the long way through a Sunday. A generous, textured throw imagined in the softest shade of cream.',
-    detail: 'Big, open stitches and a little extra texture. The sort of piece you leave over the arm of your favorite chair, always within reach.',
-    image: blanketImage,
-    imageAlt: 'Concept photo of a chunky cream throw draped over a wooden chair in afternoon sunlight',
-    imagePosition: '70% center',
+    slug: 'mulberry-corduroy-hat',
+    name: 'Mulberry corduroy hat',
+    audience: 'adult',
+    price: 72,
+    color: 'Mulberry',
+    materials: ['Cotton corduroy', 'Cotton'],
+    lining: 'Fully lined in soft cotton',
+    sizes: ['S', 'M', 'L', 'XL'],
+    status: 'Made to order',
+    productionTime: 'Please allow 2–3 weeks before shipping.',
+    description: 'A softly structured everyday hat in deep mulberry corduroy, finished with a comfortable cotton lining.',
+    detail: 'Cut and sewn one at a time in the Good Apollo studio. Small variations are part of the character of a handmade piece.',
+    images: [placeholder('Mulberry corduroy hat')],
   },
   {
-    slug: 'gathering-bag', name: 'The gathering bag', category: 'sewn',
-    craft: 'Patchwork & little adventures', color: 'Garden remnants', samplePrice: 98,
-    description: 'A happy gathering of prints, colors, and places to go. An everyday tote with a patchwork point of view.',
-    detail: 'Plum, olive, and golden gingham come together in an easygoing quilted shape. An idea for carrying a book, a project, or a little bit of everything.',
-    image: bagImage,
-    imageAlt: 'Concept photo of a quilted patchwork tote in plum, olive, cream, and ochre with ivory handles',
+    slug: 'ochre-cotton-twill-hat',
+    name: 'Ochre cotton twill hat',
+    audience: 'adult',
+    price: 68,
+    color: 'Warm ochre',
+    materials: ['Cotton twill', 'Cotton'],
+    lining: 'Fully lined in soft cotton',
+    sizes: ['S', 'M', 'L', 'XL'],
+    status: 'Ready to ship',
+    description: 'A clean, versatile shape in sturdy cotton twill with a warm ochre color and an easy cotton-lined interior.',
+    detail: 'Made in a small batch with close attention to the brim, seams, and the way the hat settles into shape with wear.',
+    images: [placeholder('Ochre cotton twill hat')],
   },
   {
-    slug: 'afterglow-scarf', name: 'The afterglow scarf', category: 'knitwear',
-    craft: 'Knitted warmth', color: 'Mulberry & cream', samplePrice: 120,
-    description: 'One more reason to take the evening walk. A generous knit, a deep berry hue, and a few quiet stripes.',
-    detail: 'A simple shape with the stitches doing the talking. Imagined as a soft layer for cool mornings and the first hint of autumn.',
-    image: scarfImage,
-    imageAlt: 'Concept photo of a folded plum knitted scarf with fine cream stripes and visible stitch texture',
+    slug: 'moss-corduroy-hat',
+    name: 'Moss corduroy hat',
+    audience: 'child',
+    price: 58,
+    color: 'Garden moss',
+    materials: ['Cotton corduroy', 'Cotton'],
+    lining: 'Fully lined in soft cotton',
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    status: 'Made to order',
+    productionTime: 'Please allow 2–3 weeks before shipping.',
+    description: 'A comfortable child-sized hat in soft moss corduroy, made for everyday wear and lined in breathable cotton.',
+    detail: 'Each hat is cut and sewn by one maker in Grand Rapids. Choose size by actual head circumference for the best fit.',
+    images: [placeholder('Moss corduroy hat')],
+  },
+  {
+    slug: 'oat-cotton-hat',
+    name: 'Oat cotton hat',
+    audience: 'child',
+    price: 56,
+    color: 'Natural oat',
+    materials: ['Cotton', 'Cotton twill'],
+    lining: 'Fully lined in soft cotton',
+    sizes: ['XS', 'S', 'M', 'L', 'XL'],
+    status: 'Ready to ship',
+    description: 'A light, softly structured hat in natural cotton with a practical twill outer and a smooth cotton lining.',
+    detail: 'Made in a limited run in the Good Apollo studio, with durable seams and a simple shape that works season after season.',
+    images: [placeholder('Oat cotton hat')],
   },
 ];
 

@@ -1,6 +1,6 @@
 # Good Apollo
 
-A prelaunch storefront for handmade crochet, knitwear, and sewn goods, built with Astro, TypeScript, and a token-based design system. Related to [Good Apollo Garden](https://www.goodapollogarden.com/), with a distinct warm, indoor identity.
+A prelaunch storefront for Good Apollo Goods, a one-woman label making small-batch child and adult hats in Grand Rapids, Michigan. The site is built with Astro, TypeScript, and a token-based design system.
 
 ## Development
 
@@ -20,18 +20,18 @@ The development URL is printed by Astro (normally `http://localhost:4321`). This
 - `src/styles/tokens.css` — colors, typography, spacing, shape, motion, and page dimensions.
 - `src/styles/global.css` — shared styles and Tailwind's token bridge.
 - `src/components/` — reusable storefront components.
-- `src/data/products.ts` — typed catalog data and sample prices in USD.
-- `src/assets/` — AI-created sample photographs, optimized by Astro at build time.
+- `src/data/products.ts` — typed hat catalog data, sizing, availability, and draft prices in USD.
+- `src/assets/` — the branded Coming Soon product-art placeholder, optimized by Astro at build time.
 - `docs/design-system.md` — design rationale, editing guide, accessibility, and launch boundary.
 - `/design-system/` — live component and foundation reference.
 
-The catalog is static HTML. Craft filtering is a small progressive-enhancement script; navigation, piece pages, and disclosures work without JavaScript. Fonts and images are local, with responsive WebP derivatives generated during the build.
+The catalog, category pages, product details, sizing guide, About page, wholesale page, and help content are static HTML. The cart is a lightweight client-side preview stored in browser storage; all browsing content works without JavaScript. Fonts and images are local, with responsive WebP derivatives generated during the build.
 
 ## Prelaunch status
 
-The three pieces, images, and prices are illustrative samples. No payments, email collection, or inventory reservations are implemented. All pages are marked `noindex, nofollow` pending real content and launch preparation. No date or shipping promises have been invented.
+The current product names, prices, availability, and branded placeholder art are working launch content and should be confirmed before opening sales. No payments, email collection, or authoritative inventory reservations are implemented. All pages remain marked `noindex, nofollow` pending final product photography, policies, contact details, and commerce setup.
 
-Replace sample data/photos and choose a commerce provider before enabling purchases. Final inventory, payment confirmation, shipping, and tax rules belong in that provider; do not implement authoritative stock using browser storage.
+Replace each placeholder with finished product photography and connect a commerce provider before enabling checkout. Final inventory, payment confirmation, shipping, and tax rules belong in that provider; the preview cart must not become the authoritative stock ledger.
 
 ## Deployment
 

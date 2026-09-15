@@ -1,0 +1,64 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHero from '../components/PageHero.astro';
+---
+<Layout title="Cart — Good Apollo Goods" description="Your Good Apollo Goods shopping cart.">
+  <PageHero eyebrow="Your cart" title="The good things you chose." intro="Review your hats and sizes here. Checkout will be connected when the collection is ready to ship." />
+  <section class="container cart-layout" aria-live="polite">
+    <div class="cart-items" data-cart-items></div>
+    <aside class="cart-summary">
+      <div><span>Subtotal</span><strong data-cart-total>$0</strong></div>
+      <p>Shipping and applicable taxes are calculated at checkout.</p>
+      <button type="button" class="button button--primary" disabled>Checkout coming soon</button>
+      <a href="/shop/" class="text-link">Continue shopping <span aria-hidden="true">↗</span></a>
+    </aside>
+  </section>
+</Layout>
+<script>
+  type CartItem = { slug: string; name: string; price: number; size: string; quantity: number };
+  const itemsRoot = document.querySelector<HTMLElement>('[data-cart-items]');
+  const totalRoot = document.querySelector<HTMLElement>('[data-cart-total]');
+  const formatPrice = (price: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
+  const getCart = (): CartItem[] => {
+    try { const cart = JSON.parse(localStorage.getItem('good-apollo-cart') ?? '[]'); return Array.isArray(cart) ? cart : []; }
+    catch { return []; }
+  };
+  const renderCart = () => {
+    const cart = getCart();
+    if (!itemsRoot || !totalRoot) return;
+    if (cart.length === 0) {
+      itemsRoot.innerHTML = '<div class="empty-cart"><p class="eyebrow">Cart empty</p><h2>Plenty of room for a hat.</h2><p>Browse the current child and adult collection to find a good fit.</p><a class="button button--secondary" href="/shop/">Shop all hats <span aria-hidden="true">↗</span></a></div>';
+      totalRoot.textContent = '$0';
+      return;
+    }
+    itemsRoot.innerHTML = cart.map((item, index) => `<article class="cart-item"><div><p class="eyebrow">Size ${item.size}</p><h2><a href="/pieces/${item.slug}/">${item.name}</a></h2><p>${formatPrice(item.price)} · Quantity ${item.quantity}</p></div><div><strong>${formatPrice(item.price * item.quantity)}</strong><button type="button" data-remove-item="${index}">Remove</button></div></article>`).join('');
+    totalRoot.textContent = formatPrice(cart.reduce((sum, item) => sum + (item.price * item.quantity), 0));
+    itemsRoot.querySelectorAll<HTMLButtonElement>('[data-remove-item]').forEach((button) => button.addEventListener('click', () => {
+      const next = getCart();
+      next.splice(Number(button.dataset.removeItem), 1);
+      localStorage.setItem('good-apollo-cart', JSON.stringify(next));
+      window.dispatchEvent(new Event('good-apollo:cart-updated'));
+      renderCart();
+    }));
+  };
+  renderCart();
+</script>
+<style>
+  .cart-layout { display: grid; grid-template-columns: 1.5fr .7fr; gap: clamp(3rem, 8vw, 8rem); align-items: start; padding-block: var(--space-section); }
+  .cart-items { border-top: 1px solid var(--color-border); }
+  .cart-items :global(.cart-item) { display: flex; justify-content: space-between; gap: var(--space-6); padding-block: var(--space-6); border-bottom: 1px solid var(--color-border); }
+  .cart-items :global(.cart-item h2) { font-size: var(--text-xl); margin-block: var(--space-2); }
+  .cart-items :global(.cart-item h2 a) { text-decoration: none; }
+  .cart-items :global(.cart-item p:not(.eyebrow)) { color: var(--color-muted); font-size: var(--text-sm); }
+  .cart-items :global(.cart-item > div:last-child) { text-align: right; }
+  .cart-items :global([data-remove-item]) { display: block; margin-top: var(--space-4); margin-left: auto; padding: 0; border: 0; background: none; color: var(--color-muted); text-decoration: underline; text-underline-offset: 4px; font-size: var(--text-sm); }
+  .cart-items :global(.empty-cart) { padding-block: var(--space-12); }
+  .cart-items :global(.empty-cart h2) { font-size: var(--text-3xl); margin-block: var(--space-5); }
+  .cart-items :global(.empty-cart > p:not(.eyebrow)) { color: var(--color-muted); margin-bottom: var(--space-8); }
+  .cart-summary { background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-md); }
+  .cart-summary > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); font-size: var(--text-lg); }
+  .cart-summary p { color: var(--color-muted); font-size: var(--text-sm); margin-block: var(--space-5) var(--space-6); }
+  .cart-summary :global(.button) { width: 100%; }
+  .cart-summary .text-link { width: max-content; margin-top: var(--space-5); }
+  @media(max-width: 800px) { .cart-layout { grid-template-columns: 1fr; } }
+</style>

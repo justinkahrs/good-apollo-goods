@@ -1,0 +1,30 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHero from '../components/PageHero.astro';
+import Button from '../components/Button.astro';
+---
+<Layout title="About — Good Apollo Goods" description="Meet the maker behind Good Apollo Goods, an independent handmade label in Grand Rapids, Michigan.">
+  <PageHero eyebrow="About Good Apollo" title="Designed with care. Made by one pair of hands." intro="Good Apollo Goods is an independent, one-woman handmade brand based in Grand Rapids, Michigan." />
+  <section class="container about-grid" aria-label="About the maker">
+    <div class="maker-mark" aria-hidden="true"><span>GR</span><em>made here</em><small>42.9634° N</small></div>
+    <div class="about-copy">
+      <p class="lead">The work begins with a professional design background and a long-standing pull toward making useful things by hand.</p>
+      <p>Vintage-inspired design and traditional handcraft shape the way each piece is considered: the proportion of a brim, the feel of a fabric, the placement of a seam, and the small construction choices that help a hat wear well.</p>
+      <p>Every hat is cut and sewn in small batches, with attention to structure and detail. The collection stays intentionally focused, leaving room to refine familiar forms and introduce new colors and fabrics over time.</p>
+      <p>Good Apollo Goods is handmade in Grand Rapids, Michigan—from the first pattern to the final stitch.</p>
+      <Button href="/shop/" arrow>Shop the hats</Button>
+    </div>
+  </section>
+</Layout>
+<style>
+  .about-grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(3rem, 9vw, 9rem); align-items: center; padding-block: var(--space-section); }
+  .maker-mark { aspect-ratio: 4 / 5; background: var(--color-brand); color: var(--color-page); border-radius: 48% 48% var(--radius-sm) var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-8); text-align: center; }
+  .maker-mark span { font-family: var(--font-display); font-size: clamp(5rem, 12vw, 10rem); line-height: .8; letter-spacing: -.08em; color: var(--color-accent); }
+  .maker-mark em { font-family: var(--font-display); font-size: var(--text-2xl); margin-top: var(--space-8); }
+  .maker-mark small { margin-top: var(--space-6); font-size: var(--text-xs); letter-spacing: .14em; }
+  .about-copy { max-width: 62ch; }
+  .about-copy p { color: var(--color-muted); margin-bottom: var(--space-6); line-height: 1.85; }
+  .about-copy .lead { color: var(--color-text); font-family: var(--font-display); font-size: var(--text-2xl); line-height: 1.35; letter-spacing: -.025em; }
+  .about-copy :global(.button) { margin-top: var(--space-4); }
+  @media(max-width: 800px) { .about-grid { grid-template-columns: 1fr; } .maker-mark { max-width: 480px; width: 100%; } }
+</style>

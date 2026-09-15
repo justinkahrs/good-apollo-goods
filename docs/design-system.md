@@ -1,6 +1,6 @@
 # Good Apollo design system
 
-A warm editorial storefront for an eclectic home practice. The palette, expressive serif, arch-shaped photography, and unhurried language should make the work feel personal and worth keeping. Good Apollo is related to Good Apollo Garden through its serif/sans pairing and love of making, with a separate indoor identity.
+A warm editorial storefront for a small independent hat label. The palette, expressive serif, arch-shaped imagery, and unhurried language should make the work feel personal and worth keeping without drifting into generic craft-marketplace styling.
 
 ## Sources of truth
 
@@ -8,7 +8,7 @@ A warm editorial storefront for an eclectic home practice. The palette, expressi
 - `src/styles/global.css`: reset, accessibility defaults, Tailwind theme bridge, and shared component classes.
 - `src/components/`: reusable Astro components with locally scoped styles.
 - `/design-system/`: rendered examples of the actual tokens and components used by the storefront.
-- `src/data/products.ts`: typed sample catalog, categories, copy, prices, image imports, and USD formatting.
+- `src/data/products.ts`: typed hat catalog, audience categories, product details, sizing, availability, image imports, and USD formatting.
 
 Do not duplicate color literals in component styles. Change semantic roles to retheme broadly; change a primitive to affect all roles mapped to it. Local sizing for distinctive art direction can remain in its component. Tailwind's base spacing maps to `--space-1`; named `--space-*` tokens define the explicit scale.
 
@@ -46,17 +46,17 @@ Use small image corners for products. Reserve arched images for the hero/story. 
 
 - `Brand`: regular and large wordmark variants.
 - `Button`: primary/secondary; link or native button; optional arrow; disabled state only for buttons. Buttons default to `type="button"`.
-- `Header` / `Footer`: shared navigation and prelaunch context.
-- `ProductCard`: image, craft, name, sample price, and link to static piece page.
-- `Collection`: progressive enhancement for craft filters. All pieces remain visible without JavaScript. Filters expose `aria-pressed`, a polite result count, and a shareable `?craft=` parameter.
-- `Opening`: native HTML disclosure elements, usable without JavaScript.
+- `Header` / `Footer`: shared navigation, cart count, help links, and brand context.
+- `ProductCard`: image, audience, status, name, color, lining, price, and link to a static product page.
+- `Collection`: shared presentation for All Hats, Adult, and Child category pages.
+- `PageHero`: reusable editorial heading block for information pages.
 - `Layout`: metadata, local fonts, skip link, main landmark, header, footer.
 
 Movement is limited to subtle hover image scaling and small arrow/button feedback. No continuous movement, parallax, or scroll hijacking. Honor `prefers-reduced-motion` globally. Keyboard focus must remain visible, and filtering must not move focus away from the selected button.
 
-## Photography and sample content
+## Photography and launch content
 
-The current three images are AI-created concept assets. They are not photographs of real products. The catalog and product detail pages disclose this, and the entire site is marked `noindex, nofollow` while sample content is in use.
+The current product image is a branded Coming Soon placeholder made specifically for Good Apollo Goods. It includes the wordmark as a watermark and patternmaking details, so unfinished photography still feels intentional. The entire site remains marked `noindex, nofollow` while placeholder imagery and draft commerce data are in use.
 
 Real photography should use warm natural light, faithful colors, and visible workmanship. Include real dimensions, materials, care instructions, and useful scale/context for each item before enabling sales. Do not infer these facts from an image.
 
@@ -70,4 +70,4 @@ Real photography should use warm natural light, faithful colors, and visible wor
 
 ## Launch boundary
 
-This is an intentional prelaunch site. It has no checkout, cart, email collection, or fabricated stock counts. Before opening: replace sample assets/data; define shipping, returns, contact information, and final pricing; connect the selected commerce provider; enforce quantity-one inventory at that provider; then update prelaunch copy and robots metadata. A static page alone must never be used as the authoritative inventory ledger.
+This is an intentional prelaunch site. It has a browser-local preview cart but no checkout, payment processing, email collection, or authoritative inventory. Before opening: replace placeholder imagery, confirm product data and prices, define final shipping and returns policies, verify contact information, connect the selected commerce provider, enforce inventory there, and update robots metadata. A static page or browser storage must never be used as the authoritative inventory ledger.

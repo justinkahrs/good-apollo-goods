@@ -1,0 +1,15 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHero from '../components/PageHero.astro';
+---
+<Layout title="Contact — Good Apollo Goods" description="Contact the maker behind Good Apollo Goods.">
+  <PageHero eyebrow="Contact" title="Send a note to the studio." intro="Questions about sizing, a piece, an order, or a possible retail partnership are always welcome." />
+  <section class="container contact-card"><div><span class="eyebrow">Email</span><a href="mailto:hello@goodapollogoods.com">hello@goodapollogoods.com</a></div><p>Good Apollo Goods is a one-woman studio, so replies come directly from the maker. Please allow a little time around production days.</p></section>
+</Layout>
+<style>
+  .contact-card { padding-block: var(--space-section); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-12); align-items: start; }
+  .contact-card div { display: grid; gap: var(--space-5); }
+  .contact-card a { width: fit-content; font-family: var(--font-display); font-size: var(--text-2xl); text-decoration-thickness: 1px; text-underline-offset: 6px; overflow-wrap: anywhere; }
+  .contact-card p { color: var(--color-muted); max-width: 50ch; line-height: 1.8; }
+  @media(max-width: 700px) { .contact-card { grid-template-columns: 1fr; } }
+</style>

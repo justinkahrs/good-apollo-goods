@@ -1,0 +1,56 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHero from '../components/PageHero.astro';
+
+const childSizes = [
+  ['XS', '44 cm / 17.3 in'],
+  ['S', '46 cm / 18.1 in'],
+  ['M', '48 cm / 18.9 in'],
+  ['L', '50 cm / 19.7 in'],
+  ['XL', '52 cm / 20.5 in'],
+];
+const adultSizes = [
+  ['S', '54 cm / 21.3 in'],
+  ['M', '56 cm / 22 in'],
+  ['L', '58 cm / 22.8 in'],
+  ['XL', '60 cm / 23.6 in'],
+];
+---
+<Layout title="Sizing & care — Good Apollo Goods" description="Child and adult hat sizing, measuring instructions, materials, and care for Good Apollo Goods hats.">
+  <PageHero eyebrow="Sizing & care" title="A comfortable fit starts with one measurement." intro="Use actual head circumference to choose a size. Child and adult size charts are kept separate so the numbers stay clear." />
+  <section class="container measure" aria-labelledby="measure-title">
+    <div><p class="eyebrow">How to measure</p><h2 id="measure-title" class="display-heading">Around the head, where the hat will sit.</h2></div>
+    <div class="measure-copy"><p>Use a soft measuring tape and wrap it around the widest part of the head, passing just above the eyebrows and ears. Keep the tape level and comfortably snug without pulling it tight.</p><p>Choose the closest circumference in the chart below. For Child sizing, use the actual measurement—not age—as the primary fit method.</p></div>
+  </section>
+  <section class="container size-charts" aria-label="Hat size charts">
+    <div class="size-card"><div class="chart-heading"><span class="eyebrow">Child</span><h2>Child sizes</h2></div><table><thead><tr><th>Size</th><th>Head circumference</th></tr></thead><tbody>{childSizes.map(([size, measurement]) => <tr><th scope="row">{size}</th><td>{measurement}</td></tr>)}</tbody></table><p>Measure the child’s head each time you order; fit varies more reliably by circumference than by age.</p></div>
+    <div class="size-card"><div class="chart-heading"><span class="eyebrow">Adult</span><h2>Adult sizes</h2></div><table><thead><tr><th>Size</th><th>Head circumference</th></tr></thead><tbody>{adultSizes.map(([size, measurement]) => <tr><th scope="row">{size}</th><td>{measurement}</td></tr>)}</tbody></table><p>If your measurement falls between sizes, choose the larger size for a more relaxed fit.</p></div>
+  </section>
+  <section class="care-band">
+    <div class="container care-grid">
+      <div><p class="eyebrow">Materials</p><h2 class="display-heading">Natural, familiar fabrics.</h2><p>Hats are primarily made from cotton, cotton twill, corduroy, and cotton lining. Exact materials are always listed on the individual product page.</p></div>
+      <div><p class="eyebrow">Care</p><h2 class="display-heading">Keep the shape. Skip the heat.</h2><ol><li>Machine wash cold on a gentle cycle.</li><li>Air dry only.</li><li>Reshape while damp if needed. Avoid high heat.</li></ol></div>
+    </div>
+  </section>
+</Layout>
+<style>
+  .measure { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 7vw, 7rem); padding-block: var(--space-section); }
+  .measure h2 { margin-top: var(--space-5); }
+  .measure-copy p { color: var(--color-muted); line-height: 1.85; margin-bottom: var(--space-5); }
+  .size-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); padding-bottom: var(--space-section); }
+  .size-card { background: var(--color-surface); padding: clamp(1.5rem, 4vw, 3rem); border-radius: var(--radius-md); }
+  .chart-heading { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-8); }
+  .chart-heading h2 { font-size: var(--text-2xl); }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th,td { padding: var(--space-4) 0; border-bottom: 1px solid var(--color-border); text-align: left; }
+  thead th { font-size: var(--text-xs); color: var(--color-muted); font-weight: 550; }
+  tbody th { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 500; }
+  tbody td { text-align: right; }
+  .size-card > p { color: var(--color-muted); font-size: var(--text-sm); margin-top: var(--space-6); }
+  .care-band { background: var(--color-brand); color: var(--color-page); padding-block: var(--space-section); }
+  .care-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(3rem, 9vw, 9rem); }
+  .care-grid h2 { margin-block: var(--space-5) var(--space-6); }
+  .care-grid p:not(.eyebrow),.care-grid li { color: var(--color-cream-200); line-height: 1.8; }
+  .care-grid ol { margin: 0; padding-left: 1.25rem; display: grid; gap: var(--space-3); }
+  @media(max-width: 800px) { .measure,.size-charts,.care-grid { grid-template-columns: 1fr; } }
+</style>

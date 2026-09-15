@@ -1,42 +1,118 @@
 ---
 import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
-import Button from '../../components/Button.astro';
 import ProductCard from '../../components/ProductCard.astro';
 import { products, formatPrice, type Product } from '../../data/products';
-export function getStaticPaths() { return products.map((product) => ({ params: { slug: product.slug }, props: { product } })); }
+
+export function getStaticPaths() {
+  return products.map((product) => ({ params: { slug: product.slug }, props: { product } }));
+}
 interface Props { product: Product; }
 const { product } = Astro.props;
-const others = products.filter((piece) => piece.slug !== product.slug);
+const related = products.filter((piece) => piece.slug !== product.slug && piece.audience === product.audience).slice(0, 2);
 ---
-<Layout title={`${product.name} — Collection preview · Good Apollo`} description={`A sample design from Good Apollo. ${product.description} Not yet available to purchase.`}>
-  <div class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/#collection">The collection</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav></div>
-  <section class="container piece-grid" aria-labelledby="piece-title">
-    <figure class="piece-photo"><Image src={product.image} alt={product.imageAlt} widths={[600, 900, 1200]} sizes="(max-width: 800px) 90vw, 50vw" width={1200} height={1320} fit="cover" format="webp" loading="eager" style={{ objectPosition: product.imagePosition ?? 'center' }} /><figcaption>Illustrative concept image · Real product photos coming at launch</figcaption></figure>
-    <div class="piece-copy"><p class="eyebrow">Collection preview · {product.craft}</p><h1 id="piece-title">{product.name}</h1><p class="piece-color">{product.color}</p><div class="piece-price"><span>{formatPrice(product.samplePrice)}</span><span>Illustrative price · USD</span></div><p class="piece-description">{product.description}</p><p class="piece-detail">{product.detail}</p><div class="preview-notice"><span class="badge">A sample, for now</span><p>This is a sample design, with an AI-created image and an illustrative price. It isn’t an item for sale. Finished pieces, materials, measurements, and final prices will be shared at launch.</p></div><Button href="/#opening" arrow>About the first collection</Button><p class="piece-footnote">Handmade. Finished before it’s listed. Never made to order.</p></div>
+<Layout title={`${product.name} — Good Apollo Goods`} description={product.description}>
+  <div class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/shop/">Shop</a><span aria-hidden="true">/</span><a href={`/shop/${product.audience}/`}>{product.audience}</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav></div>
+  <section class="container product-grid" aria-labelledby="product-title">
+    <div class:list={['product-gallery', { single: product.images.length === 1 }]}>
+      {product.images.map((image, index) => <figure><Image src={image.src} alt={image.alt} widths={[600, 900, 1200]} sizes="(max-width: 850px) 92vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading={index === 0 ? 'eager' : 'lazy'} style={{ objectPosition: image.position ?? 'center' }} />{index === 0 && <figcaption>Finished product photography coming soon</figcaption>}</figure>)}
+    </div>
+    <div class="product-copy">
+      <p class="eyebrow">{product.audience} hats · {product.status}</p>
+      <h1 id="product-title">{product.name}</h1>
+      <p class="product-price">{formatPrice(product.price)}</p>
+      <p class="product-description">{product.description}</p>
+      <p class="product-detail">{product.detail}</p>
+
+      <form class="purchase-form" data-add-to-cart data-slug={product.slug} data-name={product.name} data-price={product.price}>
+        <fieldset>
+          <legend><span>Choose a size</span><a href="/sizing-care/">View size guide</a></legend>
+          <div class="size-options">{product.sizes.map((size) => <label><input type="radio" name="size" value={size} required /><span>{size}</span></label>)}</div>
+        </fieldset>
+        <button class="button button--primary add-button" type="submit">Add to cart <span aria-hidden="true">↗</span></button>
+        <p class="cart-status" data-cart-status aria-live="polite"></p>
+      </form>
+
+      <dl class="product-facts">
+        <div><dt>Color</dt><dd>{product.color}</dd></div>
+        <div><dt>Materials</dt><dd>{product.materials.join(', ')}</dd></div>
+        <div><dt>Lining</dt><dd>{product.lining}</dd></div>
+        <div><dt>Availability</dt><dd>{product.status}{product.productionTime && <><br /><small>{product.productionTime}</small></>}</dd></div>
+      </dl>
+      <div class="practical-details">
+        <div><h2>Care</h2><p>Machine wash cold on a gentle cycle. Air dry only. Reshape while damp if needed, and avoid high heat.</p></div>
+        <div><h2>Shipping & returns</h2><p>Shipping timing is shown with each piece. Made-to-order production time is separate from transit time. See <a href="/shipping/">shipping</a> and <a href="/returns/">returns & exchanges</a>.</p></div>
+      </div>
+    </div>
   </section>
-  <section class="container related" aria-labelledby="related-title"><div class="related-heading"><h2 id="related-title" class="display-heading">A few more good things.</h2><a href="/#collection" class="text-link">The whole preview <span aria-hidden="true">↗</span></a></div><div class="related-grid">{others.map((piece) => <ProductCard product={piece} />)}</div></section>
+  {related.length > 0 && <section class="container related" aria-labelledby="related-title"><div class="related-heading"><h2 id="related-title" class="display-heading">More in {product.audience}.</h2><a href={`/shop/${product.audience}/`} class="text-link">Shop this fit <span aria-hidden="true">↗</span></a></div><div class="related-grid">{related.map((piece) => <ProductCard product={piece} />)}</div></section>}
 </Layout>
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-add-to-cart]');
+  const status = document.querySelector<HTMLElement>('[data-cart-status]');
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const size = String(formData.get('size') ?? '');
+    if (!size) return;
+    const item = {
+      slug: form.dataset.slug,
+      name: form.dataset.name,
+      price: Number(form.dataset.price),
+      size,
+      quantity: 1,
+    };
+    let cart: typeof item[] = [];
+    try { cart = JSON.parse(localStorage.getItem('good-apollo-cart') ?? '[]'); } catch { cart = []; }
+    const existing = cart.find((entry) => entry.slug === item.slug && entry.size === size);
+    if (existing) existing.quantity += 1;
+    else cart.push(item);
+    localStorage.setItem('good-apollo-cart', JSON.stringify(cart));
+    window.dispatchEvent(new Event('good-apollo:cart-updated'));
+    if (status) status.innerHTML = `Added ${item.name}, size ${size}. <a href="/cart/">View cart</a>`;
+  });
+</script>
 <style>
-  .breadcrumb { display: flex; flex-wrap: wrap; gap: var(--space-3); padding-top: var(--space-6); padding-bottom: var(--space-8); color: var(--color-muted); font-size: var(--text-sm); }
+  .breadcrumb { display: flex; flex-wrap: wrap; gap: var(--space-3); padding-top: var(--space-6); padding-bottom: var(--space-8); color: var(--color-muted); font-size: var(--text-sm); text-transform: capitalize; }
   .breadcrumb a { text-underline-offset: 4px; }
-  .piece-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(2rem, 6vw, 6rem); align-items: center; padding-bottom: var(--space-section); }
-  .piece-photo { margin: 0; min-width: 0; }
-  .piece-photo img { width: 100%; aspect-ratio: 1 / 1.1; object-fit: cover; border-radius: var(--radius-md); }
-  .piece-photo figcaption { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-3); }
-  .piece-copy h1 { font-size: var(--text-3xl); margin-top: var(--space-5); }
-  .piece-color { color: var(--color-muted); font-size: var(--text-sm); margin-top: var(--space-3); }
-  .piece-price { display: flex; gap: var(--space-4); align-items: baseline; margin-block: var(--space-6); }
-  .piece-price span:first-child { font-size: var(--text-xl); }
-  .piece-price span:last-child { font-size: var(--text-xs); color: var(--color-muted); }
-  .piece-description { font-size: var(--text-lg); }
-  .piece-detail { color: var(--color-muted); margin-top: var(--space-5); }
-  .preview-notice { background: var(--color-surface); padding: var(--space-5); margin-block: var(--space-8); border-radius: var(--radius-md); }
-  .preview-notice p { font-size: var(--text-sm); color: var(--color-muted); margin-top: var(--space-3); }
-  .piece-footnote { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-5); }
+  .product-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: clamp(2.5rem, 6vw, 6rem); align-items: start; padding-bottom: var(--space-section); }
+  .product-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  .product-gallery.single { grid-template-columns: 1fr; }
+  .product-gallery figure { margin: 0; min-width: 0; }
+  .product-gallery figure:first-child { grid-column: 1 / -1; }
+  .product-gallery img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--color-surface); border-radius: var(--radius-md); }
+  .product-gallery figcaption { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-3); }
+  .product-copy { position: sticky; top: var(--space-6); }
+  .product-copy h1 { font-size: var(--text-3xl); margin-top: var(--space-5); text-wrap: balance; }
+  .product-price { font-size: var(--text-xl); margin-top: var(--space-5); font-variant-numeric: tabular-nums; }
+  .product-description { font-family: var(--font-display); font-size: var(--text-xl); line-height: 1.45; margin-top: var(--space-8); }
+  .product-detail { color: var(--color-muted); margin-top: var(--space-5); line-height: 1.8; }
+  .purchase-form { padding-block: var(--space-8); border-bottom: 1px solid var(--color-border); }
+  fieldset { border: 0; padding: 0; margin: 0 0 var(--space-6); }
+  legend { width: 100%; display: flex; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); font-size: var(--text-sm); font-weight: 600; }
+  legend a { color: var(--color-muted); font-weight: 400; text-underline-offset: 4px; }
+  .size-options { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .size-options input { position: absolute; opacity: 0; pointer-events: none; }
+  .size-options span { min-width: 50px; min-height: 46px; display: grid; place-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-sm); transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast); }
+  .size-options label { cursor: pointer; }
+  .size-options label:hover span { background: var(--color-surface); }
+  .size-options input:checked + span { background: var(--color-brand); border-color: var(--color-brand); color: var(--color-page); }
+  .size-options input:focus-visible + span { outline: 2px solid var(--color-focus); outline-offset: 4px; }
+  .add-button { width: 100%; }
+  .cart-status { min-height: 1.4em; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-muted); }
+  .cart-status :global(a) { color: var(--color-text); text-underline-offset: 4px; }
+  .product-facts { margin: 0; }
+  .product-facts div { display: grid; grid-template-columns: 7rem 1fr; gap: var(--space-5); padding-block: var(--space-4); border-bottom: 1px solid var(--color-border); }
+  .product-facts dt { color: var(--color-muted); font-size: var(--text-sm); }
+  .product-facts dd { margin: 0; font-size: var(--text-sm); }
+  .product-facts small { color: var(--color-muted); }
+  .practical-details { display: grid; gap: var(--space-6); padding-top: var(--space-8); }
+  .practical-details h2 { font-family: var(--font-body); font-size: var(--text-sm); letter-spacing: 0; font-weight: 650; margin-bottom: var(--space-2); }
+  .practical-details p { color: var(--color-muted); font-size: var(--text-sm); line-height: 1.75; }
+  .practical-details a { color: var(--color-text); text-underline-offset: 4px; }
   .related { border-top: 1px solid var(--color-border); padding-block: var(--space-section); }
   .related-heading { display: flex; justify-content: space-between; gap: var(--space-5); align-items: baseline; margin-bottom: var(--space-10); }
   .related-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: var(--space-8); max-width: 900px; }
-  @media(max-width: 800px) { .piece-grid { grid-template-columns: 1fr; } .related-heading { display: block; } .related-heading a { margin-top: var(--space-5); } }
-  @media(max-width: 600px) { .related-grid { grid-template-columns: 1fr; } }
+  @media(max-width: 850px) { .product-grid { grid-template-columns: 1fr; } .product-copy { position: static; } }
+  @media(max-width: 650px) { .related-heading { display: block; } .related-heading a { margin-top: var(--space-5); } .related-grid { grid-template-columns: 1fr; } }
 </style>
