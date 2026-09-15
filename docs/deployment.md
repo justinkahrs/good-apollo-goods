@@ -8,6 +8,14 @@ Configured September 8, 2026.
 - Redirect: `www.goodapollogoods.com` → `goodapollogoods.com` (HTTP 308)
 - Domains are attached and verified for use by this Vercel project. DNS still needs to point to Vercel.
 
+## Continuous deployment
+
+Connected September 15, 2026.
+
+- GitHub repository: `justinkahrs/good-apollo-goods`
+- Production branch: `main`
+- Every push to `main` triggers a Vercel production deployment.
+
 ## GoDaddy records
 
 Open GoDaddy Domain Portfolio → **goodapollogoods.com** → **DNS**. Keep the existing GoDaddy nameservers (`ns21.domaincontrol.com` and `ns22.domaincontrol.com`).
