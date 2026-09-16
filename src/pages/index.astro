@@ -22,7 +22,7 @@ const heroImage = products[0].images[0];
   <div class="values-strip container"><span>Natural fibers</span><span aria-hidden="true">✳︎</span><span>Child & adult sizing</span><span aria-hidden="true">✳︎</span><span>Made by one pair of hands</span></div>
   <Collection compact />
   <OurStory />
-  <section class="wholesale-callout container" aria-labelledby="wholesale-title"><p class="eyebrow">For independent shops</p><h2 id="wholesale-title" class="display-heading">A small label with room to grow.</h2><p>Good Apollo Goods is open to thoughtful partnerships with independent retailers and boutiques.</p><Button href="/wholesale/" variant="secondary" arrow>Wholesale inquiries</Button></section>
+  <section class="retail-callout container" aria-labelledby="retail-title"><p class="eyebrow">For independent shops</p><h2 id="retail-title" class="display-heading">A small label with room to grow.</h2><p>Good Apollo Goods is open to thoughtful consignment and retail partnerships with independent shops.</p><Button href="/consignment-stockists/" variant="secondary" arrow>For shops & stockists</Button></section>
 </Layout>
 <style>
   .hero { display: grid; grid-template-columns: 1fr 1.08fr; gap: clamp(2rem, 6vw, 6rem); padding-top: var(--space-6); padding-bottom: var(--space-16); align-items: center; }
@@ -39,8 +39,8 @@ const heroImage = products[0].images[0];
   .maker-seal strong { font-family: var(--font-display); font-size: 2rem; line-height: .87; text-align: center; font-weight: 500; }
   .values-strip { display: flex; align-items: center; justify-content: space-around; gap: var(--space-4); padding-block: var(--space-6); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); font-size: var(--text-sm); }
   .values-strip [aria-hidden] { color: var(--color-brand); font-size: 1.4rem; }
-  .wholesale-callout { padding-block: var(--space-section); display: grid; grid-template-columns: 1fr 1.2fr auto; align-items: end; gap: var(--space-8); border-top: 1px solid var(--color-border); }
-  .wholesale-callout p:not(.eyebrow) { color: var(--color-muted); max-width: 42ch; }
-  @media(max-width: 900px) { .wholesale-callout { grid-template-columns: 1fr; align-items: start; } }
+  .retail-callout { padding-block: var(--space-section); display: grid; grid-template-columns: 1fr 1.2fr auto; align-items: end; gap: var(--space-8); border-top: 1px solid var(--color-border); }
+  .retail-callout p:not(.eyebrow) { color: var(--color-muted); max-width: 42ch; }
+  @media(max-width: 900px) { .retail-callout { grid-template-columns: 1fr; align-items: start; } }
   @media(max-width: 800px) { .hero { grid-template-columns: 1fr; gap: var(--space-8); padding-top: 0; } .hero-copy { padding-block: var(--space-6); } .hero h1 { font-size: clamp(3.15rem, 11vw, 5rem); } .hero-textile { margin-left: var(--space-4); } .maker-seal { width: 112px; height: 112px; left: 1rem; bottom: 1.5rem; } .values-strip { flex-wrap: wrap; justify-content: center; gap: var(--space-3) var(--space-6); } .values-strip span:last-child,.values-strip [aria-hidden]:nth-child(4) { display: none; } }
 </style>

@@ -25,7 +25,7 @@ The development URL is printed by Astro (normally `http://localhost:4321`). This
 - `docs/design-system.md` — design rationale, editing guide, accessibility, and launch boundary.
 - `/design-system/` — live component and foundation reference.
 
-The catalog, category pages, product details, sizing guide, About page, wholesale page, and help content are static HTML. The cart is a lightweight client-side preview stored in browser storage; all browsing content works without JavaScript. Fonts and images are local, with responsive WebP derivatives generated during the build.
+The catalog, category pages, product details, sizing guide, About page, Consignment / Stockists page, and help content are static HTML. The cart is a lightweight client-side preview stored in browser storage; all browsing content works without JavaScript. Fonts and images are local, with responsive WebP derivatives generated during the build.
 
 ## Prelaunch status
 

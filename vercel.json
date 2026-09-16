@@ -4,5 +4,12 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "trailingSlash": true
+  "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/wholesale/:path*",
+      "destination": "/consignment-stockists/",
+      "permanent": true
+    }
+  ]
 }

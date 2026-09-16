@@ -28,6 +28,7 @@
 }
 @layer components {
   .container { width: 100%; max-width: var(--content-width); padding-inline: var(--page-gutter); margin-inline: auto; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   .eyebrow { font-size: var(--text-xs); letter-spacing: .14em; font-weight: 600; text-transform: uppercase; }
   .display-heading { font-size: var(--text-3xl); }
   .muted { color: var(--color-muted); }
