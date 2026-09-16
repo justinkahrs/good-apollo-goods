@@ -1,9 +1,3 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import PageHero from '../../components/PageHero.astro';
-import Collection from '../../components/Collection.astro';
+return Astro.redirect('/shop/hats/', 301);
 ---
-<Layout title="Child hats — Good Apollo Goods" description="Shop child hats handmade in small batches from cotton, cotton twill, and corduroy.">
-  <PageHero eyebrow="Shop / Child" title="Child hats." intro="Easy, durable hats for small heads. Choose by actual head circumference rather than age for the best fit." />
-  <Collection audience="child" />
-</Layout>

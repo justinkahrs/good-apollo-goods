@@ -1,28 +1,27 @@
 /* Good Apollo foundation. Change semantic tokens here to retheme every route. */
 :root {
-  --color-plum-950: #37272f;
-  --color-plum-800: #543543;
-  --color-plum-700: #664252;
-  --color-plum-100: #efe5e9;
-  --color-cream-50: #fbf8f2;
-  --color-cream-100: #f5f0e6;
-  --color-cream-200: #ece4d7;
-  --color-butter-300: #eed99b;
-  --color-olive-700: #656b4e;
-  --color-stone-600: #696063;
-  --color-stone-300: #d7cec7;
+  --color-buttercream: #fcfaf2;
+  --color-cornflower: #a8b9cd;
+  --color-flax: #e8e1d1;
+  --color-marigold: #e5c887;
+  --color-burgundy: #673d39;
+  --color-plum: #352c2e;
+  --color-plum-muted: #5e5051;
+  --color-plum-border: #938586;
+  --color-burgundy-hover: #512f2c;
 
-  --color-page: var(--color-cream-50);
-  --color-surface: var(--color-cream-100);
-  --color-surface-raised: #fffdf8;
-  --color-text: var(--color-plum-950);
-  --color-muted: var(--color-stone-600);
-  --color-brand: var(--color-plum-800);
-  --color-brand-hover: var(--color-plum-700);
-  --color-accent: var(--color-butter-300);
-  --color-border: var(--color-stone-300);
-  --color-focus: var(--color-plum-700);
-  --color-focus-inverse: var(--color-butter-300);
+  --color-page: var(--color-buttercream);
+  --color-surface: var(--color-flax);
+  --color-surface-raised: var(--color-buttercream);
+  --color-text: var(--color-plum);
+  --color-muted: var(--color-plum-muted);
+  --color-brand: var(--color-burgundy);
+  --color-brand-hover: var(--color-burgundy-hover);
+  --color-secondary: var(--color-cornflower);
+  --color-accent: var(--color-marigold);
+  --color-border: var(--color-plum-border);
+  --color-focus: var(--color-burgundy);
+  --color-focus-inverse: var(--color-buttercream);
 
   --font-display: 'Fraunces Variable', Georgia, serif;
   --font-body: 'DM Sans Variable', system-ui, sans-serif;

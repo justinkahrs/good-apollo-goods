@@ -1,16 +1,19 @@
 ---
 interface Props { large?: boolean; }
 const { large = false } = Astro.props;
+const lockup = large ? '/brand/gag-stacked-lockup.svg' : '/brand/gag-lockup.svg';
 ---
-<a href="/" class:list={['brand', { 'brand--large': large }]} aria-label="Good Apollo home">
-  <span class="brand-name">good apollo<span class="brand-dot">.</span></span>
-  <span class="brand-caption">HANDMADE IN GRAND RAPIDS</span>
+<a href="/" class:list={['brand', { 'brand--stacked': large }]} aria-label="Good Apollo Goods home">
+  <img src={lockup} alt="Good Apollo Goods" />
 </a>
+
 <style>
-  .brand { display: inline-flex; flex-direction: column; text-decoration: none; align-items: center; width: max-content; }
-  .brand-name { font-family: var(--font-display); font-size: 2.35rem; line-height: 1.1; font-weight: 600; letter-spacing: -.08em; font-variation-settings: 'SOFT' 100, 'WONK' 1; }
-  .brand-dot { color: var(--color-brand); }
-  .brand-caption { font-size: .625rem; letter-spacing: .19em; margin-top: .4rem; font-weight: 550; }
-  .brand--large .brand-name { font-size: clamp(2.8rem, 5vw, 4.5rem); }
-  .brand--large .brand-caption { font-size: .75rem; }
+  .brand { display: inline-flex; width: 12.5rem; text-decoration: none; }
+  .brand img { display: block; width: 100%; height: auto; }
+  .brand--stacked { width: clamp(9.5rem, 15vw, 13.5rem); }
+
+  @media (max-width: 480px) {
+    .brand { width: 10rem; }
+    .brand--stacked { width: 11rem; }
+  }
 </style>

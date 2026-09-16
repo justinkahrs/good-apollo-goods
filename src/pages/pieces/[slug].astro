@@ -10,42 +10,43 @@ export function getStaticPaths() {
 interface Props { product: Product; }
 const { product } = Astro.props;
 const related = products.filter((piece) => piece.slug !== product.slug && piece.audience === product.audience).slice(0, 2);
+const availabilityLabel = product.isListed ? product.status : 'Not currently listed';
 ---
 <Layout title={`${product.name} — Good Apollo Goods`} description={product.description}>
-  <div class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/shop/">Shop</a><span aria-hidden="true">/</span><a href={`/shop/${product.audience}/`}>{product.audience}</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav></div>
+  <div class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/shop/">Shop</a><span aria-hidden="true">/</span><a href={`/shop/${product.kind}s/`}>{product.kind}s</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav></div>
   <section class="container product-grid" aria-labelledby="product-title">
     <div class:list={['product-gallery', { single: product.images.length === 1 }]}>
-      {product.images.map((image, index) => <figure><Image src={image.src} alt={image.alt} widths={[600, 900, 1200]} sizes="(max-width: 850px) 92vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading={index === 0 ? 'eager' : 'lazy'} style={{ objectPosition: image.position ?? 'center' }} />{index === 0 && <figcaption>Finished product photography coming soon</figcaption>}</figure>)}
+      {product.isListed ? product.images.map((image, index) => <figure><Image src={image.src} alt={image.alt} widths={[600, 900, 1200]} sizes="(max-width: 850px) 92vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading={index === 0 ? 'eager' : 'lazy'} style={{ objectPosition: image.position ?? 'center' }} /></figure>) : <figure><div class="product-placeholder" aria-hidden="true"><div class="placeholder-mark"><img src="/brand/gag-stacked-lockup.svg" alt="" /></div></div><figcaption>This piece is not currently listed.</figcaption></figure>}
     </div>
     <div class="product-copy">
-      <p class="eyebrow">{product.audience} hats · {product.status}</p>
+      <p class="eyebrow">{product.kind}s · {availabilityLabel}</p>
       <h1 id="product-title">{product.name}</h1>
-      <p class="product-price">{formatPrice(product.price)}</p>
+      {product.isListed && <p class="product-price">{formatPrice(product.price)}</p>}
       <p class="product-description">{product.description}</p>
       <p class="product-detail">{product.detail}</p>
 
-      <form class="purchase-form" data-add-to-cart data-slug={product.slug} data-name={product.name} data-price={product.price}>
+      {product.isListed ? <form class="purchase-form" data-add-to-cart data-slug={product.slug} data-name={product.name} data-price={product.price}>
         <fieldset>
           <legend><span>Choose a size</span><a href="/sizing-care/">View size guide</a></legend>
           <div class="size-options">{product.sizes.map((size) => <label><input type="radio" name="size" value={size} required /><span>{size}</span></label>)}</div>
         </fieldset>
         <button class="button button--primary add-button" type="submit">Add to cart <span aria-hidden="true">↗</span></button>
         <p class="cart-status" data-cart-status aria-live="polite"></p>
-      </form>
+      </form> : <p class="unlisted-note">This piece is part of a future small batch and is not currently available to purchase.</p>}
 
       <dl class="product-facts">
         <div><dt>Color</dt><dd>{product.color}</dd></div>
         <div><dt>Materials</dt><dd>{product.materials.join(', ')}</dd></div>
         <div><dt>Lining</dt><dd>{product.lining}</dd></div>
-        <div><dt>Availability</dt><dd>{product.status}{product.productionTime && <><br /><small>{product.productionTime}</small></>}</dd></div>
+        <div><dt>Availability</dt><dd>{availabilityLabel}</dd></div>
       </dl>
       <div class="practical-details">
         <div><h2>Care</h2><p>Machine wash cold on a gentle cycle. Air dry only. Reshape while damp if needed, and avoid high heat.</p></div>
-        <div><h2>Shipping & returns</h2><p>Shipping timing is shown with each piece. Made-to-order production time is separate from transit time. See <a href="/shipping/">shipping</a> and <a href="/returns/">returns & exchanges</a>.</p></div>
+        <div><h2>Shipping & final sale</h2><p>Shipping timing is shown with each available piece. All sales are final, with no returns, exchanges, repairs, or refunds. Please review the product details before ordering. See <a href="/shipping/">shipping</a> and the <a href="/returns/">final sale policy</a>.</p></div>
       </div>
     </div>
   </section>
-  {related.length > 0 && <section class="container related" aria-labelledby="related-title"><div class="related-heading"><h2 id="related-title" class="display-heading">More in {product.audience}.</h2><a href={`/shop/${product.audience}/`} class="text-link">Shop this fit <span aria-hidden="true">↗</span></a></div><div class="related-grid">{related.map((piece) => <ProductCard product={piece} />)}</div></section>}
+  {related.length > 0 && <section class="container related" aria-labelledby="related-title"><div class="related-heading"><h2 id="related-title" class="display-heading">More hats.</h2><a href="/shop/hats/" class="text-link">Shop hats <span aria-hidden="true">↗</span></a></div><div class="related-grid">{related.map((piece) => <ProductCard product={piece} />)}</div></section>}
 </Layout>
 <script>
   const form = document.querySelector<HTMLFormElement>('[data-add-to-cart]');
@@ -81,6 +82,9 @@ const related = products.filter((piece) => piece.slug !== product.slug && piece.
   .product-gallery figure { margin: 0; min-width: 0; }
   .product-gallery figure:first-child { grid-column: 1 / -1; }
   .product-gallery img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--color-surface); border-radius: var(--radius-md); }
+  .product-placeholder { width: 100%; aspect-ratio: 4 / 5; display: grid; place-items: center; background: var(--color-secondary); border-radius: var(--radius-md); }
+  .placeholder-mark { width: min(52%, 20rem); aspect-ratio: 1; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--color-text) 28%, transparent); border-radius: 50%; background: color-mix(in srgb, var(--color-page) 28%, transparent); }
+  .placeholder-mark img { width: 58%; height: auto; aspect-ratio: auto; object-fit: contain; background: none; border-radius: 0; opacity: .42; }
   .product-gallery figcaption { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-3); }
   .product-copy { position: sticky; top: var(--space-6); }
   .product-copy h1 { font-size: var(--text-3xl); margin-top: var(--space-5); text-wrap: balance; }
@@ -88,6 +92,7 @@ const related = products.filter((piece) => piece.slug !== product.slug && piece.
   .product-description { font-family: var(--font-display); font-size: var(--text-xl); line-height: 1.45; margin-top: var(--space-8); }
   .product-detail { color: var(--color-muted); margin-top: var(--space-5); line-height: 1.8; }
   .purchase-form { padding-block: var(--space-8); border-bottom: 1px solid var(--color-border); }
+  .unlisted-note { padding-block: var(--space-8); border-bottom: 1px solid var(--color-border); color: var(--color-muted); line-height: 1.8; }
   fieldset { border: 0; padding: 0; margin: 0 0 var(--space-6); }
   legend { width: 100%; display: flex; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); font-size: var(--text-sm); font-weight: 600; }
   legend a { color: var(--color-muted); font-weight: 400; text-underline-offset: 4px; }

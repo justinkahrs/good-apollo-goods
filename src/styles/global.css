@@ -6,8 +6,11 @@
   --font-serif: var(--font-display);
   --color-ink: var(--color-text);
   --color-paper: var(--color-page);
-  --color-plum: var(--color-brand);
-  --color-butter: var(--color-accent);
+  --color-plum: var(--color-text);
+  --color-burgundy: var(--color-brand);
+  --color-butter: var(--color-page);
+  --color-cornflower: var(--color-secondary);
+  --color-marigold: var(--color-accent);
   --spacing: var(--space-1);
 }
 

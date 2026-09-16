@@ -20,15 +20,16 @@ Do not duplicate color literals in component styles. Change semantic roles to re
 | Secondary text | `--color-muted` | Supporting copy, metadata |
 | Brand | `--color-brand` | Buttons, announcement, italic emphasis |
 | Brand hover | `--color-brand-hover` | Hovered primary actions |
-| Page | `--color-page` | Main warm paper background |
-| Surface | `--color-surface` | Story section, quiet notices |
+| Page | `--color-page` | Buttercream canvas and negative space |
+| Surface | `--color-surface` | Woven-flax supporting surfaces and quiet notices |
 | Raised surface | `--color-surface-raised` | Product badges |
-| Accent | `--color-accent` | Small butter-yellow accents |
+| Secondary | `--color-secondary` | Cornflower blue featured sections and major moments |
+| Accent | `--color-accent` | Soft-marigold decorative details |
 | Border | `--color-border` | Dividers and boundaries |
 | Focus | `--color-focus` | Keyboard focus on light surfaces |
-| Inverse focus | `--color-focus-inverse` | Keyboard focus on plum surfaces |
+| Inverse focus | `--color-focus-inverse` | Keyboard focus on burgundy surfaces |
 
-Use plum and butter sparingly. The images provide most of the color. Avoid gradients, strong shadows, or an abundance of bordered boxes. When changing colors, verify text contrast at 4.5:1 for regular text and focus indicators at 3:1 against their background.
+Buttercream is the dominant background; cornflower blue is reserved for larger branded moments; woven flax supports quieter surfaces. Marigold is used only for small decorative details. Burgundy is the consistent action color, and dark plum is the default for text and high-contrast UI. Avoid gradients, strong shadows, or an abundance of bordered boxes. When changing colors, verify text contrast at 4.5:1 for regular text and focus indicators at 3:1 against their background.
 
 ## Typography
 

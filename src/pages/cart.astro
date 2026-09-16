@@ -27,7 +27,7 @@ import PageHero from '../components/PageHero.astro';
     const cart = getCart();
     if (!itemsRoot || !totalRoot) return;
     if (cart.length === 0) {
-      itemsRoot.innerHTML = '<div class="empty-cart"><p class="eyebrow">Cart empty</p><h2>Plenty of room for a hat.</h2><p>Browse the current child and adult collection to find a good fit.</p><a class="button button--secondary" href="/shop/">Shop all hats <span aria-hidden="true">↗</span></a></div>';
+      itemsRoot.innerHTML = '<div class="empty-cart"><p class="eyebrow">Cart empty</p><h2>Plenty of room for a good thing.</h2><p>Browse the current small batch to find something you’ll love having around.</p><a class="button button--secondary" href="/shop/">Shop the collection <span aria-hidden="true">↗</span></a></div>';
       totalRoot.textContent = '$0';
       return;
     }

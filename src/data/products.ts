@@ -2,13 +2,13 @@ import type { ImageMetadata } from 'astro';
 import comingSoonImage from '../assets/good-apollo-coming-soon.png';
 
 export const shopCategories = [
-  { id: 'all', label: 'All hats', href: '/shop/' },
-  { id: 'adult', label: 'Adult', href: '/shop/adult/' },
-  { id: 'child', label: 'Child', href: '/shop/child/' },
+  { id: 'all', label: 'All pieces', href: '/shop/' },
+  { id: 'hat', label: 'Hats', href: '/shop/hats/' },
 ] as const;
 
-export type Audience = Exclude<(typeof shopCategories)[number]['id'], 'all'>;
-export type ProductStatus = 'Ready to ship' | 'Made to order';
+export type ProductKind = Exclude<(typeof shopCategories)[number]['id'], 'all'>;
+export type Audience = 'adult' | 'child';
+export type ProductStatus = 'Ready to ship';
 
 export interface ProductImage {
   src: ImageMetadata;
@@ -19,6 +19,7 @@ export interface ProductImage {
 export interface Product {
   slug: string;
   name: string;
+  kind: ProductKind;
   audience: Audience;
   price: number;
   color: string;
@@ -26,7 +27,7 @@ export interface Product {
   lining: string;
   sizes: string[];
   status: ProductStatus;
-  productionTime?: string;
+  isListed: boolean;
   description: string;
   detail: string;
   images: ProductImage[];
@@ -42,14 +43,15 @@ export const products: Product[] = [
   {
     slug: 'mulberry-corduroy-hat',
     name: 'Mulberry corduroy hat',
+    kind: 'hat',
     audience: 'adult',
     price: 72,
     color: 'Mulberry',
     materials: ['Cotton corduroy', 'Cotton'],
     lining: 'Fully lined in soft cotton',
     sizes: ['S', 'M', 'L', 'XL'],
-    status: 'Made to order',
-    productionTime: 'Please allow 2–3 weeks before shipping.',
+    status: 'Ready to ship',
+    isListed: false,
     description: 'A softly structured everyday hat in deep mulberry corduroy, finished with a comfortable cotton lining.',
     detail: 'Cut and sewn one at a time in the Good Apollo studio. Small variations are part of the character of a handmade piece.',
     images: [placeholder('Mulberry corduroy hat')],
@@ -57,6 +59,7 @@ export const products: Product[] = [
   {
     slug: 'ochre-cotton-twill-hat',
     name: 'Ochre cotton twill hat',
+    kind: 'hat',
     audience: 'adult',
     price: 68,
     color: 'Warm ochre',
@@ -64,6 +67,7 @@ export const products: Product[] = [
     lining: 'Fully lined in soft cotton',
     sizes: ['S', 'M', 'L', 'XL'],
     status: 'Ready to ship',
+    isListed: false,
     description: 'A clean, versatile shape in sturdy cotton twill with a warm ochre color and an easy cotton-lined interior.',
     detail: 'Made in a small batch with close attention to the brim, seams, and the way the hat settles into shape with wear.',
     images: [placeholder('Ochre cotton twill hat')],
@@ -71,14 +75,15 @@ export const products: Product[] = [
   {
     slug: 'moss-corduroy-hat',
     name: 'Moss corduroy hat',
+    kind: 'hat',
     audience: 'child',
     price: 58,
     color: 'Garden moss',
     materials: ['Cotton corduroy', 'Cotton'],
     lining: 'Fully lined in soft cotton',
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    status: 'Made to order',
-    productionTime: 'Please allow 2–3 weeks before shipping.',
+    status: 'Ready to ship',
+    isListed: false,
     description: 'A comfortable child-sized hat in soft moss corduroy, made for everyday wear and lined in breathable cotton.',
     detail: 'Each hat is cut and sewn by one maker in Grand Rapids. Choose size by actual head circumference for the best fit.',
     images: [placeholder('Moss corduroy hat')],
@@ -86,6 +91,7 @@ export const products: Product[] = [
   {
     slug: 'oat-cotton-hat',
     name: 'Oat cotton hat',
+    kind: 'hat',
     audience: 'child',
     price: 56,
     color: 'Natural oat',
@@ -93,6 +99,7 @@ export const products: Product[] = [
     lining: 'Fully lined in soft cotton',
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
     status: 'Ready to ship',
+    isListed: false,
     description: 'A light, softly structured hat in natural cotton with a practical twill outer and a smooth cotton lining.',
     detail: 'Made in a limited run in the Good Apollo studio, with durable seams and a simple shape that works season after season.',
     images: [placeholder('Oat cotton hat')],

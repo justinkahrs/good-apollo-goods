@@ -1,24 +1,24 @@
 ---
-import { products, shopCategories, type Audience } from '../data/products';
+import { products, shopCategories, type ProductKind } from '../data/products';
 import ProductCard from './ProductCard.astro';
 
 interface Props {
-  audience?: Audience | 'all';
+  kind?: ProductKind | 'all';
   compact?: boolean;
 }
-const { audience = 'all', compact = false } = Astro.props;
-const visibleProducts = audience === 'all' ? products : products.filter((product) => product.audience === audience);
+const { kind = 'all', compact = false } = Astro.props;
+const visibleProducts = kind === 'all' ? products : products.filter((product) => product.kind === kind);
 ---
 <section id="collection" class:list={['container collection', { compact }]} aria-labelledby="collection-title">
   <div class="collection-heading">
-    <div><p class="eyebrow">Small-batch hats</p><h2 id="collection-title" class="display-heading">{compact ? 'From the hat shelf.' : audience === 'all' ? 'All hats.' : `${audience} hats.`}</h2></div>
-    <p>Cotton, cotton twill, and corduroy.<br />Cut and sewn in Grand Rapids.</p>
+    <div><p class="eyebrow">The small batch</p><h2 id="collection-title" class="display-heading">{compact ? 'From the small batch.' : kind === 'all' ? 'All pieces.' : 'Hats.'}</h2></div>
+    <p>A small, evolving collection.<br />Made slowly in Grand Rapids.</p>
   </div>
   <nav class="collection-filters" aria-label="Shop categories">
-    {shopCategories.map((category) => <a href={category.href} aria-current={category.id === audience ? 'page' : undefined}>{category.label}</a>)}
+    {shopCategories.map((category) => <a href={category.href} aria-current={category.id === kind ? 'page' : undefined}>{category.label}</a>)}
   </nav>
   <div class="product-grid">{visibleProducts.map((product) => <ProductCard product={product} />)}</div>
-  {compact && <a class="text-link shop-all" href="/shop/">Shop all hats <span aria-hidden="true">↗</span></a>}
+  {compact && <a class="text-link shop-all" href="/shop/">Shop the collection <span aria-hidden="true">↗</span></a>}
 </section>
 <style>
   .collection { padding-block: var(--space-section); }
