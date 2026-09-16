@@ -7,7 +7,7 @@
   "trailingSlash": true,
   "redirects": [
     {
-      "source": "/wholesale/:path*",
+      "source": "/wholesale/",
       "destination": "/consignment-stockists/",
       "permanent": true
     }
