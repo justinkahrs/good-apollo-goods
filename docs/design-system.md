@@ -18,17 +18,19 @@ Do not duplicate color literals in component styles. Change semantic roles to re
 | --- | --- | --- |
 | Text | `--color-text` | Headings, body, and labels |
 | Secondary text | `--color-muted` | Supporting copy, metadata |
-| Brand | `--color-brand` | Buttons, announcement, italic emphasis |
+| Brand | `--color-brand` | Burgundy buttons, announcement, selected states |
 | Brand hover | `--color-brand-hover` | Hovered primary actions |
-| Page | `--color-page` | Main warm paper background |
-| Surface | `--color-surface` | Story section, quiet notices |
-| Raised surface | `--color-surface-raised` | Product badges |
-| Accent | `--color-accent` | Small butter-yellow accents |
+| Page | `--color-page` | Buttercream page background |
+| Surface | `--color-surface` | Dusty lilac editorial sections and cards |
+| Strong surface | `--color-surface-strong` | Cornflower navigation and preview states |
+| Raised surface | `--color-surface-raised` | Buttercream content on colored surfaces |
+| Accent | `--color-accent` | Cornflower interactive and graphic accents |
+| Secondary | `--color-secondary` | Dusty lilac supporting surfaces |
 | Border | `--color-border` | Dividers and boundaries |
 | Focus | `--color-focus` | Keyboard focus on light surfaces |
-| Inverse focus | `--color-focus-inverse` | Keyboard focus on plum surfaces |
+| Inverse focus | `--color-focus-inverse` | Keyboard focus on burgundy surfaces |
 
-Use plum and butter sparingly. The images provide most of the color. Avoid gradients, strong shadows, or an abundance of bordered boxes. When changing colors, verify text contrast at 4.5:1 for regular text and focus indicators at 3:1 against their background.
+The source palette is fixed: buttercream `#E5E3C8`, cornflower blue `#8B9AC5`, dusty lilac `#BCB4BC`, deep burgundy `#6E322D`, and dark plum/brown `#342427`. Cornflower and lilac should carry meaningful surface area, not appear only as tiny accents. Avoid gradients, strong shadows, or generic beige and sage substitutions. When changing color roles, verify text contrast at 4.5:1 for regular text and focus indicators at 3:1 against their background.
 
 ## Typography
 
@@ -40,14 +42,14 @@ Body copy starts at 1rem with 1.6–1.8 line height. Controls are 0.875rem; none
 
 The page container caps at 1440px and uses fluid gutters. Spacing follows a 4px base scale; section gaps are fluid. Layouts collapse at 800px for editorial splits and at 700px for single-column product browsing, with a two-column intermediate catalog below 1000px.
 
-Use small image corners for products. Reserve arched images for the hero/story. Buttons and category filters use pill corners. Product names and prices sit below photographs; avoid putting whole products inside card shells.
+Use small image corners for products. Reserve arched images for the hero/story. Buttons and category filters use pill corners. Product names and availability sit below photographs; prices appear only after a product is officially released. Avoid putting whole products inside card shells.
 
 ## Components and behavior
 
 - `Brand`: regular and large wordmark variants.
 - `Button`: primary/secondary; link or native button; optional arrow; disabled state only for buttons. Buttons default to `type="button"`.
 - `Header` / `Footer`: shared navigation, cart count, help links, and brand context.
-- `ProductCard`: image, audience, status, name, color, lining, price, and link to a static product page.
+- `ProductCard`: image, audience, status, name, color, lining, optional released-product price, and link to a static product page.
 - `Collection`: shared presentation for All Hats, Adult, and Child category pages.
 - `PageHero`: reusable editorial heading block for information pages.
 - `Layout`: metadata, local fonts, skip link, main landmark, header, footer.
@@ -70,4 +72,4 @@ Real photography should use warm natural light, faithful colors, and visible wor
 
 ## Launch boundary
 
-This is an intentional prelaunch site. It has a browser-local preview cart but no checkout, payment processing, email collection, or authoritative inventory. Before opening: replace placeholder imagery, confirm product data and prices, define final shipping and returns policies, verify contact information, connect the selected commerce provider, enforce inventory there, and update robots metadata. A static page or browser storage must never be used as the authoritative inventory ledger.
+This is an intentional prelaunch site. Coming-soon products have no prices or purchase controls. The browser-local cart is reserved for future products explicitly marked Available; there is no checkout, payment processing, email collection, or authoritative inventory. Before opening: replace placeholder imagery, add actual prices only to released batches, define final shipping and returns policies, verify contact information, connect the selected commerce provider, enforce inventory there, and update robots metadata. A static page or browser storage must never be used as the authoritative inventory ledger.

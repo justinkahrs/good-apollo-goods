@@ -10,6 +10,26 @@
       "source": "/wholesale/",
       "destination": "/consignment-stockists/",
       "permanent": true
+    },
+    {
+      "source": "/pieces/mulberry-corduroy-hat/",
+      "destination": "/pieces/deep-burgundy-corduroy-hat/",
+      "permanent": true
+    },
+    {
+      "source": "/pieces/ochre-cotton-twill-hat/",
+      "destination": "/pieces/cornflower-cotton-twill-hat/",
+      "permanent": true
+    },
+    {
+      "source": "/pieces/moss-corduroy-hat/",
+      "destination": "/pieces/dusty-lilac-corduroy-hat/",
+      "permanent": true
+    },
+    {
+      "source": "/pieces/oat-cotton-hat/",
+      "destination": "/pieces/buttercream-cotton-hat/",
+      "permanent": true
     }
   ]
 }
