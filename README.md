@@ -20,7 +20,7 @@ The development URL is printed by Astro (normally `http://localhost:4321`). This
 - `src/styles/tokens.css` — colors, typography, spacing, shape, motion, and page dimensions.
 - `src/styles/global.css` — shared styles and Tailwind's token bridge.
 - `src/components/` — reusable storefront components.
-- `src/data/products.ts` — typed hat catalog data, sizing, availability states, and optional released-product prices in USD.
+- `src/data/products.ts` — typed hat catalog data, sizing, availability, and draft prices in USD.
 - `src/assets/` — the branded Coming Soon product-art placeholder, optimized by Astro at build time.
 - `docs/design-system.md` — design rationale, editing guide, accessibility, and launch boundary.
 - `/design-system/` — live component and foundation reference.
@@ -29,7 +29,7 @@ The catalog, category pages, product details, sizing guide, About page, Consignm
 
 ## Prelaunch status
 
-The current products are explicitly marked Coming Soon. They display no price or purchase controls until an actual completed batch is released. No payments, email collection, or authoritative inventory reservations are implemented. All pages remain marked `noindex, nofollow` pending final product photography, released-product details, policies, contact details, and commerce setup.
+The current product names, prices, availability, and branded placeholder art are working launch content and should be confirmed before opening sales. No payments, email collection, or authoritative inventory reservations are implemented. All pages remain marked `noindex, nofollow` pending final product photography, policies, contact details, and commerce setup.
 
 Replace each placeholder with finished product photography and connect a commerce provider before enabling checkout. Final inventory, payment confirmation, shipping, and tax rules belong in that provider; the preview cart must not become the authoritative stock ledger.
 

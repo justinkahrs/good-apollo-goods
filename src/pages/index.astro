@@ -17,7 +17,7 @@ const heroImage = products[0].images[0];
       <div class="hero-actions"><Button href="/shop/" arrow>Shop all hats</Button><a href="/sizing-care/" class="text-link">Find your size <span aria-hidden="true">↗</span></a></div>
       <p class="hero-footnote">Cotton lined · Small batch · Handmade one at a time</p>
     </div>
-    <div class:list={['hero-textile', { 'is-placeholder': heroImage.placeholder }]}><Image class="hero-image" src={heroImage.src} alt={heroImage.alt} widths={[600, 900, 1200]} sizes="(max-width: 800px) 90vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading="eager" fetchpriority="high" /><div class="maker-seal"><span>SMALL BATCH</span><strong>made<br /><em>here.</em></strong><span>GRAND RAPIDS</span></div></div>
+    <div class="hero-textile"><Image class="hero-image" src={heroImage.src} alt={heroImage.alt} widths={[600, 900, 1200]} sizes="(max-width: 800px) 90vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading="eager" fetchpriority="high" /><div class="maker-seal"><span>SMALL BATCH</span><strong>made<br /><em>here.</em></strong><span>GRAND RAPIDS</span></div></div>
   </section>
   <div class="values-strip container"><span>Natural fibers</span><span aria-hidden="true">✳︎</span><span>Child & adult sizing</span><span aria-hidden="true">✳︎</span><span>Made by one pair of hands</span></div>
   <Collection compact />
@@ -32,13 +32,12 @@ const heroImage = products[0].images[0];
   .hero-description { color: var(--color-muted); max-width: 38ch; margin-top: var(--space-6); margin-bottom: var(--space-8); font-size: var(--text-base); line-height: 1.75; }
   .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-5) var(--space-8); }
   .hero-footnote { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-6); }
-  .hero-textile { position: relative; min-width: 0; aspect-ratio: 4 / 5; border-radius: 46% 46% var(--radius-sm) var(--radius-sm); background: var(--color-surface-strong); overflow: hidden; }
+  .hero-textile { position: relative; min-width: 0; aspect-ratio: 4 / 5; border-radius: 46% 46% var(--radius-sm) var(--radius-sm); background: var(--color-cream-200); overflow: hidden; }
   .hero-textile :global(.hero-image) { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
-  .hero-textile.is-placeholder :global(.hero-image) { opacity: .82; mix-blend-mode: multiply; }
-  .maker-seal { position: absolute; bottom: 2.5rem; left: 1.5rem; width: 132px; height: 132px; border-radius: 50%; background: var(--color-secondary); color: var(--color-text); border: 1px solid var(--color-brand); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; transform: rotate(-10deg); }
+  .maker-seal { position: absolute; bottom: 2.5rem; left: 1.5rem; width: 132px; height: 132px; border-radius: 50%; background: var(--color-accent); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; transform: rotate(-10deg); }
   .maker-seal span { font-size: .56rem; font-weight: 650; letter-spacing: .14em; }
   .maker-seal strong { font-family: var(--font-display); font-size: 2rem; line-height: .87; text-align: center; font-weight: 500; }
-  .values-strip { display: flex; align-items: center; justify-content: space-around; gap: var(--space-4); padding-block: var(--space-6); background: var(--color-surface-strong); border-block: 1px solid var(--color-brand); font-size: var(--text-sm); }
+  .values-strip { display: flex; align-items: center; justify-content: space-around; gap: var(--space-4); padding-block: var(--space-6); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); font-size: var(--text-sm); }
   .values-strip [aria-hidden] { color: var(--color-brand); font-size: 1.4rem; }
   .retail-callout { padding-block: var(--space-section); display: grid; grid-template-columns: 1fr 1.2fr auto; align-items: end; gap: var(--space-8); border-top: 1px solid var(--color-border); }
   .retail-callout p:not(.eyebrow) { color: var(--color-muted); max-width: 42ch; }

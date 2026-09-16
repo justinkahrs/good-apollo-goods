@@ -10,50 +10,38 @@ export function getStaticPaths() {
 interface Props { product: Product; }
 const { product } = Astro.props;
 const related = products.filter((piece) => piece.slug !== product.slug && piece.audience === product.audience).slice(0, 2);
-const isAvailable = product.status === 'Available' && typeof product.price === 'number';
-const formattedPrice = typeof product.price === 'number' && product.status !== 'Coming Soon' ? formatPrice(product.price) : null;
-const state = product.status.toLowerCase().replaceAll(' ', '-');
-const availabilityCopy = product.status === 'Sold Out'
-  ? 'This small batch has sold out. New batches are released periodically.'
-  : product.status === 'Coming Soon'
-    ? 'This piece is a preview from an upcoming small-batch release. It is not available to purchase yet.'
-    : 'This release is currently unavailable.';
 ---
 <Layout title={`${product.name} — Good Apollo Goods`} description={product.description}>
   <div class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/shop/">Shop</a><span aria-hidden="true">/</span><a href={`/shop/${product.audience}/`}>{product.audience}</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav></div>
   <section class="container product-grid" aria-labelledby="product-title">
     <div class:list={['product-gallery', { single: product.images.length === 1 }]}>
-      {product.images.map((image, index) => <figure class:list={{ 'is-placeholder': image.placeholder }}><Image src={image.src} alt={image.alt} widths={[600, 900, 1200]} sizes="(max-width: 850px) 92vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading={index === 0 ? 'eager' : 'lazy'} style={{ objectPosition: image.position ?? 'center' }} />{image.placeholder && index === 0 && <figcaption>Finished product photography coming soon</figcaption>}</figure>)}
+      {product.images.map((image, index) => <figure><Image src={image.src} alt={image.alt} widths={[600, 900, 1200]} sizes="(max-width: 850px) 92vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading={index === 0 ? 'eager' : 'lazy'} style={{ objectPosition: image.position ?? 'center' }} />{index === 0 && <figcaption>Finished product photography coming soon</figcaption>}</figure>)}
     </div>
     <div class="product-copy">
       <p class="eyebrow">{product.audience} hats · {product.status}</p>
       <h1 id="product-title">{product.name}</h1>
-      {formattedPrice && <p class="product-price">{formattedPrice}</p>}
+      <p class="product-price">{formatPrice(product.price)}</p>
       <p class="product-description">{product.description}</p>
       <p class="product-detail">{product.detail}</p>
 
-      {isAvailable ? (
-        <form class="purchase-form" data-add-to-cart data-slug={product.slug} data-name={product.name} data-price={product.price}>
-          <fieldset>
-            <legend><span>Choose a size</span><a href="/sizing-care/">View size guide</a></legend>
-            <div class="size-options">{product.sizes.map((size) => <label><input type="radio" name="size" value={size} required /><span>{size}</span></label>)}</div>
-          </fieldset>
-          <button class="button button--primary add-button" type="submit">Add to cart <span aria-hidden="true">↗</span></button>
-          <p class="cart-status" data-cart-status aria-live="polite"></p>
-        </form>
-      ) : (
-        <div class="availability-panel" data-state={state}><span class="eyebrow">{product.status}</span><p>{availabilityCopy}</p><a href="/contact/">Ask about new releases <span aria-hidden="true">↗</span></a></div>
-      )}
+      <form class="purchase-form" data-add-to-cart data-slug={product.slug} data-name={product.name} data-price={product.price}>
+        <fieldset>
+          <legend><span>Choose a size</span><a href="/sizing-care/">View size guide</a></legend>
+          <div class="size-options">{product.sizes.map((size) => <label><input type="radio" name="size" value={size} required /><span>{size}</span></label>)}</div>
+        </fieldset>
+        <button class="button button--primary add-button" type="submit">Add to cart <span aria-hidden="true">↗</span></button>
+        <p class="cart-status" data-cart-status aria-live="polite"></p>
+      </form>
 
       <dl class="product-facts">
         <div><dt>Color</dt><dd>{product.color}</dd></div>
         <div><dt>Materials</dt><dd>{product.materials.join(', ')}</dd></div>
         <div><dt>Lining</dt><dd>{product.lining}</dd></div>
-        <div><dt>Availability</dt><dd>{product.status}</dd></div>
+        <div><dt>Availability</dt><dd>{product.status}{product.productionTime && <><br /><small>{product.productionTime}</small></>}</dd></div>
       </dl>
       <div class="practical-details">
         <div><h2>Care</h2><p>Machine wash cold on a gentle cycle. Air dry only. Reshape while damp if needed, and avoid high heat.</p></div>
-        <div><h2>Shipping & returns</h2><p>Available pieces ship from completed small-batch inventory. Shipping timing appears at checkout. See <a href="/shipping/">shipping</a> and <a href="/returns/">returns & exchanges</a>.</p></div>
+        <div><h2>Shipping & returns</h2><p>Shipping timing is shown with each piece. Made-to-order production time is separate from transit time. See <a href="/shipping/">shipping</a> and <a href="/returns/">returns & exchanges</a>.</p></div>
       </div>
     </div>
   </section>
@@ -75,11 +63,11 @@ const availabilityCopy = product.status === 'Sold Out'
       quantity: 1,
     };
     let cart: typeof item[] = [];
-    try { cart = JSON.parse(localStorage.getItem('good-apollo-cart-v2') ?? '[]'); } catch { cart = []; }
+    try { cart = JSON.parse(localStorage.getItem('good-apollo-cart') ?? '[]'); } catch { cart = []; }
     const existing = cart.find((entry) => entry.slug === item.slug && entry.size === size);
     if (existing) existing.quantity += 1;
     else cart.push(item);
-    localStorage.setItem('good-apollo-cart-v2', JSON.stringify(cart));
+    localStorage.setItem('good-apollo-cart', JSON.stringify(cart));
     window.dispatchEvent(new Event('good-apollo:cart-updated'));
     if (status) status.innerHTML = `Added ${item.name}, size ${size}. <a href="/cart/">View cart</a>`;
   });
@@ -90,11 +78,9 @@ const availabilityCopy = product.status === 'Sold Out'
   .product-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: clamp(2.5rem, 6vw, 6rem); align-items: start; padding-bottom: var(--space-section); }
   .product-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
   .product-gallery.single { grid-template-columns: 1fr; }
-  .product-gallery figure { margin: 0; min-width: 0; border-radius: var(--radius-md); }
+  .product-gallery figure { margin: 0; min-width: 0; }
   .product-gallery figure:first-child { grid-column: 1 / -1; }
-  .product-gallery figure.is-placeholder { background: var(--color-surface-strong); border: 1px solid var(--color-brand); overflow: hidden; }
   .product-gallery img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--color-surface); border-radius: var(--radius-md); }
-  .product-gallery .is-placeholder img { opacity: .82; mix-blend-mode: multiply; }
   .product-gallery figcaption { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-3); }
   .product-copy { position: sticky; top: var(--space-6); }
   .product-copy h1 { font-size: var(--text-3xl); margin-top: var(--space-5); text-wrap: balance; }
@@ -102,11 +88,6 @@ const availabilityCopy = product.status === 'Sold Out'
   .product-description { font-family: var(--font-display); font-size: var(--text-xl); line-height: 1.45; margin-top: var(--space-8); }
   .product-detail { color: var(--color-muted); margin-top: var(--space-5); line-height: 1.8; }
   .purchase-form { padding-block: var(--space-8); border-bottom: 1px solid var(--color-border); }
-  .availability-panel { margin-block: var(--space-8); padding: var(--space-6); background: var(--color-surface-strong); border: 1px solid var(--color-brand); border-radius: var(--radius-md); }
-  .availability-panel[data-state='sold-out'] { background: var(--color-secondary); }
-  .availability-panel .eyebrow { color: var(--color-brand); }
-  .availability-panel p { max-width: 48ch; margin-block: var(--space-3) var(--space-5); line-height: 1.7; }
-  .availability-panel a { display: inline-flex; gap: var(--space-5); font-size: var(--text-sm); font-weight: 600; text-underline-offset: 5px; }
   fieldset { border: 0; padding: 0; margin: 0 0 var(--space-6); }
   legend { width: 100%; display: flex; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); font-size: var(--text-sm); font-weight: 600; }
   legend a { color: var(--color-muted); font-weight: 400; text-underline-offset: 4px; }

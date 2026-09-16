@@ -8,25 +8,25 @@ export const shopCategories = [
 ] as const;
 
 export type Audience = Exclude<(typeof shopCategories)[number]['id'], 'all'>;
-export type ProductStatus = 'Coming Soon' | 'Available' | 'Sold Out';
+export type ProductStatus = 'Ready to ship' | 'Made to order';
 
 export interface ProductImage {
   src: ImageMetadata;
   alt: string;
   position?: string;
-  placeholder?: boolean;
 }
 
 export interface Product {
   slug: string;
   name: string;
   audience: Audience;
-  price?: number;
+  price: number;
   color: string;
   materials: string[];
   lining: string;
   sizes: string[];
   status: ProductStatus;
+  productionTime?: string;
   description: string;
   detail: string;
   images: ProductImage[];
@@ -35,62 +35,67 @@ export interface Product {
 const placeholder = (name: string): ProductImage => ({
   src: comingSoonImage,
   alt: `${name} photography coming soon`,
-  placeholder: true,
 });
 
 /** Initial hat collection. Replace placeholders as finished photography arrives. */
 export const products: Product[] = [
   {
-    slug: 'deep-burgundy-corduroy-hat',
-    name: 'Deep burgundy corduroy hat',
+    slug: 'mulberry-corduroy-hat',
+    name: 'Mulberry corduroy hat',
     audience: 'adult',
-    color: 'Deep burgundy',
+    price: 72,
+    color: 'Mulberry',
     materials: ['Cotton corduroy', 'Cotton'],
     lining: 'Fully lined in soft cotton',
     sizes: ['S', 'M', 'L', 'XL'],
-    status: 'Coming Soon',
-    description: 'A softly structured everyday hat in deep burgundy corduroy, finished with a comfortable cotton lining.',
+    status: 'Made to order',
+    productionTime: 'Please allow 2–3 weeks before shipping.',
+    description: 'A softly structured everyday hat in deep mulberry corduroy, finished with a comfortable cotton lining.',
     detail: 'Cut and sewn one at a time in the Good Apollo studio. Small variations are part of the character of a handmade piece.',
-    images: [placeholder('Deep burgundy corduroy hat')],
+    images: [placeholder('Mulberry corduroy hat')],
   },
   {
-    slug: 'cornflower-cotton-twill-hat',
-    name: 'Cornflower cotton twill hat',
+    slug: 'ochre-cotton-twill-hat',
+    name: 'Ochre cotton twill hat',
     audience: 'adult',
-    color: 'Cornflower blue',
+    price: 68,
+    color: 'Warm ochre',
     materials: ['Cotton twill', 'Cotton'],
     lining: 'Fully lined in soft cotton',
     sizes: ['S', 'M', 'L', 'XL'],
-    status: 'Coming Soon',
-    description: 'A clean, versatile shape in sturdy cornflower cotton twill with an easy cotton-lined interior.',
+    status: 'Ready to ship',
+    description: 'A clean, versatile shape in sturdy cotton twill with a warm ochre color and an easy cotton-lined interior.',
     detail: 'Made in a small batch with close attention to the brim, seams, and the way the hat settles into shape with wear.',
-    images: [placeholder('Cornflower cotton twill hat')],
+    images: [placeholder('Ochre cotton twill hat')],
   },
   {
-    slug: 'dusty-lilac-corduroy-hat',
-    name: 'Dusty lilac corduroy hat',
+    slug: 'moss-corduroy-hat',
+    name: 'Moss corduroy hat',
     audience: 'child',
-    color: 'Dusty lilac',
+    price: 58,
+    color: 'Garden moss',
     materials: ['Cotton corduroy', 'Cotton'],
     lining: 'Fully lined in soft cotton',
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    status: 'Coming Soon',
-    description: 'A comfortable child-sized hat in soft dusty lilac corduroy, made for everyday wear and lined in breathable cotton.',
+    status: 'Made to order',
+    productionTime: 'Please allow 2–3 weeks before shipping.',
+    description: 'A comfortable child-sized hat in soft moss corduroy, made for everyday wear and lined in breathable cotton.',
     detail: 'Each hat is cut and sewn by one maker in Grand Rapids. Choose size by actual head circumference for the best fit.',
-    images: [placeholder('Dusty lilac corduroy hat')],
+    images: [placeholder('Moss corduroy hat')],
   },
   {
-    slug: 'buttercream-cotton-hat',
-    name: 'Buttercream cotton hat',
+    slug: 'oat-cotton-hat',
+    name: 'Oat cotton hat',
     audience: 'child',
-    color: 'Buttercream',
+    price: 56,
+    color: 'Natural oat',
     materials: ['Cotton', 'Cotton twill'],
     lining: 'Fully lined in soft cotton',
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
-    status: 'Coming Soon',
-    description: 'A light, softly structured hat in buttercream cotton with a practical twill outer and a smooth cotton lining.',
+    status: 'Ready to ship',
+    description: 'A light, softly structured hat in natural cotton with a practical twill outer and a smooth cotton lining.',
     detail: 'Made in a limited run in the Good Apollo studio, with durable seams and a simple shape that works season after season.',
-    images: [placeholder('Buttercream cotton hat')],
+    images: [placeholder('Oat cotton hat')],
   },
 ];
 
