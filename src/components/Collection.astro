@@ -8,16 +8,17 @@ interface Props {
 }
 const { kind = 'all', compact = false } = Astro.props;
 const visibleProducts = kind === 'all' ? products : products.filter((product) => product.kind === kind);
+const category = shopCategories.find((item) => item.id === kind);
 ---
 <section id="collection" class:list={['container collection', { compact }]} aria-labelledby="collection-title">
   <div class="collection-heading">
-    <div><p class="eyebrow">The small batch</p><h2 id="collection-title" class="display-heading">{compact ? 'From the small batch.' : kind === 'all' ? 'All pieces.' : 'Hats.'}</h2></div>
+    <div><p class="eyebrow">The small batch</p><h2 id="collection-title" class="display-heading">{compact ? 'From the small batch.' : `${category?.label ?? 'All pieces'}.`}</h2></div>
     <p>A small, evolving collection.<br />Made slowly in Grand Rapids.</p>
   </div>
   <nav class="collection-filters" aria-label="Shop categories">
     {shopCategories.map((category) => <a href={category.href} aria-current={category.id === kind ? 'page' : undefined}>{category.label}</a>)}
   </nav>
-  <div class="product-grid">{visibleProducts.map((product) => <ProductCard product={product} />)}</div>
+  {visibleProducts.length > 0 ? <div class="product-grid">{visibleProducts.map((product) => <ProductCard product={product} />)}</div> : <p class="empty-collection">New pieces coming soon.</p>}
   {compact && <a class="text-link shop-all" href="/shop/">Shop the collection <span aria-hidden="true">↗</span></a>}
 </section>
 <style>
@@ -32,6 +33,7 @@ const visibleProducts = kind === 'all' ? products : products.filter((product) =>
   .collection-filters a:hover:not([aria-current='page']) { background: var(--color-surface); }
   .collection-filters a:active { transform: scale(.98); }
   .product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-12) var(--space-6); margin-top: var(--space-8); }
+  .empty-collection { margin-top: var(--space-8); color: var(--color-muted); }
   .shop-all { margin-top: var(--space-10); }
   @media(min-width: 1000px) { .compact .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   @media(max-width: 700px) { .collection-heading { display: block; } .collection-heading > p { margin-top: var(--space-5); } .collection-heading br { display: none; } .product-grid { grid-template-columns: 1fr; } .collection-filters { margin-top: var(--space-6); } }

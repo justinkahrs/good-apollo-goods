@@ -2,24 +2,25 @@
 import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
-import { products, formatPrice, type Product } from '../../data/products';
+import { products, formatPrice, shopCategories, type Product } from '../../data/products';
 
 export function getStaticPaths() {
   return products.map((product) => ({ params: { slug: product.slug }, props: { product } }));
 }
 interface Props { product: Product; }
 const { product } = Astro.props;
-const related = products.filter((piece) => piece.slug !== product.slug && piece.audience === product.audience).slice(0, 2);
+const productCategory = shopCategories.find((category) => category.id === product.kind);
+const related = products.filter((piece) => piece.slug !== product.slug && piece.kind === product.kind).slice(0, 2);
 const availabilityLabel = product.isListed ? product.status : 'Not currently listed';
 ---
 <Layout title={`${product.name} — Good Apollo Goods`} description={product.description}>
-  <div class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/shop/">Shop</a><span aria-hidden="true">/</span><a href={`/shop/${product.kind}s/`}>{product.kind}s</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav></div>
+  <div class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/shop/">Shop</a><span aria-hidden="true">/</span><a href={productCategory?.href}>{productCategory?.label}</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav></div>
   <section class="container product-grid" aria-labelledby="product-title">
     <div class:list={['product-gallery', { single: product.images.length === 1 }]}>
       {product.isListed ? product.images.map((image, index) => <figure><Image src={image.src} alt={image.alt} widths={[600, 900, 1200]} sizes="(max-width: 850px) 92vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading={index === 0 ? 'eager' : 'lazy'} style={{ objectPosition: image.position ?? 'center' }} /></figure>) : <figure><div class="product-placeholder" aria-hidden="true"><div class="placeholder-mark"><img src="/brand/gag-stacked-lockup.svg" alt="" /></div></div><figcaption>This piece is not currently listed.</figcaption></figure>}
     </div>
     <div class="product-copy">
-      <p class="eyebrow">{product.kind}s · {availabilityLabel}</p>
+      <p class="eyebrow">{productCategory?.label} · {availabilityLabel}</p>
       <h1 id="product-title">{product.name}</h1>
       {product.isListed && <p class="product-price">{formatPrice(product.price)}</p>}
       <p class="product-description">{product.description}</p>
@@ -46,7 +47,7 @@ const availabilityLabel = product.isListed ? product.status : 'Not currently lis
       </div>
     </div>
   </section>
-  {related.length > 0 && <section class="container related" aria-labelledby="related-title"><div class="related-heading"><h2 id="related-title" class="display-heading">More hats.</h2><a href="/shop/hats/" class="text-link">Shop hats <span aria-hidden="true">↗</span></a></div><div class="related-grid">{related.map((piece) => <ProductCard product={piece} />)}</div></section>}
+  {related.length > 0 && <section class="container related" aria-labelledby="related-title"><div class="related-heading"><h2 id="related-title" class="display-heading">More {productCategory?.label.toLowerCase()}.</h2><a href={productCategory?.href} class="text-link">Shop {productCategory?.label.toLowerCase()} <span aria-hidden="true">↗</span></a></div><div class="related-grid">{related.map((piece) => <ProductCard product={piece} />)}</div></section>}
 </Layout>
 <script>
   const form = document.querySelector<HTMLFormElement>('[data-add-to-cart]');
@@ -83,7 +84,7 @@ const availabilityLabel = product.isListed ? product.status : 'Not currently lis
   .product-gallery figure:first-child { grid-column: 1 / -1; }
   .product-gallery img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--color-surface); border-radius: var(--radius-md); }
   .product-placeholder { width: 100%; aspect-ratio: 4 / 5; display: grid; place-items: center; background: var(--color-secondary); border-radius: var(--radius-md); }
-  .placeholder-mark { width: min(52%, 20rem); aspect-ratio: 1; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--color-text) 28%, transparent); border-radius: 50%; background: color-mix(in srgb, var(--color-page) 28%, transparent); }
+  .placeholder-mark { width: min(52%, 20rem); aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--color-page) 28%, transparent); }
   .placeholder-mark img { width: 58%; height: auto; aspect-ratio: auto; object-fit: contain; background: none; border-radius: 0; opacity: .42; }
   .product-gallery figcaption { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-3); }
   .product-copy { position: sticky; top: var(--space-6); }

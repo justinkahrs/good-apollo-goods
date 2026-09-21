@@ -4,18 +4,16 @@ import Layout from '../layouts/Layout.astro';
 import Button from '../components/Button.astro';
 import Collection from '../components/Collection.astro';
 import OurStory from '../components/OurStory.astro';
-import { products } from '../data/products';
-
-const heroImage = products[0].images[0];
+import heroImage from '../assets/good-apollo-hero.jpeg';
 ---
 <Layout title="Good Apollo Goods — Small-batch pieces made in Grand Rapids" description="Thoughtfully constructed small-batch goods, made slowly by one maker in Grand Rapids, Michigan.">
   <section class="hero container" aria-labelledby="hero-title">
     <div class="hero-copy">
-      <h1 id="hero-title">Goods made with<br /><em>character.</em><br />Made to last.</h1>
+      <h1 id="hero-title">Coming soon.</h1>
       <p class="hero-description">Thoughtfully constructed pieces for everyday life. Designed slowly and made in small batches.</p>
       <div class="hero-actions"><Button href="/shop/" arrow>Explore the collection</Button><a href="/about/" class="text-link">Meet the maker <span aria-hidden="true">↗</span></a></div>
     </div>
-    <div class="hero-textile"><Image class="hero-image" src={heroImage.src} alt={heroImage.alt} widths={[600, 900, 1200]} sizes="(max-width: 800px) 90vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading="eager" fetchpriority="high" /><div class="maker-seal"><span>SMALL BATCH</span><strong>made<br /><em>here.</em></strong><span>GRAND RAPIDS</span></div></div>
+    <div class="hero-textile"><Image class="hero-image" src={heroImage} alt="Woman wearing a blue hat against a golden yellow wall" widths={[600, 900, 1200]} sizes="(max-width: 800px) 90vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading="eager" fetchpriority="high" /></div>
   </section>
   <Collection compact />
   <OurStory />
@@ -27,10 +25,7 @@ const heroImage = products[0].images[0];
   .hero h1 em { color: var(--color-brand); font-weight: 420; }
   .hero-description { color: var(--color-muted); max-width: 38ch; margin-top: var(--space-6); margin-bottom: var(--space-8); font-size: var(--text-base); line-height: 1.75; }
   .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-5) var(--space-8); }
-  .hero-textile { position: relative; min-width: 0; aspect-ratio: 4 / 5; border-radius: 46% 46% var(--radius-sm) var(--radius-sm); background: var(--color-surface); overflow: hidden; }
+  .hero-textile { position: relative; min-width: 0; aspect-ratio: 4 / 5; border-radius: 50% 50% var(--radius-sm) var(--radius-sm) / 35% 35% var(--radius-sm) var(--radius-sm); background: var(--color-surface); overflow: hidden; }
   .hero-textile :global(.hero-image) { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
-  .maker-seal { position: absolute; bottom: 2.5rem; left: 1.5rem; width: 132px; height: 132px; border-radius: 50%; background: var(--color-accent); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; transform: rotate(-10deg); }
-  .maker-seal span { font-size: .56rem; font-weight: 650; letter-spacing: .14em; }
-  .maker-seal strong { font-family: var(--font-display); font-size: 2rem; line-height: .87; text-align: center; font-weight: 500; }
-  @media(max-width: 800px) { .hero { grid-template-columns: 1fr; gap: var(--space-8); padding-top: 0; } .hero-copy { padding-block: var(--space-6); } .hero h1 { font-size: clamp(3.15rem, 11vw, 5rem); } .hero-textile { margin-left: var(--space-4); } .maker-seal { width: 112px; height: 112px; left: 1rem; bottom: 1.5rem; } }
+  @media(max-width: 800px) { .hero { grid-template-columns: 1fr; gap: var(--space-8); padding-top: 0; } .hero-copy { padding-block: var(--space-6); } .hero h1 { font-size: clamp(3.15rem, 11vw, 5rem); } .hero-textile { margin-left: var(--space-4); } }
 </style>

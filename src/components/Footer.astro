@@ -4,7 +4,8 @@ import Brand from './Brand.astro';
 const groups = [
   { title: 'Shop', links: [
     ['All pieces', '/shop/'],
-    ['Hats', '/shop/hats/'],
+    ['Wearables', '/shop/wearables/'],
+    ['Art', '/shop/art/'],
   ] },
   { title: 'Help', links: [
     ['Sizing & Care', '/sizing-care/'],
@@ -22,25 +23,21 @@ const groups = [
 ---
 <footer class="site-footer">
   <div class="container footer-main">
-    <div class="footer-brand"><Brand large /><p>Small-batch goods, made by one woman in Grand Rapids, Michigan.</p></div>
-    {groups.map((group) => <nav class="footer-group" aria-label={group.title}><h2>{group.title}</h2>{group.links.map(([label, href]) => label === 'Instagram' ? <a class="social-link" href={href} target="_blank" rel="noopener noreferrer" aria-label="Instagram (opens in a new tab)"><span class="instagram-mark" aria-hidden="true"></span></a> : <a href={href}>{label}</a>)}</nav>)}
+    <div class="footer-brand"><Brand large /></div>
+    {groups.map((group) => <nav class="footer-group" aria-label={group.title}><h2>{group.title}</h2>{group.links.map(([label, href]) => label === 'Instagram' ? <a class="social-link" href={href} target="_blank" rel="noopener noreferrer" aria-label="Instagram (opens in a new tab)"><svg class="instagram-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.223 2.76.421a3.914 3.914 0 0 0-1.417.923A3.914 3.914 0 0 0 .42 2.76c-.198.509-.333 1.09-.373 1.943C.01 5.556 0 5.83 0 8c0 2.171.01 2.444.048 3.297.04.853.175 1.434.373 1.943.204.527.477.974.923 1.417.443.446.89.719 1.417.923.509.198 1.09.333 1.943.373C5.556 15.99 5.83 16 8 16s2.444-.01 3.297-.048c.853-.04 1.434-.175 1.943-.373a3.914 3.914 0 0 0 1.417-.923c.446-.443.719-.89.923-1.417.198-.509.333-1.09.373-1.943C15.99 10.444 16 10.17 16 8s-.01-2.444-.048-3.297c-.04-.853-.175-1.434-.373-1.943a3.914 3.914 0 0 0-.923-1.417A3.914 3.914 0 0 0 13.24.42c-.509-.198-1.09-.333-1.943-.373C10.444.01 10.17 0 8 0Zm0 1.442c2.136 0 2.389.008 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599.28.28.454.547.599.92.11.282.24.706.275 1.486.038.843.046 1.096.046 3.232s-.008 2.389-.046 3.232c-.035.78-.166 1.204-.275 1.486a2.472 2.472 0 0 1-.599.92c-.28.28-.547.454-.92.599-.282.11-.706.24-1.486.275-.843.038-1.096.046-3.232.046s-2.389-.008-3.232-.046c-.78-.035-1.204-.166-1.486-.275a2.472 2.472 0 0 1-.92-.599 2.472 2.472 0 0 1-.599-.92c-.11-.282-.24-.706-.275-1.486C1.45 10.389 1.442 10.136 1.442 8s.008-2.389.046-3.232c.035-.78.166-1.204.275-1.486.145-.373.319-.64.599-.92.28-.28.547-.454.92-.599.282-.11.706-.24 1.486-.275C5.611 1.45 5.864 1.442 8 1.442Zm0 2.406A4.153 4.153 0 1 0 8 12.153 4.153 4.153 0 0 0 8 3.848Zm0 6.864A2.711 2.711 0 1 1 8 5.289a2.711 2.711 0 0 1 0 5.423Zm4.324-7.122a.969.969 0 1 0 0 1.938.969.969 0 0 0 0-1.938Z" /></svg></a> : <a href={href}>{label}</a>)}</nav>)}
   </div>
   <div class="container footer-bottom"><span>© {new Date().getFullYear()} Good Apollo Goods</span><div><a href="/privacy/">Privacy Policy</a><a href="/terms/">Terms</a></div></div>
 </footer>
 <style>
   .site-footer { background: var(--color-surface); padding-top: var(--space-16); }
   .footer-main { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: clamp(2rem, 5vw, 5rem); padding-bottom: var(--space-16); align-items: start; }
-  .footer-brand p { max-width: 30ch; font-size: var(--text-sm); color: var(--color-muted); margin-top: var(--space-6); }
   .footer-group { display: grid; gap: var(--space-3); align-content: start; }
   .footer-group h2 { font-family: var(--font-body); font-size: var(--text-xs); font-weight: 650; letter-spacing: .11em; text-transform: uppercase; margin-bottom: var(--space-2); }
   .footer-group a { width: fit-content; font-size: var(--text-sm); text-decoration: none; }
   .footer-group a:hover { text-decoration: underline; text-underline-offset: 4px; }
-  .footer-group .social-link { display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem; margin-top: calc(var(--space-2) * -1); color: var(--color-text); }
+  .footer-group .social-link { display: inline-flex; width: 1rem; height: 1rem; color: var(--color-text); }
   .footer-group .social-link:hover { text-decoration: none; }
-  .instagram-mark { position: relative; width: 1.2rem; height: 1.2rem; border: 1.5px solid currentColor; border-radius: .36rem; }
-  .instagram-mark::before,.instagram-mark::after { content: ''; position: absolute; display: block; }
-  .instagram-mark::before { width: .45rem; height: .45rem; border: 1.5px solid currentColor; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-  .instagram-mark::after { width: .14rem; height: .14rem; background: currentColor; border-radius: 50%; top: .2rem; right: .2rem; }
+  .instagram-icon { width: 1rem; height: 1rem; fill: currentColor; opacity: .82; }
   .footer-bottom { border-top: 1px solid var(--color-border); display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-5); font-size: var(--text-xs); color: var(--color-muted); }
   .footer-bottom div { display: flex; gap: var(--space-6); }
   .footer-bottom a { text-underline-offset: 4px; }

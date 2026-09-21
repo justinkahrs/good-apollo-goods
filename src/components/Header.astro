@@ -5,13 +5,11 @@ const pathname = Astro.url.pathname;
 const navigation = [
   { label: 'Shop', href: '/shop/' },
   { label: 'About', href: '/about/' },
-  { label: 'Sizing & Care', href: '/sizing-care/' },
-  { label: 'Consignment / Stockists', href: '/consignment-stockists/' },
   { label: 'Contact', href: '/contact/' },
 ];
 const isActive = (href: string) => pathname === href || pathname.startsWith(href) || (href === '/shop/' && pathname.startsWith('/pieces/'));
 ---
-<div class="announcement">Handmade in Grand Rapids, Michigan <span aria-hidden="true">·</span> Small batches, one maker</div>
+<div class="announcement">Handmade in Grand Rapids, Michigan</div>
 <header class="container site-header">
   <Brand />
   <div class="header-actions">
@@ -33,14 +31,9 @@ const isActive = (href: string) => pathname === href || pathname.startsWith(href
       </button>
     </header>
     <div class="container menu-body">
-      <div class="menu-context">
-        <p class="eyebrow">Good Apollo Goods</p>
-        <p>Small-batch hats,<br />made in Grand Rapids.</p>
-      </div>
       <nav class="menu-nav" aria-label="Primary navigation">
-        {navigation.map((item, index) => (
+        {navigation.map((item) => (
           <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
-            <span class="menu-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
             <span class="menu-label">{item.label}</span>
             <span class="menu-arrow" aria-hidden="true">↗</span>
           </a>
@@ -106,7 +99,6 @@ const isActive = (href: string) => pathname === href || pathname.startsWith(href
 
 <style>
   .announcement { background: var(--color-brand); color: var(--color-page); text-align: center; font-size: var(--text-xs); letter-spacing: .03em; padding: .58rem var(--space-4); }
-  .announcement span { margin-inline: .45rem; color: var(--color-accent); }
   .site-header { display: flex; align-items: center; justify-content: space-between; min-height: 116px; gap: var(--space-8); }
   .header-actions { display: flex; align-items: center; gap: clamp(1.25rem, 3vw, 3rem); }
   .cart-link,.menu-trigger { font-size: var(--text-sm); font-weight: 550; white-space: nowrap; }
@@ -126,6 +118,9 @@ const isActive = (href: string) => pathname === href || pathname.startsWith(href
   .site-menu.is-closing { opacity: 0; transform: translateY(-1.25rem); }
   .site-menu::backdrop { background: rgb(55 39 47 / .35); }
   @starting-style { .site-menu[open] { opacity: 0; transform: translateY(-1.25rem); } }
+  .menu-brand :global(.brand) { position: relative; }
+  .menu-brand :global(.brand img) { opacity: 0; }
+  .menu-brand :global(.brand)::after { content: ''; position: absolute; inset: 0; background: var(--color-page); -webkit-mask: url('/brand/gag-lockup.svg') center / contain no-repeat; mask: url('/brand/gag-lockup.svg') center / contain no-repeat; }
   .site-menu :global(.brand-dot) { color: var(--color-accent); }
   .site-menu :focus-visible { outline-color: var(--color-focus-inverse); }
   .menu-shell { min-height: 100dvh; display: flex; flex-direction: column; overflow-y: auto; }
@@ -135,14 +130,10 @@ const isActive = (href: string) => pathname === href || pathname.startsWith(href
   .close-icon i:first-child { transform: rotate(45deg); }
   .close-icon i:last-child { transform: rotate(-45deg); }
   .menu-close:hover .close-icon { transform: rotate(8deg); }
-  .menu-body { flex: 1; display: grid; grid-template-columns: minmax(150px, .55fr) minmax(520px, 1.6fr) minmax(170px, .55fr); gap: clamp(2rem, 5vw, 5.5rem); align-items: end; padding-top: clamp(2.5rem, 6vh, 5rem); padding-bottom: clamp(2rem, 5vh, 4rem); }
-  .menu-context { align-self: start; padding-top: var(--space-4); }
-  .menu-context .eyebrow { color: var(--color-accent); margin-bottom: var(--space-6); }
-  .menu-context p:last-child { max-width: 20ch; color: rgb(251 248 242 / .7); font-size: var(--text-sm); line-height: 1.75; }
+  .menu-body { flex: 1; display: grid; grid-template-columns: minmax(520px, 1.6fr) minmax(170px, .55fr); gap: clamp(2rem, 5vw, 5.5rem); align-items: end; padding-top: clamp(2.5rem, 6vh, 5rem); padding-bottom: clamp(2rem, 5vh, 4rem); }
   .menu-nav { align-self: center; }
-  .menu-nav a { display: grid; grid-template-columns: 2.25rem 1fr auto; gap: var(--space-5); align-items: center; min-height: clamp(4.7rem, 9.4vh, 6.5rem); border-bottom: 1px solid rgb(251 248 242 / .22); color: inherit; text-decoration: none; }
+  .menu-nav a { display: grid; grid-template-columns: 1fr auto; gap: var(--space-5); align-items: center; min-height: clamp(4.7rem, 9.4vh, 6.5rem); border-bottom: 1px solid rgb(251 248 242 / .22); color: inherit; text-decoration: none; }
   .menu-nav a:first-child { border-top: 1px solid rgb(251 248 242 / .22); }
-  .menu-number { align-self: start; padding-top: 1.25rem; color: var(--color-accent); font-size: var(--text-xs); letter-spacing: .08em; }
   .menu-label { font-family: var(--font-display); font-size: clamp(2.15rem, 4.15vw, 4.5rem); font-weight: 430; letter-spacing: -.045em; line-height: .96; transition: color var(--duration-fast), transform var(--duration-gentle) var(--ease-out); }
   .menu-arrow { font-size: var(--text-xl); transition: transform var(--duration-gentle) var(--ease-out), color var(--duration-fast); }
   .menu-nav a:hover .menu-label,.menu-nav a:focus-visible .menu-label { color: var(--color-accent); transform: translateX(.45rem); }
@@ -153,7 +144,6 @@ const isActive = (href: string) => pathname === href || pathname.startsWith(href
   .menu-meta p { max-width: 22ch; margin-top: var(--space-6); color: rgb(251 248 242 / .68); line-height: 1.75; }
   @media(max-width: 950px) {
     .menu-body { grid-template-columns: 1fr; align-items: start; }
-    .menu-context { display: none; }
     .menu-nav { width: 100%; align-self: start; }
     .menu-meta { grid-template-columns: auto auto; justify-content: start; column-gap: var(--space-8); }
     .menu-meta p { grid-column: 1 / -1; margin-top: var(--space-2); }
@@ -164,8 +154,7 @@ const isActive = (href: string) => pathname === href || pathname.startsWith(href
     .site-header :global(.brand-caption),.menu-header :global(.brand-caption) { display: none; }
     .header-actions { gap: var(--space-5); }
     .menu-body { gap: var(--space-8); padding-top: var(--space-6); }
-    .menu-nav a { grid-template-columns: 1.75rem 1fr auto; gap: var(--space-3); min-height: 4.65rem; }
-    .menu-number { padding-top: 1rem; }
+    .menu-nav a { grid-template-columns: 1fr auto; gap: var(--space-3); min-height: 4.65rem; }
     .menu-label { font-size: clamp(1.95rem, 8vw, 2.75rem); }
   }
   @media(max-width: 390px) { .announcement { font-size: .7rem; } }
