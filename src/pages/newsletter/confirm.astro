@@ -1,0 +1,32 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+export const prerender = false;
+const token = Astro.url.searchParams.get('token') ?? '';
+const validShape = token.length >= 32 && token.length <= 256;
+---
+
+<Layout title="Confirm newsletter signup — Good Apollo Goods" description="Confirm your Good Apollo Goods newsletter address." privatePage>
+  <meta slot="head" name="referrer" content="no-referrer" />
+  <PageHero eyebrow="Good Apollo Goods" title="Confirm your address." intro="Confirm only if you asked to receive the Good Apollo Goods newsletter." />
+  <section class="container confirm-panel">
+    {validShape ? (
+      <form data-newsletter-form action="/api/newsletter/confirm" method="post">
+        <input type="hidden" name="token" value={token} />
+        <button class="button button--primary" type="submit">Confirm newsletter signup</button>
+        <p data-newsletter-status role="status" aria-live="polite" tabindex="-1"></p>
+      </form>
+    ) : <p>This confirmation link is invalid or expired.</p>}
+  </section>
+</Layout>
+
+<script>
+  import '../../client/newsletter';
+</script>
+
+<style>
+  .confirm-panel { max-width: 780px; padding-block: var(--space-12) var(--space-section); }
+  form { display: grid; justify-items: start; gap: var(--space-5); }
+  .button { width: fit-content; }
+  p { color: var(--color-muted); }
+</style>

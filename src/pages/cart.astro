@@ -1,64 +1,399 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import PageHero from '../components/PageHero.astro';
+export const prerender = false;
 ---
-<Layout title="Cart — Good Apollo Goods" description="Your Good Apollo Goods shopping cart.">
-  <PageHero eyebrow="Your cart" title="The good things you chose." intro="Review your hats and sizes here. Checkout will be connected when the collection is ready to ship." />
-  <section class="container cart-layout" aria-live="polite">
-    <div class="cart-items" data-cart-items></div>
+
+<Layout title="Cart — Good Apollo Goods" privatePage>
+  <PageHero
+    eyebrow="Your cart"
+    title="The good things you chose."
+    intro="Review your pieces here. Stock is reserved only when you start checkout."
+  />
+  <section class="container cart-layout">
+    <div>
+      <p data-cart-message role="status"></p>
+      <div class="cart-items" data-cart-items></div>
+    </div>
     <aside class="cart-summary">
-      <div><span>Subtotal</span><strong data-cart-total>$0</strong></div>
-      <p>Shipping and applicable taxes are calculated at checkout.</p>
-      <button type="button" class="button button--primary" disabled>Checkout coming soon</button>
-      <a href="/shop/" class="text-link">Continue shopping <span aria-hidden="true">↗</span></a>
+      <div>
+        <span>Subtotal</span>
+        <strong data-cart-total>$0.00</strong>
+      </div>
+      <p data-shipping></p>
+      <p>
+        Applicable tax and the final total are shown in secure Stripe checkout.
+      </p>
+      <label>
+        <input type="checkbox" data-review /> I have reviewed the pieces, prices
+        and shipping.
+      </label>
+      <button
+        type="button"
+        class="button button--primary"
+        data-checkout
+        disabled
+      >
+        Continue to secure checkout
+      </button>
+      <p data-checkout-message role="status"></p>
+      <button
+        type="button"
+        class="button button--secondary"
+        data-recover-checkout
+        hidden
+      >
+        Review earlier checkout
+      </button>
+      <a href="/shop/" class="text-link">
+        Continue shopping
+      </a>
     </aside>
   </section>
 </Layout>
 <script>
-  type CartItem = { slug: string; name: string; price: number; size: string; quantity: number };
-  const itemsRoot = document.querySelector<HTMLElement>('[data-cart-items]');
-  const totalRoot = document.querySelector<HTMLElement>('[data-cart-total]');
-  const formatPrice = (price: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price);
-  const getCart = (): CartItem[] => {
-    try { const cart = JSON.parse(localStorage.getItem('good-apollo-cart') ?? '[]'); return Array.isArray(cart) ? cart : []; }
-    catch { return []; }
+  import { readCart, writeCart, post, cartAdditions } from '../client/cart';
+  type Quote = {
+    token: string;
+    rows: Array<{
+      variantId: string;
+      quantity: number;
+      name: string;
+      label: string;
+      slug: string;
+      unitPriceCents: number;
+      available: number;
+    }>;
+    subtotalCents: number;
+    shippingCents: number;
+    processingWindow: string;
+    canCheckout: boolean;
+    salesEnabled: boolean;
   };
-  const renderCart = () => {
-    const cart = getCart();
-    if (!itemsRoot || !totalRoot) return;
-    if (cart.length === 0) {
-      itemsRoot.innerHTML = '<div class="empty-cart"><p class="eyebrow">Cart empty</p><h2>Plenty of room for a good thing.</h2><p>Browse the current small batch to find something you’ll love having around.</p><a class="button button--secondary" href="/shop/">Shop the collection <span aria-hidden="true">↗</span></a></div>';
-      totalRoot.textContent = '$0';
+  const root = document.querySelector<HTMLElement>('[data-cart-items]')!,
+    message = document.querySelector<HTMLElement>('[data-cart-message]')!,
+    checkout = document.querySelector<HTMLButtonElement>('[data-checkout]')!,
+    review = document.querySelector<HTMLInputElement>('[data-review]')!,
+    checkoutMessage = document.querySelector<HTMLElement>(
+      '[data-checkout-message]',
+    )!;
+  const money = (n: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(n / 100);
+  let quote: Quote | undefined,
+    renderSequence = 0;
+  type Pending = {
+    token: string;
+    fingerprint: string;
+    baseline: Record<string, number>;
+    statusUrl?: string;
+  };
+  const recover = document.querySelector<HTMLButtonElement>(
+    '[data-recover-checkout]',
+  )!;
+  function readPending(): Pending | null {
+    try {
+      return JSON.parse(
+        sessionStorage.getItem('gag-checkout-pending') ?? 'null',
+      );
+    } catch {
+      return null;
+    }
+  }
+  recover.hidden = !readPending();
+  function el(tag: string, text?: string) {
+    const node = document.createElement(tag);
+    if (text) node.textContent = text;
+    return node;
+  }
+  async function render() {
+    const sequence = ++renderSequence;
+    quote = undefined;
+    checkout.disabled = true;
+    review.checked = false;
+    const cart = readCart(true);
+    message.textContent = cart.message ?? '';
+    root.replaceChildren();
+    if (!cart.lines.length) {
+      root.append(
+        el('h2', 'Your cart is empty.'),
+        el('p', 'Browse the current small batch to find your next good thing.'),
+      );
       return;
     }
-    itemsRoot.innerHTML = cart.map((item, index) => `<article class="cart-item"><div><p class="eyebrow">Size ${item.size}</p><h2><a href="/pieces/${item.slug}/">${item.name}</a></h2><p>${formatPrice(item.price)} · Quantity ${item.quantity}</p></div><div><strong>${formatPrice(item.price * item.quantity)}</strong><button type="button" data-remove-item="${index}">Remove</button></div></article>`).join('');
-    totalRoot.textContent = formatPrice(cart.reduce((sum, item) => sum + (item.price * item.quantity), 0));
-    itemsRoot.querySelectorAll<HTMLButtonElement>('[data-remove-item]').forEach((button) => button.addEventListener('click', () => {
-      const next = getCart();
-      next.splice(Number(button.dataset.removeItem), 1);
-      localStorage.setItem('good-apollo-cart', JSON.stringify(next));
-      window.dispatchEvent(new Event('good-apollo:cart-updated'));
-      renderCart();
+    for (const line of cart.lines) {
+      const row = el('article');
+      row.className = 'cart-item';
+      row.append(el('p', 'Loading current piece…'));
+      const remove = el('button', 'Remove') as HTMLButtonElement;
+      remove.type = 'button';
+      remove.addEventListener('click', () => {
+        writeCart(
+          readCart().lines.filter((l) => l.variantId !== line.variantId),
+        );
+        void render();
+      });
+      row.append(remove);
+      root.append(row);
+    }
+    try {
+      const nextQuote = await post<Quote>('/api/cart/quote/', cart.lines);
+      if (sequence !== renderSequence) return;
+      quote = nextQuote;
+      root.replaceChildren();
+      for (const line of quote.rows) {
+        const row = el('article'),
+          copy = el('div'),
+          controls = el('div');
+        row.className = 'cart-item';
+        const h = el('h2'),
+          a = el('a', line.name) as HTMLAnchorElement;
+        a.href = '/pieces/' + encodeURIComponent(line.slug) + '/';
+        h.append(a);
+        copy.append(
+          h,
+          el('p', line.label),
+          el('p', money(line.unitPriceCents)),
+        );
+        const label = el('label', 'Quantity '),
+          input = el('input') as HTMLInputElement;
+        input.type = 'number';
+        input.min = '1';
+        input.max = '10';
+        input.value = String(line.quantity);
+        input.setAttribute(
+          'aria-label',
+          'Quantity for ' + line.name + ' ' + line.label,
+        );
+        input.addEventListener('change', () => {
+          const n = Number(input.value);
+          if (!Number.isInteger(n) || n < 1 || n > 10) {
+            input.value = String(line.quantity);
+            return;
+          }
+          writeCart(
+            readCart().lines.map((l) =>
+              l.variantId === line.variantId ? { ...l, quantity: n } : l,
+            ),
+          );
+          void render();
+        });
+        label.append(input);
+        const remove = el('button', 'Remove') as HTMLButtonElement;
+        remove.type = 'button';
+        remove.dataset.removeItem = '';
+        remove.addEventListener('click', () => {
+          writeCart(
+            readCart().lines.filter((l) => l.variantId !== line.variantId),
+          );
+          void render();
+        });
+        controls.append(
+          label,
+          el('strong', money(line.quantity * line.unitPriceCents)),
+          remove,
+        );
+        if (line.available < line.quantity)
+          copy.append(
+            el(
+              'p',
+              line.available === 0
+                ? 'Sold out. Please remove this piece.'
+                : 'Only ' + line.available + ' available.',
+            ),
+          );
+        row.append(copy, controls);
+        root.append(row);
+      }
+      document.querySelector('[data-cart-total]')!.textContent = money(
+        quote.subtotalCents,
+      );
+      document.querySelector('[data-shipping]')!.textContent =
+        'Flat-rate U.S. shipping: ' +
+        money(quote.shippingCents) +
+        '. Processing: ' +
+        quote.processingWindow +
+        '.';
+      if (!quote.salesEnabled)
+        message.textContent =
+          'Checkout is temporarily closed. Your cart is saved.';
+      const previous = JSON.parse(
+        sessionStorage.getItem('gag-reviewed-prices') ?? '{}',
+      );
+      if (
+        quote.rows.some(
+          (r) =>
+            previous[r.variantId] !== undefined &&
+            previous[r.variantId] !== r.unitPriceCents,
+        )
+      )
+        message.textContent =
+          'A price changed. Review the current prices before continuing.';
+      sessionStorage.setItem(
+        'gag-reviewed-prices',
+        JSON.stringify(
+          Object.fromEntries(
+            quote.rows.map((r) => [r.variantId, r.unitPriceCents]),
+          ),
+        ),
+      );
+    } catch (e) {
+      message.textContent = (e as Error).message;
+    }
+  }
+  review.addEventListener('change', () => {
+    checkout.disabled = !review.checked || !quote?.canCheckout;
+  });
+  async function continueCheckout(pending: Pending) {
+    if (pending.statusUrl) {
+      location.assign(pending.statusUrl);
+      return;
+    }
+    checkout.disabled = true;
+    recover.disabled = true;
+    checkoutMessage.textContent = 'Starting secure checkout…';
+    const lines = JSON.parse(pending.fingerprint);
+    sessionStorage.setItem('gag-checkout-pending', JSON.stringify(pending));
+    recover.hidden = false;
+    try {
+      const result = await post<{
+        url?: string;
+        statusUrl: string;
+        status: string;
+      }>('/api/checkout/', { token: pending.token });
+      const token = new URL(result.statusUrl, location.origin).searchParams.get(
+        'token',
+      )!;
+      let attempts: Record<string, unknown> = {};
+      try {
+        attempts = JSON.parse(
+          localStorage.getItem('gag-purchased-carts') ?? '{}',
+        );
+      } catch {}
+      attempts = Object.fromEntries(Object.entries(attempts).slice(-19));
+      attempts[token] = { lines, baseline: pending.baseline };
+      localStorage.setItem('gag-purchased-carts', JSON.stringify(attempts));
+      pending.statusUrl = result.statusUrl;
+      sessionStorage.setItem('gag-checkout-pending', JSON.stringify(pending));
+      location.assign(result.url ?? result.statusUrl);
+    } catch (e) {
+      const error = e as Error & { code?: string };
+      checkoutMessage.textContent = error.message;
+      if (['failed', 'stale', 'stock'].includes(error.code ?? '')) {
+        sessionStorage.removeItem('gag-checkout-pending');
+        recover.hidden = true;
+      }
+      checkout.disabled = !review.checked || !quote?.canCheckout;
+      recover.disabled = false;
+    }
+  }
+  recover.addEventListener('click', () => {
+    const p = readPending();
+    if (p) void continueCheckout(p);
+  });
+  checkout.addEventListener('click', async () => {
+    if (!quote || !review.checked) return;
+    const pending = readPending();
+    if (pending) {
+      await continueCheckout(pending);
+      return;
+    }
+    const lines = quote.rows.map(({ variantId, quantity }) => ({
+      variantId,
+      quantity,
     }));
-  };
-  renderCart();
+    await continueCheckout({
+      token: quote.token,
+      fingerprint: JSON.stringify(lines),
+      baseline: cartAdditions(),
+    });
+  });
+  void render();
 </script>
 <style>
-  .cart-layout { display: grid; grid-template-columns: 1.5fr .7fr; gap: clamp(3rem, 8vw, 8rem); align-items: start; padding-block: var(--space-section); }
-  .cart-items { border-top: 1px solid var(--color-border); }
-  .cart-items :global(.cart-item) { display: flex; justify-content: space-between; gap: var(--space-6); padding-block: var(--space-6); border-bottom: 1px solid var(--color-border); }
-  .cart-items :global(.cart-item h2) { font-size: var(--text-xl); margin-block: var(--space-2); }
-  .cart-items :global(.cart-item h2 a) { text-decoration: none; }
-  .cart-items :global(.cart-item p:not(.eyebrow)) { color: var(--color-muted); font-size: var(--text-sm); }
-  .cart-items :global(.cart-item > div:last-child) { text-align: right; }
-  .cart-items :global([data-remove-item]) { display: block; margin-top: var(--space-4); margin-left: auto; padding: 0; border: 0; background: none; color: var(--color-muted); text-decoration: underline; text-underline-offset: 4px; font-size: var(--text-sm); }
-  .cart-items :global(.empty-cart) { padding-block: var(--space-12); }
-  .cart-items :global(.empty-cart h2) { font-size: var(--text-3xl); margin-block: var(--space-5); }
-  .cart-items :global(.empty-cart > p:not(.eyebrow)) { color: var(--color-muted); margin-bottom: var(--space-8); }
-  .cart-summary { background: var(--color-surface); padding: var(--space-8); border-radius: var(--radius-md); }
-  .cart-summary > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-4); font-size: var(--text-lg); }
-  .cart-summary p { color: var(--color-muted); font-size: var(--text-sm); margin-block: var(--space-5) var(--space-6); }
-  .cart-summary :global(.button) { width: 100%; }
-  .cart-summary .text-link { width: max-content; margin-top: var(--space-5); }
-  @media(max-width: 800px) { .cart-layout { grid-template-columns: 1fr; } }
+  .cart-layout {
+    display: grid;
+    grid-template-columns: 1.5fr 0.7fr;
+    gap: clamp(3rem, 8vw, 8rem);
+    align-items: start;
+    padding-block: var(--space-section);
+  }
+  .cart-items {
+    border-top: 1px solid var(--color-border);
+  }
+  .cart-items :global(.cart-item) {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-6);
+    padding-block: var(--space-6);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .cart-items :global(.cart-item h2) {
+    font-size: var(--text-xl);
+    margin-block: var(--space-2);
+  }
+  .cart-items :global(.cart-item h2 a) {
+    text-decoration: none;
+  }
+  .cart-items :global(.cart-item p:not(.eyebrow)) {
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+  }
+  .cart-items :global(.cart-item > div:last-child) {
+    text-align: right;
+  }
+  .cart-items :global([data-remove-item]) {
+    display: block;
+    margin-top: var(--space-4);
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-muted);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    font-size: var(--text-sm);
+  }
+  .cart-items :global(.empty-cart) {
+    padding-block: var(--space-12);
+  }
+  .cart-items :global(.empty-cart h2) {
+    font-size: var(--text-3xl);
+    margin-block: var(--space-5);
+  }
+  .cart-items :global(.empty-cart > p:not(.eyebrow)) {
+    color: var(--color-muted);
+    margin-bottom: var(--space-8);
+  }
+  .cart-summary {
+    background: var(--color-surface);
+    padding: var(--space-8);
+    border-radius: var(--radius-md);
+  }
+  .cart-summary > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+    font-size: var(--text-lg);
+  }
+  .cart-summary p {
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    margin-block: var(--space-5) var(--space-6);
+  }
+  .cart-summary :global(.button) {
+    width: 100%;
+  }
+  .cart-summary .text-link {
+    width: max-content;
+    margin-top: var(--space-5);
+  }
+  @media (max-width: 800px) {
+    .cart-layout {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>

@@ -1,0 +1,53 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { config } from '../../server/config';
+export const prerender = false;
+---
+
+<AdminLayout title="Sign in" authPage>
+  <section style="max-width:480px;margin:3rem auto">
+    <h1>Welcome to the studio.</h1>
+    <p>
+      Sign in with your approved email address. Then verify your authenticator
+      for this work session.
+    </p>
+    <form class="panel stack" data-sign-in>
+      <label>
+        Email address
+        <input
+          type="email"
+          name="email"
+          autocomplete="email"
+          value={config().ADMIN_EMAIL}
+          required
+        />
+      </label>
+      <button class="primary" type="submit">
+        Email me a sign-in link
+      </button>
+      <p role="status" data-status></p>
+    </form>
+  </section>
+</AdminLayout>
+<script>
+  import { post } from '../../client/cart';
+  const form = document.querySelector<HTMLFormElement>('[data-sign-in]')!;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const b = form.querySelector('button')!;
+    b.disabled = true;
+    const s = form.querySelector('[data-status]')!;
+    try {
+      await post('/api/auth/sign-in/magic-link/', {
+        email: new FormData(form).get('email'),
+        callbackURL: '/admin/verify/',
+      });
+      s.textContent =
+        'If this address is approved, a sign-in link is on its way. Open it in this browser.';
+    } catch (e) {
+      s.textContent = (e as Error).message;
+    } finally {
+      b.disabled = false;
+    }
+  });
+</script>

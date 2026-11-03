@@ -5,9 +5,23 @@ import '@fontsource-variable/dm-sans';
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-interface Props { title?: string; description?: string; }
-const { title = 'Good Apollo Goods — Handmade hats in Grand Rapids', description = 'Small-batch child and adult hats handmade in Grand Rapids, Michigan from cotton, cotton twill, and corduroy.' } = Astro.props;
+import { discoveryEnabled } from '../server/config';
+interface Props {
+  title?: string;
+  description?: string;
+  privatePage?: boolean;
+}
+const {
+  title = 'Good Apollo Goods — Handmade hats in Grand Rapids',
+  description = 'Small-batch child and adult hats handmade in Grand Rapids, Michigan from cotton, cotton twill, and corduroy.',
+  privatePage = false,
+} = Astro.props;
+const indexable =
+  !privatePage &&
+  discoveryEnabled() &&
+  !Astro.url.pathname.startsWith('/design-system');
 ---
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -15,15 +29,23 @@ const { title = 'Good Apollo Goods — Handmade hats in Grand Rapids', descripti
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#6E322D" />
     <meta name="description" content={description} />
-    <meta name="robots" content="noindex, nofollow" />
+    <meta
+      name="robots"
+      content={indexable ? 'index, follow' : 'noindex, nofollow'}
+    />
+    <slot name="head" />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <a class="skip-link" href="#main">
+      Skip to content
+    </a>
     <Header />
-    <main id="main"><slot /></main>
+    <main id="main">
+      <slot />
+    </main>
     <Footer />
   </body>
 </html>

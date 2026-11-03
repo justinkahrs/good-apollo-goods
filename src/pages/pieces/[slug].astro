@@ -1,124 +1,611 @@
 ---
-import { Image } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import ProductCard from '../../components/ProductCard.astro';
-import { products, formatPrice, shopCategories, type Product } from '../../data/products';
-
-export function getStaticPaths() {
-  return products.map((product) => ({ params: { slug: product.slug }, props: { product } }));
-}
-interface Props { product: Product; }
-const { product } = Astro.props;
-const productCategory = shopCategories.find((category) => category.id === product.kind);
-const related = products.filter((piece) => piece.slug !== product.slug && piece.kind === product.kind).slice(0, 2);
-const availabilityLabel = product.isListed ? product.status : 'Not currently listed';
+import { publicCatalog } from '../../server/catalog';
+import { money } from '../../server/domain';
+import { db } from '../../server/db';
+import { salesReady, discoveryEnabled } from '../../server/config';
+export const prerender = false;
+const products = await publicCatalog();
+const product = products.find((p) => p.slug === Astro.params.slug);
+if (!product) return Astro.redirect('/404/', 404);
+const related = products
+  .filter((p) => p.slug !== product.slug && p.category === product.category)
+  .slice(0, 2);
+const settings = await db().storeSettings.findUnique({
+  where: { id: 'store' },
+});
+const available = product.variants.some((v) => v.available > 0);
+const singlePiece =
+  product.variants.length === 1 &&
+  Object.keys(product.variants[0].options ?? {}).length === 0;
+const price = Math.min(...product.variants.map((v) => v.priceCents));
+const categoryLabel = product.category === 'other' ? 'Art' : 'Wearables';
+const categoryHref =
+  product.category === 'other' ? '/shop/art/' : '/shop/wearables/';
+const structured = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  description: product.description,
+  image: product.images.map((i) => new URL(i.url, Astro.site).href),
+  offers: product.variants.map((v) => ({
+    '@type': 'Offer',
+    priceCurrency: 'USD',
+    price: (v.priceCents / 100).toFixed(2),
+    availability:
+      v.available > 0
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+    url: new URL(Astro.url.pathname, Astro.site).href,
+  })),
+};
 ---
-<Layout title={`${product.name} — Good Apollo Goods`} description={product.description}>
-  <div class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="/shop/">Shop</a><span aria-hidden="true">/</span><a href={productCategory?.href}>{productCategory?.label}</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav></div>
+
+<Layout
+  title={`${product.name} — Good Apollo Goods`}
+  description={product.description}
+>
+  {discoveryEnabled() && (
+    <script
+      is:inline
+      slot="head"
+      type="application/ld+json"
+      set:html={JSON.stringify(structured).replaceAll('<', '\\u003c')}
+    />
+  )}
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/shop/">Shop</a>
+      <span aria-hidden="true">/</span>
+      <a href={categoryHref}>{categoryLabel}</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{product.name}</span>
+    </nav>
+  </div>
   <section class="container product-grid" aria-labelledby="product-title">
-    <div class:list={['product-gallery', { single: product.images.length === 1 }]}>
-      {product.isListed ? product.images.map((image, index) => <figure><Image src={image.src} alt={image.alt} widths={[600, 900, 1200]} sizes="(max-width: 850px) 92vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading={index === 0 ? 'eager' : 'lazy'} style={{ objectPosition: image.position ?? 'center' }} /></figure>) : <figure><div class="product-placeholder" aria-hidden="true"><div class="placeholder-mark"><img src="/brand/gag-stacked-lockup.svg" alt="" /></div></div><figcaption>This piece is not currently listed.</figcaption></figure>}
+    <div
+      class:list={['product-gallery', { single: product.images.length === 1 }]}
+      data-product-gallery
+      aria-label="Product photos"
+      role="region"
+      aria-roledescription="carousel"
+    >
+      <div class="gallery-stage">
+        {product.images.map((image, index) => (
+          <figure
+            data-gallery-slide
+            data-variant-photo={image.variantId ?? ''}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${index + 1} of ${product.images.length}`}
+          >
+            <img
+              src={image.url}
+              srcset={image.srcset}
+              sizes="(max-width:850px) 92vw, 48vw"
+              alt={image.alt}
+              width="1200"
+              height="1500"
+              loading={index === 0 ? 'eager' : 'lazy'}
+            />
+          </figure>
+        ))}
+        {product.images.length > 1 && (
+          <div class="gallery-controls" data-gallery-controls hidden>
+            <button
+              class="gallery-arrow"
+              type="button"
+              data-gallery-previous
+              aria-label="Previous photo"
+            >
+              <span aria-hidden="true">←</span>
+            </button>
+            <button
+              class="gallery-arrow"
+              type="button"
+              data-gallery-next
+              aria-label="Next photo"
+            >
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        )}
+      </div>
+      {product.images.length > 1 && (
+        <div class="gallery-navigation" data-gallery-navigation hidden>
+          <div
+            class="gallery-thumbnails"
+            role="group"
+            aria-label="Choose a photo"
+          >
+            {product.images.map((image, index) => (
+              <button
+                class="gallery-thumbnail"
+                type="button"
+                data-gallery-thumb={index}
+                data-variant-photo={image.variantId ?? ''}
+                aria-label={`Show photo ${index + 1}: ${image.alt}`}
+                aria-pressed={index === 0 ? 'true' : 'false'}
+              >
+                <img
+                  src={image.url}
+                  srcset={image.srcset}
+                  sizes="72px"
+                  alt=""
+                  width="72"
+                  height="90"
+                  loading="lazy"
+                />
+              </button>
+            ))}
+          </div>
+          <p
+            class="gallery-status sr-only"
+            data-gallery-status
+            aria-live="polite"
+          ></p>
+        </div>
+      )}
     </div>
     <div class="product-copy">
-      <p class="eyebrow">{productCategory?.label} · {availabilityLabel}</p>
+      <p class="eyebrow">
+        {categoryLabel} · {available ? 'Ready to ship' : 'Sold out'}
+      </p>
       <h1 id="product-title">{product.name}</h1>
-      {product.isListed && <p class="product-price">{formatPrice(product.price)}</p>}
+      <p class="product-price" data-piece-price>
+        {money(price)}
+      </p>
       <p class="product-description">{product.description}</p>
       <p class="product-detail">{product.detail}</p>
-
-      {product.isListed ? <form class="purchase-form" data-add-to-cart data-slug={product.slug} data-name={product.name} data-price={product.price}>
-        <fieldset>
-          <legend><span>Choose a size</span><a href="/sizing-care/">View size guide</a></legend>
-          <div class="size-options">{product.sizes.map((size) => <label><input type="radio" name="size" value={size} required /><span>{size}</span></label>)}</div>
-        </fieldset>
-        <button class="button button--primary add-button" type="submit">Add to cart <span aria-hidden="true">↗</span></button>
+      <form class="purchase-form" data-add-to-cart>
+        {singlePiece ? (
+          <input type="hidden" name="variant" value={product.variants[0].id} />
+        ) : (
+          <fieldset>
+            <legend>
+              <span>Choose your piece</span>
+              <a href="/sizing-care/">Size guide</a>
+            </legend>
+            <div class="size-options">
+              {product.variants.map((v) => (
+                <label>
+                  <input
+                    type="radio"
+                    name="variant"
+                    value={v.id}
+                    data-price={v.priceCents}
+                    required
+                    disabled={v.available === 0}
+                  />
+                  <span>
+                    {v.label}
+                    {v.available === 0 ? ' — Sold out' : ''}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
+        <button
+          class="button button--primary add-button"
+          type="submit"
+          disabled={!available || !salesReady()}
+        >
+          {salesReady()
+            ? available
+              ? 'Add to cart'
+              : 'Sold out'
+            : 'Collection opening soon'}
+        </button>
         <p class="cart-status" data-cart-status aria-live="polite"></p>
-      </form> : <p class="unlisted-note">This piece is part of a future small batch and is not currently available to purchase.</p>}
-
+        <a href="/cart/">View cart</a>
+      </form>
       <dl class="product-facts">
-        <div><dt>Color</dt><dd>{product.color}</dd></div>
-        <div><dt>Materials</dt><dd>{product.materials.join(', ')}</dd></div>
-        <div><dt>Lining</dt><dd>{product.lining}</dd></div>
-        <div><dt>Availability</dt><dd>{availabilityLabel}</dd></div>
+        <div>
+          <dt>Materials</dt>
+          <dd>{product.materials}</dd>
+        </div>
+        <div>
+          <dt>Availability</dt>
+          <dd>{available ? 'Ready to ship' : 'Sold out'}</dd>
+        </div>
       </dl>
       <div class="practical-details">
-        <div><h2>Care</h2><p>Machine wash cold on a gentle cycle. Air dry only. Reshape while damp if needed, and avoid high heat.</p></div>
-        <div><h2>Shipping & final sale</h2><p>Shipping timing is shown with each available piece. All sales are final, with no returns, exchanges, repairs, or refunds. Please review the product details before ordering. See <a href="/shipping/">shipping</a> and the <a href="/returns/">final sale policy</a>.</p></div>
+        <div>
+          <h2>Care</h2>
+          <p>
+            {product.care ||
+              'Please contact us for care guidance for this piece.'}
+          </p>
+        </div>
+        <div>
+          <h2>Shipping & final sale</h2>
+          <p>
+            U.S. shipping {money(settings?.shippingCents ?? 695)} per order,
+            including Alaska and Hawaii. Processing:{' '}
+            {settings?.processingWindow ?? '3–5 business days'}. Shipping and
+            applicable tax are confirmed before payment. All sales are final.
+            For an incorrect, damaged or missing order, contact us so we can
+            review it. See <a href="/shipping/">shipping</a> and the{' '}
+            <a href="/returns/">final sale policy</a>.
+          </p>
+        </div>
       </div>
     </div>
   </section>
-  {related.length > 0 && <section class="container related" aria-labelledby="related-title"><div class="related-heading"><h2 id="related-title" class="display-heading">More {productCategory?.label.toLowerCase()}.</h2><a href={productCategory?.href} class="text-link">Shop {productCategory?.label.toLowerCase()} <span aria-hidden="true">↗</span></a></div><div class="related-grid">{related.map((piece) => <ProductCard product={piece} />)}</div></section>}
+  {related.length > 0 && (
+    <section class="container related">
+      <div class="related-heading">
+        <h2 class="display-heading">More {categoryLabel.toLowerCase()}.</h2>
+        <a href={categoryHref} class="text-link">
+          Shop {categoryLabel.toLowerCase()}
+        </a>
+      </div>
+      <div class="related-grid">
+        {related.map((p) => (
+          <ProductCard product={p} />
+        ))}
+      </div>
+    </section>
+  )}
 </Layout>
 <script>
-  const form = document.querySelector<HTMLFormElement>('[data-add-to-cart]');
-  const status = document.querySelector<HTMLElement>('[data-cart-status]');
+  import { addPiece } from '../../client/cart';
+  import { initProductGallery } from '../../client/product-gallery';
+  const form = document.querySelector<HTMLFormElement>('[data-add-to-cart]'),
+    status = document.querySelector<HTMLElement>('[data-cart-status]');
+  initProductGallery(
+    document.querySelector<HTMLElement>('[data-product-gallery]'),
+    form,
+  );
+  form?.addEventListener('change', () => {
+    const selected = form.querySelector<HTMLInputElement>('input:checked');
+    const price = document.querySelector('[data-piece-price]');
+    if (selected && price)
+      price.textContent = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+      }).format(Number(selected.dataset.price) / 100);
+  });
   form?.addEventListener('submit', (event) => {
     event.preventDefault();
-    const formData = new FormData(form);
-    const size = String(formData.get('size') ?? '');
-    if (!size) return;
-    const item = {
-      slug: form.dataset.slug,
-      name: form.dataset.name,
-      price: Number(form.dataset.price),
-      size,
-      quantity: 1,
-    };
-    let cart: typeof item[] = [];
-    try { cart = JSON.parse(localStorage.getItem('good-apollo-cart') ?? '[]'); } catch { cart = []; }
-    const existing = cart.find((entry) => entry.slug === item.slug && entry.size === size);
-    if (existing) existing.quantity += 1;
-    else cart.push(item);
-    localStorage.setItem('good-apollo-cart', JSON.stringify(cart));
-    window.dispatchEvent(new Event('good-apollo:cart-updated'));
-    if (status) status.innerHTML = `Added ${item.name}, size ${size}. <a href="/cart/">View cart</a>`;
+    const id = String(new FormData(form).get('variant') ?? '');
+    if (!id) return;
+    try {
+      addPiece(id);
+      if (status) status.textContent = 'Added to your cart.';
+    } catch (error) {
+      if (status) status.textContent = (error as Error).message;
+    }
   });
 </script>
 <style>
-  .breadcrumb { display: flex; flex-wrap: wrap; gap: var(--space-3); padding-top: var(--space-6); padding-bottom: var(--space-8); color: var(--color-muted); font-size: var(--text-sm); text-transform: capitalize; }
-  .breadcrumb a { text-underline-offset: 4px; }
-  .product-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: clamp(2.5rem, 6vw, 6rem); align-items: start; padding-bottom: var(--space-section); }
-  .product-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
-  .product-gallery.single { grid-template-columns: 1fr; }
-  .product-gallery figure { margin: 0; min-width: 0; }
-  .product-gallery figure:first-child { grid-column: 1 / -1; }
-  .product-gallery img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: var(--color-surface); border-radius: var(--radius-md); }
-  .product-placeholder { width: 100%; aspect-ratio: 4 / 5; display: grid; place-items: center; background: var(--color-secondary); border-radius: var(--radius-md); }
-  .placeholder-mark { width: min(52%, 20rem); aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--color-page) 28%, transparent); }
-  .placeholder-mark img { width: 58%; height: auto; aspect-ratio: auto; object-fit: contain; background: none; border-radius: 0; opacity: .42; }
-  .product-gallery figcaption { font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-3); }
-  .product-copy { position: sticky; top: var(--space-6); }
-  .product-copy h1 { font-size: var(--text-3xl); margin-top: var(--space-5); text-wrap: balance; }
-  .product-price { font-size: var(--text-xl); margin-top: var(--space-5); font-variant-numeric: tabular-nums; }
-  .product-description { font-family: var(--font-display); font-size: var(--text-xl); line-height: 1.45; margin-top: var(--space-8); }
-  .product-detail { color: var(--color-muted); margin-top: var(--space-5); line-height: 1.8; }
-  .purchase-form { padding-block: var(--space-8); border-bottom: 1px solid var(--color-border); }
-  .unlisted-note { padding-block: var(--space-8); border-bottom: 1px solid var(--color-border); color: var(--color-muted); line-height: 1.8; }
-  fieldset { border: 0; padding: 0; margin: 0 0 var(--space-6); }
-  legend { width: 100%; display: flex; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); font-size: var(--text-sm); font-weight: 600; }
-  legend a { color: var(--color-muted); font-weight: 400; text-underline-offset: 4px; }
-  .size-options { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-  .size-options input { position: absolute; opacity: 0; pointer-events: none; }
-  .size-options span { min-width: 50px; min-height: 46px; display: grid; place-items: center; border: 1px solid var(--color-border); border-radius: var(--radius-sm); transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast); }
-  .size-options label { cursor: pointer; }
-  .size-options label:hover span { background: var(--color-surface); }
-  .size-options input:checked + span { background: var(--color-brand); border-color: var(--color-brand); color: var(--color-page); }
-  .size-options input:focus-visible + span { outline: 2px solid var(--color-focus); outline-offset: 4px; }
-  .add-button { width: 100%; }
-  .cart-status { min-height: 1.4em; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--color-muted); }
-  .cart-status :global(a) { color: var(--color-text); text-underline-offset: 4px; }
-  .product-facts { margin: 0; }
-  .product-facts div { display: grid; grid-template-columns: 7rem 1fr; gap: var(--space-5); padding-block: var(--space-4); border-bottom: 1px solid var(--color-border); }
-  .product-facts dt { color: var(--color-muted); font-size: var(--text-sm); }
-  .product-facts dd { margin: 0; font-size: var(--text-sm); }
-  .product-facts small { color: var(--color-muted); }
-  .practical-details { display: grid; gap: var(--space-6); padding-top: var(--space-8); }
-  .practical-details h2 { font-family: var(--font-body); font-size: var(--text-sm); letter-spacing: 0; font-weight: 650; margin-bottom: var(--space-2); }
-  .practical-details p { color: var(--color-muted); font-size: var(--text-sm); line-height: 1.75; }
-  .practical-details a { color: var(--color-text); text-underline-offset: 4px; }
-  .related { border-top: 1px solid var(--color-border); padding-block: var(--space-section); }
-  .related-heading { display: flex; justify-content: space-between; gap: var(--space-5); align-items: baseline; margin-bottom: var(--space-10); }
-  .related-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: var(--space-8); max-width: 900px; }
-  @media(max-width: 850px) { .product-grid { grid-template-columns: 1fr; } .product-copy { position: static; } }
-  @media(max-width: 650px) { .related-heading { display: block; } .related-heading a { margin-top: var(--space-5); } .related-grid { grid-template-columns: 1fr; } }
+  .breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding-top: var(--space-6);
+    padding-bottom: var(--space-8);
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    text-transform: capitalize;
+  }
+  .breadcrumb a {
+    text-underline-offset: 4px;
+  }
+  .product-grid {
+    display: grid;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: clamp(2.5rem, 6vw, 6rem);
+    align-items: start;
+    padding-bottom: var(--space-section);
+  }
+  .product-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .product-gallery[data-gallery-ready] {
+    display: block;
+  }
+  .product-gallery.single {
+    grid-template-columns: 1fr;
+  }
+  .gallery-stage {
+    position: relative;
+  }
+  .product-gallery figure {
+    margin: 0;
+    min-width: 0;
+  }
+  .product-gallery[data-gallery-ready] figure {
+    display: none;
+  }
+  .product-gallery[data-gallery-ready] figure[data-gallery-active] {
+    display: block;
+  }
+  .product-gallery figure:first-child {
+    grid-column: 1 / -1;
+  }
+  .product-gallery img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: contain;
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+  }
+  .gallery-controls {
+    position: absolute;
+    inset: 50% var(--space-4) auto;
+    display: flex;
+    justify-content: space-between;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+  .gallery-arrow {
+    width: 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+    background: color-mix(in srgb, var(--color-page) 92%, transparent);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 2px 10px rgb(53 44 46 / 12%);
+  }
+  .gallery-arrow:hover {
+    background: var(--color-page);
+  }
+  .gallery-arrow:focus-visible,
+  .gallery-thumbnail:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+  }
+  .gallery-navigation {
+    margin-top: var(--space-3);
+  }
+  .gallery-thumbnails {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    padding: 3px 3px var(--space-2);
+    scrollbar-color: var(--color-border) transparent;
+    scrollbar-width: thin;
+  }
+  .gallery-thumbnail {
+    flex: 0 0 4.5rem;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    cursor: pointer;
+  }
+  .gallery-thumbnail[aria-pressed='true'] {
+    border: 2px solid var(--color-brand);
+  }
+  .gallery-thumbnail img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: 0;
+  }
+  .product-placeholder {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    display: grid;
+    place-items: center;
+    background: var(--color-secondary);
+    border-radius: var(--radius-md);
+  }
+  .placeholder-mark {
+    width: min(52%, 20rem);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color-page) 28%, transparent);
+  }
+  .placeholder-mark img {
+    width: 58%;
+    height: auto;
+    aspect-ratio: auto;
+    object-fit: contain;
+    background: none;
+    border-radius: 0;
+    opacity: 0.42;
+  }
+  .product-gallery figcaption {
+    font-size: var(--text-xs);
+    color: var(--color-muted);
+    margin-top: var(--space-3);
+  }
+  .product-copy {
+    position: sticky;
+    top: var(--space-6);
+  }
+  .product-copy h1 {
+    font-size: var(--text-3xl);
+    margin-top: var(--space-5);
+    text-wrap: balance;
+  }
+  .product-price {
+    font-size: var(--text-xl);
+    margin-top: var(--space-5);
+    font-variant-numeric: tabular-nums;
+  }
+  .product-description {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    line-height: 1.45;
+    margin-top: var(--space-8);
+  }
+  .product-detail {
+    color: var(--color-muted);
+    margin-top: var(--space-5);
+    line-height: 1.8;
+  }
+  .purchase-form {
+    padding-block: var(--space-8);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .unlisted-note {
+    padding-block: var(--space-8);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-muted);
+    line-height: 1.8;
+  }
+  fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0 0 var(--space-6);
+  }
+  legend {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  legend a {
+    color: var(--color-muted);
+    font-weight: 400;
+    text-underline-offset: 4px;
+  }
+  .size-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .size-options input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .size-options span {
+    min-width: 50px;
+    min-height: 46px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    transition:
+      background var(--duration-fast),
+      color var(--duration-fast),
+      border-color var(--duration-fast);
+  }
+  .size-options label {
+    cursor: pointer;
+  }
+  .size-options label:hover span {
+    background: var(--color-surface);
+  }
+  .size-options input:checked + span {
+    background: var(--color-brand);
+    border-color: var(--color-brand);
+    color: var(--color-page);
+  }
+  .size-options input:focus-visible + span {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 4px;
+  }
+  .add-button {
+    width: 100%;
+  }
+  .cart-status {
+    min-height: 1.4em;
+    margin-top: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-muted);
+  }
+  .cart-status :global(a) {
+    color: var(--color-text);
+    text-underline-offset: 4px;
+  }
+  .product-facts {
+    margin: 0;
+  }
+  .product-facts div {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: var(--space-5);
+    padding-block: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .product-facts dt {
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+  }
+  .product-facts dd {
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .product-facts small {
+    color: var(--color-muted);
+  }
+  .practical-details {
+    display: grid;
+    gap: var(--space-6);
+    padding-top: var(--space-8);
+  }
+  .practical-details h2 {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    letter-spacing: 0;
+    font-weight: 650;
+    margin-bottom: var(--space-2);
+  }
+  .practical-details p {
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    line-height: 1.75;
+  }
+  .practical-details a {
+    color: var(--color-text);
+    text-underline-offset: 4px;
+  }
+  .related {
+    border-top: 1px solid var(--color-border);
+    padding-block: var(--space-section);
+  }
+  .related-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-5);
+    align-items: baseline;
+    margin-bottom: var(--space-10);
+  }
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8);
+    max-width: 900px;
+  }
+  @media (max-width: 850px) {
+    .product-grid {
+      grid-template-columns: 1fr;
+    }
+    .product-copy {
+      position: static;
+    }
+  }
+  @media (max-width: 650px) {
+    .related-heading {
+      display: block;
+    }
+    .related-heading a {
+      margin-top: var(--space-5);
+    }
+    .related-grid {
+      grid-template-columns: 1fr;
+    }
+  }
 </style>

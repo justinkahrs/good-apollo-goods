@@ -1,0 +1,133 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import StudioHeading from '../../../components/StudioHeading.astro';
+import { db } from '../../../server/db';
+import { packable } from '../../../server/orders';
+import { money } from '../../../server/domain';
+export const prerender = false;
+const filter = Astro.url.searchParams.get('filter') ?? 'to-pack';
+const all = await db().order.findMany({
+  where:
+    filter === 'all'
+      ? {}
+      : filter === 'to-pack'
+        ? {
+            paymentStatus: 'paid',
+            fulfillmentStatus: 'unfulfilled',
+            canceledAt: null,
+          }
+        : {},
+  include: { items: true, shipment: true, refunds: true, dispute: true },
+  orderBy: { createdAt: 'desc' },
+  take: 200,
+});
+const orders = all.filter((o) =>
+  filter === 'to-pack'
+    ? packable(o)
+    : filter === 'attention'
+      ? Boolean(
+          o.attention ||
+          (o.dispute &&
+            !['won', 'warning_closed'].includes(o.dispute.status)) ||
+          o.paymentStatus === 'processing',
+        )
+      : true,
+);
+---
+
+<AdminLayout title="Orders" studioPage>
+  <StudioHeading
+    section="Orders"
+    title="From studio to doorstep."
+    description="Paid orders ready to pack, all in one place. Review anything needing attention before shipping."
+  />
+  <form class="studio-toolbar orders-toolbar">
+    <label>
+      <span id="filter-label">Show</span>
+      <select name="filter" aria-labelledby="filter-label">
+        <option value="to-pack" selected={filter === 'to-pack'}>
+          Paid / To pack
+        </option>
+        <option value="attention" selected={filter === 'attention'}>
+          Needs attention
+        </option>
+        <option value="all" selected={filter === 'all'}>
+          All orders
+        </option>
+      </select>
+    </label>
+    <button>Show orders</button>
+  </form>
+  <div class="studio-view-summary">
+    <p class="studio-meta">
+      {orders.length} {orders.length === 1 ? 'order' : 'orders'} in this view
+      {all.length === 200 && ' · First 200 results'}
+    </p>
+    <a href="/api/admin/export/?kind=orders">Export orders</a>
+  </div>
+  <div>
+    {orders.map((o) => (
+      <article class="studio-record studio-order-row">
+        <div>
+          <h2>
+            <a href={`/admin/orders/${o.id}/`}>Order #{o.number}</a>
+          </h2>
+          <p class="studio-meta">
+            {o.createdAt.toLocaleDateString('en-US')} ·{' '}
+            {o.items.reduce((s, i) => s + i.quantity, 0)}{' '}
+            {o.items.reduce((s, i) => s + i.quantity, 0) === 1
+              ? 'piece'
+              : 'pieces'}{' '}
+            · {o.customerName || 'Checkout not completed'}
+          </p>
+          <div class="studio-order-status">
+            <span class="studio-pill" data-state={o.paymentStatus}>
+              {o.paymentStatus[0].toUpperCase() + o.paymentStatus.slice(1)}
+            </span>
+            <span class="studio-pill">
+              {o.fulfillmentStatus === 'unfulfilled'
+                ? 'Not shipped'
+                : 'Shipped'}
+            </span>
+            {o.canceledAt && <span class="studio-pill">Canceled</span>}
+            {o.refundedCents > 0 && (
+              <span class="studio-pill">Refunded {money(o.refundedCents)}</span>
+            )}
+          </div>
+          {o.attention && <p class="notice">{o.attention}</p>}
+          {o.dispute && <p class="studio-meta">Dispute: {o.dispute.status}</p>}
+        </div>
+        <div class="studio-record-value">
+          <span class="studio-price">{money(o.totalCents)}</span>
+          <div class="studio-links">
+            <a href={`/admin/orders/${o.id}/`}>View order</a>
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+  {!orders.length && (
+    <section class="studio-empty">
+      <h2>
+        {filter === 'to-pack'
+          ? 'Nothing to pack right now.'
+          : filter === 'attention'
+            ? 'No orders needing attention.'
+            : 'Your first order is still ahead.'}
+      </h2>
+      <p>
+        No orders in this view.{' '}
+        {filter === 'to-pack'
+          ? 'Orders appear here after payment is confirmed and they’re ready for a complete shipment.'
+          : filter === 'attention'
+            ? 'Orders with payment or fulfillment issues will appear here for review.'
+            : 'Once customers check out, their orders and payment status will appear here.'}
+      </p>
+      {filter !== 'all' && (
+        <a class="action" href="/admin/orders/?filter=all">
+          View all orders
+        </a>
+      )}
+    </section>
+  )}
+</AdminLayout>

@@ -1,0 +1,274 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import StudioHeading from '../../components/StudioHeading.astro';
+import { db } from '../../server/db';
+import { healthReport } from '../../server/maintenance';
+import { salesReady } from '../../server/config';
+export const prerender = false;
+const settings = await db().storeSettings.findUniqueOrThrow({
+    where: { id: 'store' },
+  }),
+  health = await healthReport();
+const mail = await db().emailOutbox.findMany({
+  where: { status: { not: 'delivered' } },
+  select: { kind: true, status: true, attempts: true, createdAt: true },
+  take: 30,
+  orderBy: { createdAt: 'asc' },
+});
+---
+
+<AdminLayout title="Settings & help" studioPage>
+  <StudioHeading
+    section="Settings & help"
+    title="A well-kept studio."
+    description="Set the pace for your shop, check its health and find a little help when you need it."
+  />
+  <div class="studio-settings-grid">
+    <form
+      class="studio-settings-form"
+      data-settings
+      data-revision={settings.revision}
+    >
+      <section class="studio-section">
+        <h2>Shipping & timing</h2>
+        <p>
+          Changes apply to new checkouts. Existing orders keep their original
+          details.
+        </p>
+        <div class="grid">
+          <label>
+            Flat U.S. shipping in dollars
+            <input
+              name="shipping"
+              inputmode="decimal"
+              value={(settings.shippingCents / 100).toFixed(2)}
+              required
+            />
+          </label>
+          <label>
+            Processing window
+            <input
+              name="processingWindow"
+              value={settings.processingWindow}
+              required
+              maxlength="120"
+            />
+          </label>
+        </div>
+        <p>
+          One rate covers every U.S. destination, including Alaska and Hawaii.
+          Carrier delivery time is separate; tracking is emailed when shipped.
+        </p>
+      </section>
+      <details class="studio-disclosure" open={!settings.taxConfigured}>
+        <summary>
+          Tax configuration
+          {!settings.taxConfigured && (
+            <span class="studio-meta">Verification needed</span>
+          )}
+        </summary>
+        <div class="stack studio-tax-fields">
+          <label class="check">
+            <input
+              type="checkbox"
+              name="taxEnabled"
+              checked={settings.taxEnabled}
+            />
+            Calculate applicable tax with Stripe automatic tax
+          </label>
+          <label>
+            <span id="tax-decision-label">Tax configuration decision</span>
+            <textarea
+              name="taxDecision"
+              aria-labelledby="tax-decision-label"
+              aria-describedby="tax-decision-help"
+              minlength="10"
+              maxlength="1000"
+              required
+            >{settings.taxDecision}</textarea>
+          </label>
+          <p id="tax-decision-help" class="studio-meta">
+            Record the Stripe registration/configuration verification, or the
+            reason automatic tax is disabled. This setting does not register
+            your business.
+          </p>
+          <label class="check">
+            <input
+              type="checkbox"
+              name="taxConfigured"
+              checked={settings.taxConfigured}
+            />
+            I verified Stripe’s tax configuration and recorded the decision
+            above
+          </label>
+        </div>
+      </details>
+      <div>
+        <button class="primary" type="submit">
+          Save store settings
+        </button>
+      </div>
+      <p role="status" data-status></p>
+    </form>
+    <aside class="studio-settings-aside">
+      <section class="studio-side">
+        <h2>Store health</h2>
+        <dl class="studio-health-list">
+          <div>
+            <dt>New checkout</dt>
+            <dd>
+              {salesReady() && settings.taxConfigured && health.ready
+                ? 'Enabled'
+                : 'Disabled'}
+            </dd>
+          </div>
+          <div>
+            <dt>Maintenance</dt>
+            <dd>{health.maintenanceStale ? 'Needs attention' : 'Current'}</dd>
+          </div>
+          <div>
+            <dt>Older checkout holds</dt>
+            <dd>{health.overdueHolds}</dd>
+          </div>
+          <div>
+            <dt>Repeated email failures</dt>
+            <dd>{health.failedMail}</dd>
+          </div>
+          <div>
+            <dt>Stock differences</dt>
+            <dd>{health.drift.length}</dd>
+          </div>
+        </dl>
+        <p class="studio-meta">
+          Last successful maintenance:{' '}
+          {health.lastSucceededAt?.toLocaleString('en-US') ??
+            'Not yet recorded'}
+        </p>
+        <button type="button" data-maintenance>
+          Reconcile payments & retry email
+        </button>
+        <p role="status" data-maintenance-status></p>
+        {mail.length > 0 && (
+          <details class="studio-disclosure">
+            <summary>Pending notifications</summary>
+            {mail.map((m) => (
+              <p class="studio-meta">
+                {m.kind} · {m.status} · {m.attempts} attempts ·{' '}
+                {m.createdAt.toLocaleString('en-US')}
+              </p>
+            ))}
+          </details>
+        )}
+      </section>
+      <section class="studio-account">
+        <h2>Your account</h2>
+        <p class="studio-meta">
+          Verification lasts eight hours in this browser. Keep recovery codes
+          private, and sign out when you finish on a shared device.
+        </p>
+        <button type="button" data-revoke>
+          Sign out other devices
+        </button>
+        <p role="status" data-revoke-status></p>
+      </section>
+    </aside>
+  </div>
+  <section class="studio-guide">
+    <h2>A little help for the everyday.</h2>
+    <div class="studio-guide-grid">
+      <div>
+        <h3>Add a product</h3>
+        <p>
+          Products → Add a product. Add name, description and prices. Generate
+          sizes/colors if needed, save as Draft, then upload real photos.
+          Describe and order photos; the first visible photo is the cover. Count
+          stock on Inventory. Return to the product, choose Published and save.
+        </p>
+      </div>
+      <div>
+        <h3>Count inventory</h3>
+        <p>
+          Add a batch, remove in-person sales/consignment/damage, or set the
+          actual unsold count. Paid items waiting to pack are excluded. Held
+          stock stays protected until Stripe confirms payment or expiration.
+          Always record a reason.
+        </p>
+      </div>
+      <div>
+        <h3>Pack & ship</h3>
+        <p>
+          Orders defaults to Paid / To pack. Open the order and print the
+          packing slip. Buy a label with the carrier, enter tracking and mark
+          the complete order shipped. The buyer gets an email. Review attention
+          orders before packing.
+        </p>
+      </div>
+      <div>
+        <h3>Resolve an order problem</h3>
+        <p>
+          All sales are final. For reviewed exceptions, cancel an unshipped
+          order or request a full/partial refund. Refunds change money only.
+          Restock only pieces physically present or returned and checked as
+          sellable. Disputes need a response in Stripe before their deadline.
+        </p>
+      </div>
+    </div>
+    <p class="studio-meta">
+      For account recovery or stock differences, contact the store developer.
+      See the repository’s operator and operations guides for support handoff
+      details.
+    </p>
+  </section>
+</AdminLayout>
+<script>
+  import { action, status, recoverForm } from '../../client/admin';
+  const form = document.querySelector<HTMLFormElement>('[data-settings]')!,
+    clear = recoverForm(form, 'gag-settings');
+  form.addEventListener(
+    'invalid',
+    (e) => {
+      (e.target as HTMLElement).closest('details')?.setAttribute('open', '');
+    },
+    true,
+  );
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(form)),
+      s = form.querySelector('[data-status]')!,
+      button = form.querySelector<HTMLButtonElement>('[type=submit]')!;
+    button.disabled = true;
+    try {
+      await action('settings.save', {
+        ...d,
+        revision: Number(form.dataset.revision),
+        taxEnabled: d.taxEnabled === 'on',
+        taxConfigured: d.taxConfigured === 'on',
+      });
+      clear();
+      location.reload();
+    } catch (error) {
+      status(s, (error as Error).message, error as Error);
+    } finally {
+      button.disabled = false;
+    }
+  });
+  for (const [button, scope, name] of [
+    ['[data-maintenance]', '[data-maintenance-status]', 'maintenance'],
+    ['[data-revoke]', '[data-revoke-status]', 'sessions.revoke'],
+  ])
+    document
+      .querySelector<HTMLButtonElement>(button)!
+      .addEventListener('click', async (e) => {
+        const b = e.target as HTMLButtonElement,
+          s = document.querySelector(scope)!;
+        b.disabled = true;
+        try {
+          await action(name, {});
+          status(s, 'Completed. Refresh to see the current status.');
+        } catch (error) {
+          status(s, (error as Error).message, error as Error);
+        } finally {
+          b.disabled = false;
+        }
+      });
+</script>

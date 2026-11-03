@@ -8,26 +8,27 @@ A warm editorial storefront for a small independent hat label. The palette, expr
 - `src/styles/global.css`: reset, accessibility defaults, Tailwind theme bridge, and shared component classes.
 - `src/components/`: reusable Astro components with locally scoped styles.
 - `/design-system/`: rendered examples of the actual tokens and components used by the storefront.
-- `src/data/products.ts`: typed hat catalog, audience categories, product details, sizing, availability, image imports, and USD formatting.
+- `src/server/catalog.ts` and PostgreSQL: current products, variants, verified images and available stock. `src/data/products.ts` is a draft import source only.
+- `src/styles/admin.css`: operator forms using the brand tokens, visible focus, labeled controls and 44px action targets.
 
 Do not duplicate color literals in component styles. Change semantic roles to retheme broadly; change a primitive to affect all roles mapped to it. Local sizing for distinctive art direction can remain in its component. Tailwind's base spacing maps to `--space-1`; named `--space-*` tokens define the explicit scale.
 
 ## Color
 
-| Role | Token | Use |
-| --- | --- | --- |
-| Text | `--color-text` | Headings, body, and labels |
-| Secondary text | `--color-muted` | Supporting copy, metadata |
-| Brand | `--color-brand` | Buttons, announcement, italic emphasis |
-| Brand hover | `--color-brand-hover` | Hovered primary actions |
-| Page | `--color-page` | Buttercream canvas and negative space |
-| Surface | `--color-surface` | Woven-flax supporting surfaces and quiet notices |
-| Raised surface | `--color-surface-raised` | Product badges |
-| Secondary | `--color-secondary` | Cornflower blue featured sections and major moments |
-| Accent | `--color-accent` | Soft-marigold decorative details |
-| Border | `--color-border` | Dividers and boundaries |
-| Focus | `--color-focus` | Keyboard focus on light surfaces |
-| Inverse focus | `--color-focus-inverse` | Keyboard focus on burgundy surfaces |
+| Role           | Token                    | Use                                                 |
+| -------------- | ------------------------ | --------------------------------------------------- |
+| Text           | `--color-text`           | Headings, body, and labels                          |
+| Secondary text | `--color-muted`          | Supporting copy, metadata                           |
+| Brand          | `--color-brand`          | Buttons, announcement, italic emphasis              |
+| Brand hover    | `--color-brand-hover`    | Hovered primary actions                             |
+| Page           | `--color-page`           | Buttercream canvas and negative space               |
+| Surface        | `--color-surface`        | Woven-flax supporting surfaces and quiet notices    |
+| Raised surface | `--color-surface-raised` | Product badges                                      |
+| Secondary      | `--color-secondary`      | Cornflower blue featured sections and major moments |
+| Accent         | `--color-accent`         | Soft-marigold decorative details                    |
+| Border         | `--color-border`         | Dividers and boundaries                             |
+| Focus          | `--color-focus`          | Keyboard focus on light surfaces                    |
+| Inverse focus  | `--color-focus-inverse`  | Keyboard focus on burgundy surfaces                 |
 
 Buttercream is the dominant background; cornflower blue is reserved for larger branded moments; woven flax supports quieter surfaces. Marigold is used only for small decorative details. Burgundy is the consistent action color, and dark plum is the default for text and high-contrast UI. Avoid gradients, strong shadows, or an abundance of bordered boxes. When changing colors, verify text contrast at 4.5:1 for regular text and focus indicators at 3:1 against their background.
 
@@ -48,7 +49,7 @@ Use small image corners for products. Reserve arched images for the hero/story. 
 - `Brand`: regular and large wordmark variants.
 - `Button`: primary/secondary; link or native button; optional arrow; disabled state only for buttons. Buttons default to `type="button"`.
 - `Header` / `Footer`: shared navigation, cart count, help links, and brand context.
-- `ProductCard`: image, audience, status, name, color, lining, price, and link to a static product page.
+- `ProductCard`: verified responsive image, audience, current availability, name, starting price and a stable product URL from `PublicProduct`.
 - `Collection`: shared presentation for All Hats, Adult, and Child category pages.
 - `PageHero`: reusable editorial heading block for information pages.
 - `Layout`: metadata, local fonts, skip link, main landmark, header, footer.
@@ -57,7 +58,7 @@ Movement is limited to subtle hover image scaling and small arrow/button feedbac
 
 ## Photography and launch content
 
-The current product image is a branded Coming Soon placeholder made specifically for Good Apollo Goods. It includes the wordmark as a watermark and patternmaking details, so unfinished photography still feels intentional. The entire site remains marked `noindex, nofollow` while placeholder imagery and draft commerce data are in use.
+Imported images remain blocked placeholders in private drafts. They cannot be published or sold. An empty public catalog uses the branded opening-soon presentation. Public discovery requires an approved live production release.
 
 Real photography should use warm natural light, faithful colors, and visible workmanship. Include real dimensions, materials, care instructions, and useful scale/context for each item before enabling sales. Do not infer these facts from an image.
 
@@ -66,9 +67,17 @@ Real photography should use warm natural light, faithful colors, and visible wor
 1. Adjust colors, type, spacing, and motion in `tokens.css`.
 2. Review `/design-system/` and the home and product routes.
 3. Change a reusable component to change every instance.
-4. Replace sample content in `products.ts`, keeping presentation out of the data.
-5. Run `npm run build` to type-check all Astro/TypeScript files and produce optimized static output.
+4. Manage merchandise in `/admin/`: descriptions, two option dimensions, prices, photos and explicit stock counts. No source edit or redeployment is required.
+5. Run source checks, relevant integration/browser tests and adapter builds. Catalog pages render on demand; informational pages can remain static.
 
 ## Launch boundary
 
-This is an intentional prelaunch site. It has a browser-local preview cart but no checkout, payment processing, email collection, or authoritative inventory. Before opening: replace placeholder imagery, confirm product data and prices, define final shipping and returns policies, verify contact information, connect the selected commerce provider, enforce inventory there, and update robots metadata. A static page or browser storage must never be used as the authoritative inventory ledger.
+This implementation remains prelaunch. PostgreSQL owns stock, reservations and immutable orders; hosted Stripe Checkout verifies payment. The browser cart stores variant identities and requested quantities. Real merchandise, production services, tax verification, sender delivery and primary-operator acceptance remain launch requirements in `docs/launch-checklist.md`.
+
+Operator forms preserve unsaved entries and reject stale revisions. Photo ordering uses keyboard-accessible buttons and describes the first visible photo as cover. Products and Inventory use open rows with cover photos, readable counts and restrained dividers. Orders distinguish payment, packing, refund and dispute states.
+
+Product detail pages show one featured photo with previous/next controls and a horizontally scrollable thumbnail rail. Thumbnails, arrow keys, and touch swipes navigate the gallery; variant-linked photos filter with the selected option. The markup keeps the full photo set visible if scripting is unavailable, and the gallery uses the catalog's responsive WebP derivatives without cropping the featured image.
+
+The product editor uses a quiet, open two-column workspace: name, description and fixed size/details on the left; one dollar price, available stock, visibility and save action in a flax-tinted sidebar. On phones the sidebar follows the content. Keep Fraunces headings, DM Sans controls, buttercream inputs, restrained dividers and burgundy actions. `src/styles/product-editor.css` scopes this presentation to the editor. **Offer sizes or colors** and **A little more detail** start folded, so an optionless piece requires no visible SKU or option fields. Variant generation, per-option prices, SKU overrides, stock thresholds, materials, care, tax category and stable URLs remain available through those sections. Photos stay private until a valid publication; saving a new draft opens its photo workflow. Shop pages automatically select an optionless product's one underlying stock identity.
+
+The remaining studio pages share `StudioHeading` and `src/styles/studio.css`, scoped to `.admin-main.studio-page` so production CSS ordering cannot override the workspace. Products puts cover, active available stock, visibility and price together; optionless products omit variant-count clutter. Inventory presents available, held and unsold counts in a soft flax strip, with stock adjustments folded until needed. Orders uses separate status badges and purposeful empty states; detail pages pair immutable purchased pieces with delivery/totals and keep exceptional actions folded. Settings groups shipping/timing, keeps unverified tax configuration expanded, places health/account tools alongside and gives the daily guide an open two-column layout. These layouts become one column on phones; filters, exports, audited changes and security remain available.

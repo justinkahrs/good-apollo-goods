@@ -1,0 +1,60 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { config } from '../../server/config';
+export const prerender = false;
+const e = config();
+const open = e.NEWSLETTER_ENABLED && e.NEWSLETTER_CONFIRMATION_DISPATCH_ENABLED;
+---
+
+<Layout
+  title="Good Apollo Goods newsletter"
+  description="Occasional notes from Good Apollo Goods."
+  privatePage
+>
+  <PageHero
+    eyebrow="Good Apollo Goods"
+    title="Notes from the studio."
+    intro="Occasional Good Apollo Goods news, new pieces, and studio notes. Newsletter updates are separate from order and account emails."
+  />
+  <section class="container newsletter-panel" aria-labelledby="newsletter-title">
+    {open ? (
+      <>
+        <h2 id="newsletter-title">Join the newsletter</h2>
+        <p>If the address can be subscribed, we’ll send a confirmation link. Buying something does not sign you up.</p>
+        <form data-newsletter-form action="/api/newsletter/signup" method="post">
+          <label for="newsletter-email">Email address</label>
+          <input id="newsletter-email" name="email" type="email" autocomplete="email" maxlength="320" required />
+          <label class="consent"><input name="consent" type="checkbox" value="yes" required /><span>I agree to receive the Good Apollo Goods newsletter. I can unsubscribe at any time.</span></label>
+          <button class="button button--primary" type="submit">Send me a confirmation link</button>
+          <p class="newsletter-status" data-newsletter-status role="status" aria-live="polite" tabindex="-1"></p>
+        </form>
+        <p class="newsletter-privacy">See the <a href="/privacy/">privacy policy</a> for how newsletter details are handled.</p>
+      </>
+    ) : (
+      <>
+        <h2 id="newsletter-title">Sign-ups are not open yet</h2>
+        <p>Newsletter signup is being prepared. Order, shipment, and account messages continue to work separately.</p>
+      </>
+    )}
+  </section>
+</Layout>
+
+<script>
+  import '../../client/newsletter';
+</script>
+
+<style>
+  .newsletter-panel { max-width: 780px; padding-block: var(--space-12) var(--space-section); }
+  h2 { font-size: var(--text-2xl); margin-bottom: var(--space-4); }
+  p { color: var(--color-muted); max-width: 62ch; }
+  form { display: grid; gap: var(--space-4); margin-top: var(--space-8); max-width: 34rem; }
+  label { font-weight: 550; }
+  input[type="email"] { min-height: 3rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-page); padding: .65rem .8rem; color: var(--color-text); font: inherit; }
+  .consent { display: flex; align-items: flex-start; gap: .75rem; font-size: var(--text-sm); font-weight: 400; }
+  .consent input { width: 1.15rem; height: 1.15rem; margin-top: .2rem; accent-color: var(--color-brand); flex: none; }
+  .button { width: fit-content; }
+  .newsletter-status { min-height: 1.5em; }
+  .newsletter-privacy { margin-top: var(--space-8); font-size: var(--text-sm); }
+  .newsletter-privacy a { text-underline-offset: 4px; }
+</style>

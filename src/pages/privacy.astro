@@ -2,7 +2,67 @@
 import Layout from '../layouts/Layout.astro';
 import PageHero from '../components/PageHero.astro';
 ---
-<Layout title="Privacy policy — Good Apollo Goods" description="Good Apollo Goods privacy policy.">
-  <PageHero eyebrow="Privacy" title="Privacy policy." intro="A plain-language summary of how information is handled when you visit or shop with Good Apollo Goods." />
-  <section class="container policy"><p class="policy-date">Last updated September 2026</p><h2>Information you provide</h2><p>When checkout and inquiry tools are active, Good Apollo Goods may receive the information needed to answer your message, fulfill an order, or provide customer support, such as your name, email, shipping address, and order details.</p><h2>How information is used</h2><p>Information is used only to operate the shop, complete purchases, communicate about orders or inquiries, and meet legal obligations. Good Apollo Goods does not sell personal information.</p><h2>Service providers</h2><p>Hosting, payment, shipping, and analytics providers may process limited information as needed to provide their services. Their own privacy terms also apply.</p><h2>Questions</h2><p>Email <a href="mailto:hello@goodapollogoods.com">hello@goodapollogoods.com</a> with privacy questions.</p></section>
+
+<Layout
+  title="Privacy policy — Good Apollo Goods"
+  description="Good Apollo Goods privacy policy."
+>
+  <PageHero
+    eyebrow="Privacy"
+    title="Privacy policy."
+    intro="A plain-language summary of how information is handled when you visit or shop with Good Apollo Goods."
+  />
+  <section class="container policy">
+    <p class="policy-date">Last updated September 2026</p>
+    <h2>Information you provide</h2>
+    <p>
+      When you order, Good Apollo Goods receives your name, email, shipping
+      address and order details to fulfill your purchase and provide support.
+      Stripe handles payment information through its hosted checkout. The studio
+      does not store your full card number. Messages you send to the studio are
+      used to answer your inquiry.
+    </p>
+    <h2>How information is used</h2>
+    <p>
+      Information is used only to operate the shop, complete purchases,
+      communicate about orders or inquiries, and meet legal obligations. Good
+      Apollo Goods does not sell personal information.
+    </p>
+    <h2>Service providers</h2>
+    <p>
+      Hosting, database, private photo storage, payment, email and shipping
+      providers process information needed to operate the shop. Their own
+      privacy terms also apply. Order records are kept for fulfillment, support
+      and required business records. Contact the studio about access to or
+      deletion of your information; some records may need to be retained.
+    </p>
+    <h2>Newsletter</h2>
+    <p>
+      Newsletter signup is optional and separate from purchases and store
+      accounts. If you choose to subscribe, Good Apollo Goods will use the
+      shared Mautic service and Google Workspace mail provider to manage your
+      confirmed newsletter subscription and send Good Apollo Goods newsletter
+      messages. A confirmation step is required before subscription. You can
+      withdraw newsletter permission through the preference link in a
+      newsletter; withdrawal does not affect order, shipment, sign-in or
+      support messages. A limited permission and withdrawal history is kept to
+      honor your choice and maintain the subscription audit. Contact
+      hello@goodapollogoods.com with newsletter privacy questions. The
+      newsletter feature is currently closed, and no subscriber list has been
+      imported.
+    </p>
+    <h2>Browser storage</h2>
+    <p>
+      The site saves your cart in your browser and uses a guest checkout cookie
+      to protect your order link. The operator area uses separate sign-in
+      cookies. Clearing your cookies can prevent access to your order status;
+      email the studio from your purchase email if you need help.
+    </p>
+    <h2>Questions</h2>
+    <p>
+      Email{' '}
+      <a href="mailto:hello@goodapollogoods.com">hello@goodapollogoods.com</a>{' '}
+      with privacy questions.
+    </p>
+  </section>
 </Layout>

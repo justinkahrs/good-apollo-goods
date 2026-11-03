@@ -1,0 +1,440 @@
+.admin-main.studio-page {
+  --studio-line: color-mix(in srgb, var(--color-border) 30%, transparent);
+  --studio-surface: color-mix(
+    in srgb,
+    var(--color-surface) 42%,
+    var(--color-page)
+  );
+}
+.admin-main.studio-page .studio-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 0.75rem 0 2.5rem;
+}
+.admin-main.studio-page .studio-eyebrow {
+  font-size: 0.875rem;
+  color: var(--color-brand);
+  margin-bottom: 0.75rem;
+}
+.admin-main.studio-page h1 {
+  font-size: clamp(2.5rem, 4.5vw, 3.5rem);
+  letter-spacing: -0.045em;
+  line-height: 1.1;
+  margin-bottom: 0.9rem;
+  text-wrap: balance;
+}
+.admin-main.studio-page .studio-intro {
+  max-width: 39rem;
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+}
+.admin-main.studio-page .studio-heading-action:empty {
+  display: none;
+}
+.admin-main.studio-page h2 {
+  font-size: 1.4rem;
+  letter-spacing: -0.025em;
+  margin: 0 0 0.65rem;
+}
+.admin-main.studio-page h3 {
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+.admin-main.studio-page label {
+  gap: 0.6rem;
+  font-size: 0.875rem;
+}
+.admin-main.studio-page input:not([type='checkbox']),
+.admin-main.studio-page select,
+.admin-main.studio-page textarea {
+  padding: 0.85rem 1rem;
+  background: var(--color-surface-raised);
+  border-color: color-mix(in srgb, var(--color-border) 60%, var(--color-page));
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 400;
+  transition: border-color var(--duration-fast);
+}
+.admin-main.studio-page :is(input, select, textarea):hover {
+  border-color: var(--color-brand);
+}
+.admin-main.studio-page input[type='checkbox'] {
+  accent-color: var(--color-brand);
+}
+.admin-main.studio-page input::placeholder {
+  color: var(--color-muted);
+}
+.admin-main.studio-page :is(button, .action) {
+  border-radius: var(--radius-pill);
+  transition:
+    color var(--duration-fast),
+    background var(--duration-fast),
+    border-color var(--duration-fast);
+}
+.admin-main.studio-page :is(button, .action):hover {
+  background: var(--studio-surface);
+  border-color: var(--color-brand);
+}
+.admin-main.studio-page .primary:hover {
+  background: var(--color-brand-hover);
+}
+.admin-main.studio-page :is(button, .action):active {
+  transform: translateY(1px);
+}
+.admin-main.studio-page .studio-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(10rem, 14rem) auto;
+  gap: 1rem;
+  align-items: end;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--studio-line);
+}
+.admin-main.studio-page .studio-toolbar.orders-toolbar {
+  grid-template-columns: minmax(12rem, 20rem) auto;
+  justify-content: start;
+}
+.admin-main.studio-page .studio-meta {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.admin-main.studio-page .studio-view-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-block: 1.25rem 0.5rem;
+}
+.admin-main.studio-page .studio-view-summary a,
+.admin-main.studio-page .studio-links a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+}
+.admin-main.studio-page .studio-record {
+  display: grid;
+  grid-template-columns: 6.25rem minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: center;
+  padding-block: 1.75rem;
+  border-bottom: 1px solid var(--studio-line);
+}
+.admin-main.studio-page .studio-photo {
+  width: 6.25rem;
+  height: 7.5rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  background: var(--studio-surface);
+}
+.admin-main.studio-page .studio-photo-empty {
+  display: grid;
+  place-items: center;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 0.5rem;
+}
+.admin-main.studio-page .studio-record h2 a,
+.admin-main.studio-page .studio-stock-card h2 a {
+  text-decoration: none;
+}
+.admin-main.studio-page h2 a:hover {
+  color: var(--color-brand);
+}
+.admin-main.studio-page .studio-links {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.admin-main.studio-page .studio-record-value {
+  align-self: start;
+  display: grid;
+  justify-items: end;
+  gap: 0.7rem;
+  padding-top: 0.2rem;
+}
+.admin-main.studio-page .studio-price {
+  font-size: 1.1rem;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.admin-main.studio-page .studio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: var(--studio-surface);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 550;
+  white-space: nowrap;
+}
+.admin-main.studio-page .studio-pill[data-state='published'],
+.admin-main.studio-page .studio-pill[data-state='paid'],
+.admin-main.studio-page .studio-pill[data-state='In stock'] {
+  background: color-mix(in srgb, var(--color-brand) 9%, var(--color-page));
+  color: var(--color-brand);
+}
+.admin-main.studio-page .studio-stock-card {
+  padding-block: 1.75rem;
+  border-bottom: 1px solid var(--studio-line);
+}
+.admin-main.studio-page .studio-stock-heading {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  gap: 1.25rem;
+  align-items: center;
+}
+.admin-main.studio-page .studio-stock-heading .studio-photo {
+  width: 4.5rem;
+  height: 5.5rem;
+}
+.admin-main.studio-page .studio-balances {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 1.25rem 1.5rem;
+  margin-top: 1.25rem;
+  gap: 1.25rem;
+  background: var(--studio-surface);
+  border-radius: 0.75rem;
+}
+.admin-main.studio-page .studio-balances dt {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+.admin-main.studio-page .studio-balances dd {
+  font-size: 1.5rem;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.4rem;
+}
+.admin-main.studio-page .studio-balances .available dd {
+  color: var(--color-brand);
+}
+.admin-main.studio-page .studio-disclosure {
+  border-top: 1px solid var(--studio-line);
+}
+.admin-main.studio-page .studio-disclosure > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-block: 1.1rem;
+  list-style: none;
+  font-size: 0.9375rem;
+  font-weight: 550;
+}
+.admin-main.studio-page .studio-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.admin-main.studio-page .studio-disclosure > summary::after {
+  content: '+';
+  color: var(--color-brand);
+  font-size: 1.4rem;
+  font-weight: 400;
+}
+.admin-main.studio-page .studio-disclosure[open] > summary::after {
+  content: '−';
+}
+.admin-main.studio-page .studio-disclosure > form {
+  padding-bottom: 1.25rem;
+}
+.admin-main.studio-page .studio-stock-card .studio-disclosure {
+  border-top: 0;
+}
+.admin-main.studio-page .studio-stock-card > .studio-links {
+  margin-top: 0.25rem;
+}
+.admin-main.studio-page .studio-empty {
+  padding: 3rem 1.5rem;
+  margin-top: 1rem;
+  text-align: center;
+  border-radius: 0.75rem;
+  background: var(--studio-surface);
+}
+.admin-main.studio-page .studio-empty h2 {
+  font-size: 1.75rem;
+}
+.admin-main.studio-page .studio-empty p {
+  max-width: 30rem;
+  margin: 0.5rem auto 1rem;
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+}
+.admin-main.studio-page .studio-order-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.admin-main.studio-page .studio-order-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 0.75rem;
+}
+.admin-main.studio-page .studio-settings-grid,
+.admin-main.studio-page .studio-order-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 19rem);
+  gap: 2.5rem;
+  align-items: start;
+}
+.admin-main.studio-page .studio-settings-form,
+.admin-main.studio-page .studio-section {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+.admin-main.studio-page .studio-section > h2 {
+  margin-bottom: 0;
+}
+.admin-main.studio-page .studio-settings-form > .studio-section {
+  padding-bottom: 0.5rem;
+}
+.admin-main.studio-page .studio-side {
+  display: grid;
+  gap: 1.25rem;
+  background: var(--studio-surface);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+.admin-main.studio-page .studio-settings-aside {
+  display: grid;
+  gap: 2rem;
+}
+.admin-main.studio-page .studio-account {
+  padding-block: 1.5rem;
+  border-top: 1px solid var(--studio-line);
+}
+.admin-main.studio-page .studio-account p {
+  margin-bottom: 1rem;
+}
+.admin-main.studio-page .studio-health-list {
+  display: grid;
+  gap: 0.8rem;
+}
+.admin-main.studio-page .studio-health-list > div {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.admin-main.studio-page .studio-health-list dt,
+.admin-main.studio-page .studio-health-list dd {
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.admin-main.studio-page .studio-health-list dd {
+  font-weight: 550;
+  text-align: right;
+}
+.admin-main.studio-page .studio-guide {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--studio-line);
+}
+.admin-main.studio-page .studio-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem 3rem;
+  margin-block: 1.5rem;
+}
+.admin-main.studio-page .studio-guide-grid h3 {
+  margin-bottom: 0.65rem;
+}
+.admin-main.studio-page .studio-guide-grid p,
+.admin-main.studio-page .studio-side > p,
+.admin-main.studio-page .studio-section > p {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+.admin-main.studio-page .studio-order-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--studio-line);
+}
+.admin-main.studio-page .studio-purchased-piece {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--studio-line);
+}
+.admin-main.studio-page .studio-purchased-piece p {
+  margin-top: 0.35rem;
+}
+.admin-main.studio-page .studio-totals {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  padding-block: 1.25rem;
+  border-block: 1px solid var(--studio-line);
+}
+.admin-main.studio-page .studio-totals dd {
+  text-align: right;
+}
+.admin-main.studio-page .studio-totals .total {
+  font-weight: 650;
+  font-size: 1rem;
+}
+.admin-main.studio-page .notice {
+  background: var(--studio-surface);
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-size: 0.875rem;
+}
+.admin-main.studio-page [role='status']:empty {
+  display: none;
+}
+@media (max-width: 850px) {
+  .admin-main.studio-page .studio-settings-grid,
+  .admin-main.studio-page .studio-order-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .admin-main.studio-page .studio-toolbar,
+  .admin-main.studio-page .studio-toolbar.orders-toolbar,
+  .admin-main.studio-page .studio-guide-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-main.studio-page .studio-record {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+  .admin-main.studio-page .studio-photo {
+    width: 4.5rem;
+    height: 5.5rem;
+  }
+  .admin-main.studio-page .studio-record-value {
+    grid-column: 2;
+    justify-items: start;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 0;
+  }
+  .admin-main.studio-page .studio-stock-heading {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .admin-main.studio-page .studio-stock-heading > .studio-pill {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .admin-main.studio-page .studio-balances {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  .admin-main.studio-page .studio-balances dd {
+    font-size: 1.35rem;
+  }
+  .admin-main.studio-page .studio-order-row {
+    grid-template-columns: 1fr;
+  }
+  .admin-main.studio-page .studio-order-row .studio-record-value {
+    grid-column: 1;
+  }
+}

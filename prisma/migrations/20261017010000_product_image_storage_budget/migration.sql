@@ -1,0 +1,2 @@
+ALTER TABLE "ProductImage"
+ADD COLUMN "storageBytes" BIGINT NOT NULL DEFAULT 0;

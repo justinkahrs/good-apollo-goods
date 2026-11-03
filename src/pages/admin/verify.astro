@@ -1,0 +1,156 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { adminSession } from '../../server/auth';
+export const prerender = false;
+let session;
+try {
+  session = await adminSession(Astro.request, false);
+} catch {
+  return Astro.redirect('/admin/sign-in/');
+}
+---
+
+<AdminLayout title="Verify access" authPage>
+  <section style="max-width:600px;margin:2rem auto">
+    <h1>Your studio key.</h1>
+    <p>
+      Authenticator verification lasts eight hours in this browser. Recovery
+      codes also work if your phone is unavailable.
+    </p>
+    {!session.user.twoFactorEnabled && (
+      <section class="panel stack">
+        <h2>Set up your authenticator</h2>
+        <p>
+          Use an authenticator app on your phone. Keep the recovery codes
+          somewhere private, separate from your phone.
+        </p>
+        <button type="button" data-enroll>
+          Set up authenticator
+        </button>
+        <div data-enrollment hidden>
+          <h3>Set up Google Authenticator manually</h3>
+          <p>
+            On this phone, open Google Authenticator, tap <strong>+</strong>,
+            choose <strong>Enter a setup key</strong>, and paste this key. Use
+            <strong>Time based</strong> and use this account name:
+            <strong>{session.user.email}</strong>. Then enter the six-digit code
+            shown by the app below.
+          </p>
+          <label>
+            Manual setup key
+            <input
+              data-setup-key
+              type="text"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              readonly
+            />
+          </label>
+          <button type="button" data-copy-key>Copy setup key</button>
+          <p data-copy-status role="status" aria-live="polite"></p>
+          <p>
+            Keep this key private. Anyone who has it can generate your
+            authenticator codes.
+          </p>
+          <img
+            data-qr
+            alt="Scan this code in your authenticator app"
+            width="240"
+            height="240"
+          />
+          <details>
+            <summary>Show the full setup address for another authenticator app</summary>
+            <label>
+              Full setup address<textarea data-uri readonly></textarea>
+            </label>
+          </details>
+          <h3>Save these recovery codes</h3>
+          <pre data-codes style="white-space:pre-wrap"></pre>
+          <p>Each code can be used once. Store them before continuing.</p>
+        </div>
+        <p role="status" data-enroll-status></p>
+      </section>
+    )}
+    <form class="panel stack" data-verify>
+      <label>
+        Authenticator or recovery code
+        <input name="code" autocomplete="one-time-code" required />
+      </label>
+      <label class="check">
+        <input type="checkbox" name="recovery" /> This is a recovery code
+      </label>
+      <button type="submit" class="primary">
+        Verify and open the studio
+      </button>
+      <p data-status role="status"></p>
+    </form>
+  </section>
+</AdminLayout>
+<script>
+  import { post } from '../../client/cart';
+  const enroll = document.querySelector<HTMLButtonElement>('[data-enroll]');
+  enroll?.addEventListener('click', async () => {
+    const s = document.querySelector('[data-enroll-status]')!;
+    enroll.disabled = true;
+    s.textContent = 'Preparing your authenticator setup…';
+    try {
+      const v = await post<{
+        totpURI: string;
+        manualSetupKey: string;
+        backupCodes: string[];
+        qrDataURL: string;
+      }>('/api/auth/two-factor/enable/', {});
+      document.querySelector<HTMLElement>('[data-enrollment]')!.hidden = false;
+      (document.querySelector('[data-setup-key]') as HTMLInputElement).value =
+        v.manualSetupKey;
+      (document.querySelector('[data-uri]') as HTMLTextAreaElement).value =
+        v.totpURI;
+      document.querySelector('[data-codes]')!.textContent =
+        v.backupCodes.join('\n');
+      (document.querySelector('[data-qr]') as HTMLImageElement).src =
+        v.qrDataURL;
+      const copy = document.querySelector<HTMLButtonElement>('[data-copy-key]')!;
+      copy.addEventListener('click', async () => {
+        const key = (document.querySelector('[data-setup-key]') as HTMLInputElement)
+          .value;
+        const status = document.querySelector('[data-copy-status]')!;
+        try {
+          await navigator.clipboard.writeText(key);
+          status.textContent = 'Setup key copied. Switch to your authenticator and paste it.';
+        } catch {
+          const input = document.querySelector('[data-setup-key]') as HTMLInputElement;
+          input.focus();
+          input.select();
+          status.textContent = 'Select and copy the key, then paste it into your authenticator.';
+        }
+      });
+      enroll.textContent = 'Authenticator setup ready';
+      s.textContent =
+        'Save your recovery codes. Add the setup key to your authenticator, then enter its six-digit code below.';
+    } catch (e) {
+      s.textContent = (e as Error).message;
+      enroll.disabled = false;
+    }
+  });
+  const form = document.querySelector<HTMLFormElement>('[data-verify]')!;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const d = new FormData(form),
+      s = form.querySelector('[data-status]')!,
+      b = form.querySelector('button')!;
+    b.disabled = true;
+    try {
+      await post('/api/admin/verify/', {
+        code: d.get('code'),
+        recovery: d.has('recovery'),
+      });
+      location.assign('/admin/');
+    } catch (e) {
+      s.textContent =
+        'Verification did not succeed. Check the code or use an unused recovery code.';
+    } finally {
+      b.disabled = false;
+    }
+  });
+</script>

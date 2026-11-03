@@ -1,0 +1,13 @@
+.env
+.env.*
+.local/
+.git/
+.netlify/
+.vercel/
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.astro/
+.generated/

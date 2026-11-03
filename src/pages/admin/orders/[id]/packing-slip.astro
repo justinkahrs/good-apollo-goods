@@ -1,0 +1,71 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import { db } from '../../../../server/db';
+import { packable } from '../../../../server/orders';
+export const prerender = false;
+const order = await db().order.findUnique({
+  where: { id: Astro.params.id },
+  include: { items: true, dispute: true, refunds: true },
+});
+if (!order || !packable(order))
+  return new Response('This order is not ready to pack.', { status: 409 });
+const a = order.address as Record<string, string>;
+---
+
+<AdminLayout title={`Packing slip #${order.number}`}>
+  <section class="slip">
+    <h1>Good Apollo Goods</h1>
+    <h2>Packing slip · Order #{order.number}</h2>
+    <p>
+      {order.customerName}
+      <br />
+      {a.line1}
+      <br />
+      {a.line2}
+      {a.line2 && <br />}
+      {a.city}, {a.state} {a.postal_code}
+      <br />
+      {a.country}
+    </p>
+    {order.items.map((i) => (
+      <p>
+        <strong>
+          {i.quantity} × {i.productName}
+        </strong>
+        <br />
+        {i.variantLabel} · {i.sku}
+      </p>
+    ))}
+    <p>Thank you for supporting small-batch goods, handmade in Grand Rapids.</p>
+    <button type="button" data-print>
+      Print packing slip
+    </button>
+  </section>
+</AdminLayout>
+<script>
+  document
+    .querySelector('[data-print]')
+    ?.addEventListener('click', () => window.print());
+</script>
+<style>
+  .slip {
+    display: grid;
+    gap: 1.5rem;
+    max-width: 700px;
+  }
+  @media print {
+    :global(.admin-header),
+    :global(.admin-nav),
+    :global(.skip-link),
+    button {
+      display: none !important;
+    }
+    :global(body) {
+      background: white;
+      color: black;
+    }
+    :global(.admin-main) {
+      padding: 0;
+    }
+  }
+</style>

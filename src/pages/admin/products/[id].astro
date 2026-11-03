@@ -1,0 +1,559 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { db } from '../../../server/db';
+import { productImageSelect } from '../../../server/catalog';
+import '../../../styles/product-editor.css';
+export const prerender = false;
+const isNew = Astro.params.id === 'new';
+const product = isNew
+  ? null
+  : await db().product.findUnique({
+      where: { id: Astro.params.id },
+      include: {
+        variants: { include: { stock: true }, orderBy: { createdAt: 'asc' } },
+        images: {
+          select: productImageSelect,
+          orderBy: { position: 'asc' },
+        },
+      },
+    });
+if (!isNew && !product) return Astro.redirect('/admin/');
+const defaults = product ?? {
+  name: '',
+  slug: '',
+  description: '',
+  category: 'hat',
+  audience: 'all',
+  materials: '',
+  care: '',
+  detail: '',
+  status: 'draft',
+  taxClass: 'hats',
+  revision: 1,
+  variants: [],
+  images: [],
+};
+const available = defaults.variants
+  .filter((v) => v.active)
+  .reduce(
+    (total, v) => total + (v.stock?.unsoldQty ?? 0) - (v.stock?.heldQty ?? 0),
+    0,
+  );
+const visibleImages = defaults.images.filter(
+  (image) => !image.archivedAt && !image.placeholder,
+);
+---
+
+<AdminLayout title={isNew ? 'Add a product' : `Edit ${product!.name}`}>
+  <div class="product-editor">
+    <a href="/admin/" class="editor-back">
+      ← Products
+    </a>
+    <div class="row editor-heading">
+      <div>
+        <h1>{isNew ? 'Add a good thing.' : product!.name}</h1>
+        <p>
+          {isNew
+            ? 'Give it a name, a story, and a price. Keep it private until you’re ready.'
+            : 'The details that make this piece yours. Saved edits update the shop.'}
+        </p>
+      </div>
+      <span class="editor-status">
+        {defaults.status === 'published'
+          ? 'In the shop'
+          : defaults.status === 'archived'
+            ? 'Archived'
+            : 'Private draft'}
+      </span>
+    </div>
+    <form class="product-form" data-product={JSON.stringify(defaults)}>
+      {product && <input type="hidden" name="id" value={product.id} />}
+      <input type="hidden" name="revision" value={defaults.revision} />
+      <div class="editor-main">
+        <section class="editor-section" aria-label="Product details">
+          <label>
+            Product name
+            <input
+              name="name"
+              value={defaults.name}
+              maxlength="150"
+              placeholder="e.g. The watermelon hat"
+              required
+            />
+          </label>
+          <label>
+            <span id="description-label">Description</span>
+            <textarea
+              name="description"
+              maxlength="8000"
+              placeholder="Tell its story. What’s it made from? What makes it special?"
+              aria-describedby="description-hint"
+              aria-labelledby="description-label"
+            >{defaults.description}</textarea>
+            <span class="editor-hint" id="description-hint">
+              Describe this exact piece: its shape, exterior, lining, and
+              handmade details.
+            </span>
+          </label>
+          <label>
+            <span id="details-label">
+              Size & details{' '}
+              <span class="optional" aria-hidden="true">
+                optional
+              </span>
+            </span>
+            <textarea
+              name="detail"
+              maxlength="4000"
+              placeholder="Large · diameter in cm · fit or other useful measurements"
+              aria-describedby="details-hint"
+              aria-labelledby="details-label"
+            >{defaults.detail}</textarea>
+            <span class="editor-hint" id="details-hint">
+              One fixed size or color belongs here. Add options below only if
+              shoppers have a choice.
+            </span>
+          </label>
+        </section>
+        {isNew ? (
+          <section class="editor-photo-empty" aria-label="Photos">
+            <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <rect
+                x="5"
+                y="8"
+                width="30"
+                height="25"
+                rx="4"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <circle
+                cx="14"
+                cy="16"
+                r="3"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+              <path
+                d="m6 29 10-9 6 5 6-7 7 9"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <div>
+              <h2>Photos come next.</h2>
+              <p>
+                Save this draft, then add your photos and choose a cover.
+                Nothing goes into the shop yet.
+              </p>
+            </div>
+          </section>
+        ) : (
+          <section class="editor-section" aria-label="Photo preview">
+            <h2>Photos</h2>
+            <div class="editor-photo-preview">
+              {visibleImages.slice(0, 4).map((image) => (
+                <img
+                  src={`/media/${image.id}/400/`}
+                  alt={image.alt || 'Photo awaiting description'}
+                />
+              ))}
+              <a href="#photos">
+                {visibleImages.length
+                  ? `Manage ${visibleImages.length} photo${visibleImages.length === 1 ? '' : 's'} →`
+                  : 'Add your photos →'}
+              </a>
+            </div>
+          </section>
+        )}
+        <details class="editor-disclosure" data-variant-settings>
+          <summary>
+            <span>
+              <strong>Offer sizes or colors</strong>
+              <span class="editor-hint" data-variant-summary>
+                Optional choices, each with its own price and stock.
+              </span>
+            </span>
+          </summary>
+          <div class="editor-section">
+            <p class="editor-hint">
+              Use options when a shopper can choose a different size or color. A
+              single piece already has everything it needs.
+            </p>
+            <details data-generator>
+              <summary>Generate sizes and colors</summary>
+              <div class="grid">
+                <label>
+                  First option name
+                  <input data-option-name="1" placeholder="Size" />
+                </label>
+                <label>
+                  Values, separated by commas
+                  <input
+                    data-option-values="1"
+                    placeholder="Small, Medium, Large"
+                  />
+                </label>
+                <label>
+                  Second option name (optional)
+                  <input data-option-name="2" placeholder="Color" />
+                </label>
+                <label>
+                  Values, separated by commas
+                  <input data-option-values="2" placeholder="Moss, Oat" />
+                </label>
+                <label>
+                  Default price in dollars
+                  <input
+                    data-default-price
+                    inputmode="decimal"
+                    placeholder="Enter your price"
+                  />
+                </label>
+              </div>
+              <button type="button" data-generate>
+                Generate variants
+              </button>
+              <p class="muted">
+                Matching variants keep their stock. Removed variants become
+                inactive.
+              </p>
+            </details>
+            <div data-variants class="cards editor-variant-list"></div>
+            <input type="hidden" name="variants" data-variants-json />
+            <button type="button" data-add-variant>
+              Add a variant
+            </button>
+          </div>
+        </details>
+        <details class="editor-disclosure" data-product-settings>
+          <summary>
+            <span>
+              <strong>A little more detail</strong>
+              <span class="editor-hint">
+                Materials, care, category, and the shop address.
+              </span>
+            </span>
+          </summary>
+          <div class="editor-section">
+            <div class="grid">
+              <label>
+                Category
+                <select name="category">
+                  {[
+                    ['hat', 'Hat'],
+                    ['accessory', 'Accessory'],
+                    ['other', 'Other'],
+                  ].map(([value, label]) => (
+                    <option
+                      value={value}
+                      selected={defaults.category === value}
+                    >
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Made for
+                <select name="audience">
+                  {[
+                    ['all', 'Everyone'],
+                    ['adult', 'Adults'],
+                    ['child', 'Children'],
+                  ].map(([value, label]) => (
+                    <option
+                      value={value}
+                      selected={defaults.audience === value}
+                    >
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label>
+              Materials
+              <textarea
+                name="materials"
+                maxlength="2000"
+                placeholder="Fabric, yarn, lining…"
+              >{defaults.materials}</textarea>
+            </label>
+            <label>
+              Care instructions
+              <textarea
+                name="care"
+                maxlength="4000"
+                placeholder="How to keep this piece looking good"
+              >{defaults.care}</textarea>
+            </label>
+            <label>
+              Web address
+              <input
+                name="slug"
+                value={defaults.slug}
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                maxlength="120"
+                readonly={Boolean(product?.publishedAt)}
+                required
+                aria-describedby="slug-hint"
+              />
+            </label>
+            <p class="editor-hint" id="slug-hint">
+              Created from the name. You can adjust it before the first
+              publication.
+            </p>
+            <label>
+              Tax category
+              <select name="taxClass">
+                {[
+                  ['hats', 'Hats'],
+                  ['clothing', 'Clothing & footwear'],
+                  ['children', 'Children’s clothing & footwear'],
+                  ['general', 'General physical goods'],
+                ].map(([value, label]) => (
+                  <option value={value} selected={defaults.taxClass === value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p class="editor-hint">
+              Choose the category that applies to this product. Verify
+              classifications before launch.
+            </p>
+            {product && (
+              <button type="button" data-duplicate={product.id}>
+                Duplicate as a draft
+              </button>
+            )}
+          </div>
+        </details>
+      </div>
+      <aside class="editor-sidebar" aria-label="Price and publishing">
+        <h2>In the shop</h2>
+        <div class="editor-price" data-single-product>
+          <label for="single-price">Price</label>
+          <div class="money-input">
+            <span aria-hidden="true">$</span>
+            <input
+              id="single-price"
+              data-single-price
+              inputmode="decimal"
+              placeholder="0.00"
+              required
+              aria-describedby="price-hint"
+            />
+          </div>
+          <p class="editor-hint" id="price-hint">
+            One price for this piece. Tax is added at checkout.
+          </p>
+        </div>
+        <p class="editor-hint" data-multiple-price hidden>
+          Prices are set for each option under{' '}
+          <button type="button" class="editor-text-button" data-open-variants>
+            Offer sizes or colors
+          </button>
+          .
+        </p>
+        <div class="editor-stock">
+          <div>
+            <span>Available to sell</span>
+            <strong>{available}</strong>
+          </div>
+          {product ? (
+            <a href={`/admin/inventory/?q=${encodeURIComponent(product.name)}`}>
+              Manage stock →
+            </a>
+          ) : (
+            <p>After saving, record how many pieces you have in Inventory.</p>
+          )}
+        </div>
+        <label>
+          <span id="visibility-label">Visibility</span>
+          <select name="status" aria-labelledby="visibility-label">
+            <option value="draft" selected={defaults.status === 'draft'}>
+              Draft — private
+            </option>
+            <option
+              value="published"
+              selected={defaults.status === 'published'}
+            >
+              Published — in the shop
+            </option>
+            <option value="archived" selected={defaults.status === 'archived'}>
+              Archived — kept for history
+            </option>
+          </select>
+        </label>
+        <p class="editor-hint">
+          Keep it as a draft while you add photos and count stock. Publishing
+          needs a description, price, and real photos with descriptions.
+        </p>
+        <div class="editor-save">
+          <button class="primary" type="submit">
+            Save product
+          </button>
+          <p role="status" data-product-status></p>
+        </div>
+      </aside>
+    </form>
+    <template id="variant-template">
+      <fieldset data-variant>
+        <legend data-variant-heading>Variant</legend>
+        <div class="grid">
+          <label>
+            Label
+            <input data-field="label" required />
+          </label>
+          <label>
+            Price in dollars
+            <input data-field="price" inputmode="decimal" required />
+          </label>
+        </div>
+        <details class="variant-advanced">
+          <summary>Option details & stock alerts</summary>
+          <div class="grid">
+            <label>
+              SKU (optional)
+              <input data-field="sku" maxlength="80" />
+            </label>
+            <label>
+              Low-stock alert at
+              <input data-field="threshold" type="number" min="0" max="1000" />
+            </label>
+            <label>
+              First option name
+              <input data-field="key1" />
+            </label>
+            <label>
+              First option value
+              <input data-field="value1" />
+            </label>
+            <label>
+              Second option name
+              <input data-field="key2" />
+            </label>
+            <label>
+              Second option value
+              <input data-field="value2" />
+            </label>
+          </div>
+          <label class="check">
+            <input data-field="active" type="checkbox" /> Active for new sales
+          </label>
+          <button type="button" data-remove-variant>
+            Remove variant
+          </button>
+        </details>
+      </fieldset>
+    </template>
+    {product && (
+      <section
+        id="photos"
+        class="editor-photos"
+        data-photos
+        data-product-id={product.id}
+        data-revision={product.revision}
+      >
+        <h2>Photos</h2>
+        <p>
+          JPEG, PNG or WebP, up to 10 MB each. Export HEIC photos as JPEG first.
+          Use up to 12 photos. Save product changes before uploading.
+        </p>
+        <label class="editor-upload">
+          Add photos
+          <input
+            type="file"
+            data-upload
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+          />
+        </label>
+        <progress data-progress max="100" value="0" hidden></progress>
+        <p role="status" data-upload-status></p>
+        <form data-photo-form>
+          <ol class="photo-list">
+            {product.images.map((image, index) => (
+              <li class="photo-row" data-photo-id={image.id}>
+                <div>
+                  {image.placeholder ? (
+                    <p class="muted">Placeholder</p>
+                  ) : (
+                    <img
+                      src={`/media/${image.id}/400/`}
+                      alt={image.alt || 'Photo awaiting description'}
+                    />
+                  )}
+                  <span class="muted" data-cover-label>
+                    {index === 0 ? 'Cover' : ''}
+                  </span>
+                </div>
+                <div class="stack">
+                  <label>
+                    Describe the photo (alt text)
+                    <input data-alt value={image.alt} maxlength="400" />
+                  </label>
+                  <label
+                    hidden={
+                      defaults.variants.length === 1 &&
+                      Object.keys(defaults.variants[0].options ?? {}).length ===
+                        0
+                    }
+                  >
+                    Show for variant
+                    <select data-variant-association>
+                      <option value="">All variants</option>
+                      {product.variants.map((v) => (
+                        <option
+                          value={v.id}
+                          selected={image.variantId === v.id}
+                        >
+                          {v.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label class="check">
+                    <input
+                      data-archive
+                      type="checkbox"
+                      checked={Boolean(image.archivedAt)}
+                    />{' '}
+                    Archived / staged (hidden from shop)
+                  </label>
+                  <div class="actions">
+                    <button
+                      type="button"
+                      data-up
+                      aria-label="Move photo earlier"
+                    >
+                      Move up
+                    </button>
+                    <button
+                      type="button"
+                      data-down
+                      aria-label="Move photo later"
+                    >
+                      Move down
+                    </button>
+                    <button type="button" data-cover>
+                      Make cover
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <button class="primary" type="submit">
+            Save photos & order
+          </button>
+          <p role="status" data-photo-status></p>
+        </form>
+      </section>
+    )}
+  </div>
+</AdminLayout>
+<script src="../../../client/product-editor.ts"></script>

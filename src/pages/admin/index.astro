@@ -1,0 +1,136 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import StudioHeading from '../../components/StudioHeading.astro';
+import { money } from '../../server/domain';
+import { db } from '../../server/db';
+import { productInclude } from '../../server/catalog';
+export const prerender = false;
+const search = Astro.url.searchParams.get('q')?.slice(0, 100) ?? '';
+const status = Astro.url.searchParams.get('status') ?? 'all';
+const products = await db().product.findMany({
+  where: {
+    name: { contains: search, mode: 'insensitive' },
+    ...(status === 'all'
+      ? {}
+      : {
+          status: ['draft', 'published', 'archived'].includes(status)
+            ? status
+            : 'draft',
+        }),
+  },
+  include: productInclude,
+  orderBy: { updatedAt: 'desc' },
+  take: 200,
+});
+---
+
+<AdminLayout title="Products" studioPage>
+  <StudioHeading
+    section="Products"
+    title="Your small batch."
+    description="A home for every piece you make. Keep it private until the photos, price and stock are ready."
+  >
+    <a class="action primary" href="/admin/products/new/">
+      Add a product
+    </a>
+  </StudioHeading>
+  <form class="studio-toolbar">
+    <label>
+      Find a product
+      <input name="q" value={search} placeholder="Search by name" />
+    </label>
+    <label>
+      <span id="status-label">Show</span>
+      <select name="status" aria-labelledby="status-label">
+        {['all', 'draft', 'published', 'archived'].map((s) => (
+          <option value={s} selected={s === status}>
+            {s === 'all' ? 'All products' : s[0].toUpperCase() + s.slice(1)}
+          </option>
+        ))}
+      </select>
+    </label>
+    <button>Find</button>
+  </form>
+  <div class="studio-view-summary">
+    <p class="studio-meta">
+      {products.length} {products.length === 1 ? 'product' : 'products'} in this
+      view
+      {products.length === 200 && ' · First 200 results; narrow your search'}
+    </p>
+    <a href="/api/admin/export/?kind=catalog">Export catalog</a>
+  </div>
+  <div>
+    {products.map((p) => {
+      const active = p.variants.filter((v) => v.active);
+      const prices = active.map((v) => v.priceCents);
+      const cover = p.images.find((i) => i.verified && !i.placeholder);
+      const available = active.reduce(
+        (n, v) =>
+          n + Math.max(0, (v.stock?.unsoldQty ?? 0) - (v.stock?.heldQty ?? 0)),
+        0,
+      );
+      return (
+        <article class="studio-record">
+          {cover ? (
+            <img
+              class="studio-photo"
+              src={`/media/${cover.id}/400/`}
+              alt={cover.alt}
+              loading="lazy"
+            />
+          ) : (
+            <div class="studio-photo studio-photo-empty">No photo yet</div>
+          )}
+          <div>
+            <h2>
+              <a href={`/admin/products/${p.id}/`}>{p.name}</a>
+            </h2>
+            <p class="studio-meta">
+              {available} available · {p.images.length}{' '}
+              {p.images.length === 1 ? 'photo' : 'photos'}
+              {active.length > 1 ? ` · ${active.length} variants` : ''}
+            </p>
+            <div class="studio-links">
+              <a href={`/admin/products/${p.id}/`}>Edit product</a>
+              {p.status === 'published' && (
+                <a href={`/pieces/${p.slug}/`}>View listing</a>
+              )}
+            </div>
+          </div>
+          <div class="studio-record-value">
+            <span class="studio-pill" data-state={p.status}>
+              {p.status[0].toUpperCase() + p.status.slice(1)}
+            </span>
+            <span class="studio-price">
+              {prices.length
+                ? `${new Set(prices).size > 1 ? 'From ' : ''}${money(Math.min(...prices))}`
+                : 'No active price'}
+            </span>
+          </div>
+        </article>
+      );
+    })}
+  </div>
+  {!products.length && (
+    <section class="studio-empty">
+      <h2>
+        {search || status !== 'all'
+          ? 'No products in this view.'
+          : 'Your next piece starts here.'}
+      </h2>
+      <p>
+        {search || status !== 'all'
+          ? 'Try another name or choose All products.'
+          : 'Start with a name, a description and a price. Photos and stock come next.'}
+      </p>
+      <a
+        class="action"
+        href={search || status !== 'all' ? '/admin/' : '/admin/products/new/'}
+      >
+        {search || status !== 'all'
+          ? 'Show all products'
+          : 'Add your first product'}
+      </a>
+    </section>
+  )}
+</AdminLayout>

@@ -1,0 +1,50 @@
+schema: spec-driven
+
+context: |
+  Good Apollo Goods sells small-batch physical merchandise, initially adult and
+  child hats. The owner's wife needs a simple product, variant, photo, description,
+  inventory, and order management interface without source edits or deployments.
+  The owner confirmed U.S.-only shipping, guest checkout, ready-to-ship stock, and
+  a simple Good Apollo admin using Vesper patterns for the initial launch.
+  Current code is Astro 7, TypeScript, Tailwind 4, npm, and Node 22.x. Hosting is
+  Vercel at goodapollogoods.com. Commerce is implemented locally with on-demand
+  Astro routes, PostgreSQL/Prisma catalog and append-only variant stock, Better
+  Auth/TOTP administration, private S3 photo processing, Stripe Checkout and durable
+  payment/email recovery. src/data/products.ts is a zero-stock draft import only.
+  Separate Good Apollo database/storage and shared Stripe routing are owner choices;
+  the primary admin is hello@annakahrs.com. The owner additionally authorized
+  justin@justinkahrs.com for local testing via ADDITIONAL_ADMIN_EMAILS; extra
+  admins default to none and retain all email/TOTP checks. Configurable defaults are $6.95 U.S.
+  shipping and 3–5 business day processing; tax requires recorded verification.
+  Sales remain disabled. Protected cloud services, real Stripe/inbox acceptance,
+  owner merchandise and timed primary-operator acceptance are incomplete. Preserve
+  brand tokens, URLs, accessibility and useful static help content. See README.md,
+  docs/design-system.md, docs/deployment.md and docs/launch-checklist.md for facts.
+  The sibling /Users/justin/Projects/vesper is a read-only commerce reference:
+  Stripe Checkout, Prisma/PostgreSQL, Better Auth admin plus TOTP, verified S3
+  uploads, transactional email, audits, and tests. Its products are digital, its
+  Inventory is download entitlements, and it has no physical variant stock or
+  shipping fulfillment. Reuse patterns deliberately, not its app or customer data.
+  Reuse only owner-authorized provider keys privately; never share database/auth/
+  session/webhook secrets. Its inspected .env Stripe key was empty.
+  OpenSpec artifacts and generated skills are repository docs intended for version
+  control. launch-physical-merchandise has 51 of 69 tasks verified locally; retain
+  unchecked external/owner/release gates. Distinguish observed implementation,
+  proposed behavior, assumptions and owner launch decisions.
+
+rules:
+  proposal:
+    - Include launch scope, explicit assumptions, non-goals, and measurable success.
+    - Name capability directories that exactly match the delta specs.
+  specs:
+    - Define observable requirements with concrete happy-path and failure scenarios.
+    - Cover operator usability, server authority, stock concurrency, and recovery.
+  design:
+    - Ground reuse and replacement decisions in specific current and Vesper files.
+    - Specify reservation, payment, fulfillment, refund, and image lifecycle behavior.
+    - Compare simple custom admin with hosted commerce and document the choice.
+    - Cite primary documentation for externally verified integration constraints.
+  tasks:
+    - Order actionable tasks by dependencies and map them to capability requirements.
+    - Include operator acceptance, adversarial checkout tests, and launch evidence.
+    - Keep implementation and launch tasks unchecked until actually completed.

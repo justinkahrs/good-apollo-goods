@@ -1,0 +1,348 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import StudioHeading from '../../../components/StudioHeading.astro';
+import { db } from '../../../server/db';
+import { money } from '../../../server/domain';
+import { packable } from '../../../server/orders';
+export const prerender = false;
+const order = await db().order.findUnique({
+  where: { id: Astro.params.id },
+  include: { items: true, shipment: true, refunds: true, dispute: true },
+});
+if (!order) return Astro.redirect('/admin/orders/');
+const address = order.address as {
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+} | null;
+---
+
+<AdminLayout title={`Order #${order.number}`} studioPage>
+  <a href="/admin/orders/">← Orders</a>
+  <StudioHeading
+    section="Order details"
+    title={`Order #${order.number}`}
+    description={`Created ${order.createdAt.toLocaleString('en-US')}`}
+  />
+  <p>
+    {order.paymentStatus} · {order.fulfillmentStatus}
+    {order.canceledAt ? ' · Canceled' : ''} · Created{' '}
+    {order.createdAt.toLocaleString('en-US')}
+  </p>
+  {order.attention && <p class="notice">{order.attention}</p>}
+  <div class="studio-order-grid">
+    <section class="studio-section">
+      <h2>Purchased pieces</h2>
+      {order.items.map((i) => (
+        <div class="studio-purchased-piece">
+          <h3>
+            {i.quantity} × {i.productName}
+          </h3>
+          <p>
+            {i.variantLabel} · {i.sku}
+          </p>
+          <p>
+            {money(i.unitPriceCents)} each · {money(i.lineTotalCents)}
+          </p>
+        </div>
+      ))}
+    </section>
+    <section class="studio-side">
+      <h2>Delivery & totals</h2>
+      <p>
+        {order.customerName}
+        <br />
+        {address?.line1}
+        <br />
+        {address?.line2}
+        {address?.line2 && <br />}
+        {address?.city}, {address?.state} {address?.postal_code}
+        <br />
+        {address?.country}
+      </p>
+      <p>{order.email}</p>
+      <dl class="studio-totals">
+        <dt>Subtotal</dt>
+        <dd>{money(order.subtotalCents)}</dd>
+        <dt>Shipping</dt>
+        <dd>{money(order.shippingCents)}</dd>
+        <dt>Tax</dt>
+        <dd>{money(order.taxCents)}</dd>
+        <dt class="total">Total</dt>
+        <dd class="total">{money(order.totalCents)}</dd>
+        <dt>Refunded</dt>
+        <dd>{money(order.refundedCents)}</dd>
+      </dl>
+      <p>
+        Processing:{' '}
+        {
+          (order.settingsSnapshot as { processingWindow: string })
+            .processingWindow
+        }
+      </p>
+    </section>
+  </div>
+  {packable(order) && (
+    <section class="studio-section studio-order-section">
+      <h2>Pack & ship the complete order</h2>
+      <p>
+        Buy your shipping label with the carrier, then enter tracking here. This
+        action sends one shipment email and does not change stock.
+      </p>
+      <a
+        class="action"
+        href={`/admin/orders/${order.id}/packing-slip/`}
+        target="_blank"
+        rel="noopener"
+      >
+        Print packing slip
+      </a>
+      <form
+        class="grid"
+        data-order-action="order.ship"
+        data-order-id={order.id}
+        data-revision={order.revision}
+      >
+        <label>
+          Carrier
+          <select name="carrier">
+            {['USPS', 'UPS', 'FedEx', 'DHL'].map((c) => (
+              <option>{c}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Tracking number
+          <input name="trackingNumber" required minlength="6" maxlength="80" />
+        </label>
+        <button class="primary" type="submit">
+          Mark complete order shipped
+        </button>
+        <p role="status" data-status></p>
+      </form>
+    </section>
+  )}
+  {order.shipment && (
+    <section class="studio-section studio-order-section">
+      <h2>Shipment</h2>
+      <p>
+        {order.shipment.carrier} · {order.shipment.trackingNumber} ·{' '}
+        {order.shipment.shippedAt.toLocaleString('en-US')}
+      </p>
+      <a
+        href={order.shipment.trackingUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Track shipment
+      </a>
+    </section>
+  )}
+  {order.dispute && (
+    <section class="notice">
+      <h2>Payment dispute</h2>
+      <p>
+        {order.dispute.status} · {order.dispute.reason}
+      </p>
+      <p>
+        Evidence deadline:{' '}
+        {order.dispute.deadline?.toLocaleString('en-US') ?? 'See Stripe'}
+      </p>
+      <a
+        href={`https://dashboard.stripe.com/${process.env.STRIPE_SECRET_KEY?.includes('_test_') ? 'test/' : ''}disputes/${order.dispute.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Review dispute in Stripe
+      </a>
+      <p>
+        Resolve evidence in Stripe. A dispute does not return merchandise to
+        stock.
+      </p>
+    </section>
+  )}
+  {order.paymentStatus === 'paid' && (
+    <section class="studio-section studio-order-section">
+      <h2>Exceptional order changes</h2>
+      <p>
+        All sales are final. Use these tools for reviewed order problems.
+        Refunding money and restocking merchandise are separate actions.
+      </p>
+      {!order.shipment && !order.canceledAt && (
+        <details class="studio-disclosure">
+          <summary>Cancel this unshipped order</summary>
+          <form
+            class="stack"
+            data-order-action="order.cancel"
+            data-order-id={order.id}
+            data-revision={order.revision}
+          >
+            <label>
+              Reason
+              <input name="reason" required minlength="3" maxlength="300" />
+            </label>
+            <button type="submit">Cancel order (inventory unchanged)</button>
+            <p role="status" data-status></p>
+          </form>
+        </details>
+      )}
+      <details class="studio-disclosure">
+        <summary>Request a full or partial refund</summary>
+        <form
+          class="stack"
+          data-order-action="order.refund"
+          data-order-id={order.id}
+        >
+          <label>
+            Amount in dollars
+            <input
+              name="amount"
+              inputmode="decimal"
+              value={((order.totalCents - order.refundedCents) / 100).toFixed(
+                2,
+              )}
+              required
+            />
+          </label>
+          <label>
+            Reason
+            <input name="reason" required minlength="3" maxlength="300" />
+          </label>
+          <button type="submit">Request refund (inventory unchanged)</button>
+          <p role="status" data-status></p>
+        </form>
+      </details>
+      {order.refunds.map((r) => (
+        <p>
+          {money(r.amountCents)} · {r.status} · {r.reason}
+        </p>
+      ))}
+      {(order.canceledAt || order.shipment) && (
+        <details class="studio-disclosure">
+          <summary>Restock physically present, sellable pieces</summary>
+          <form
+            class="stack"
+            data-order-action="order.restock"
+            data-order-id={order.id}
+          >
+            <label>
+              Item
+              <select name="itemId">
+                {order.items.map((i) => (
+                  <option value={i.id}>
+                    {i.productName} / {i.variantLabel} —{' '}
+                    {i.quantity - i.restockedQty} eligible
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Number of pieces
+              <input name="quantity" type="number" min="1" required />
+            </label>
+            <label>
+              Where are the pieces?
+              <select name="presence">
+                {order.shipment ? (
+                  <option value="return_received">
+                    Returned parcel received
+                  </option>
+                ) : (
+                  <option value="unshipped_present">
+                    Unshipped cancellation still in studio
+                  </option>
+                )}
+              </select>
+            </label>
+            <label class="check">
+              <input type="checkbox" name="condition" required /> I have these
+              pieces and checked that they are sellable
+            </label>
+            <label>
+              Reason
+              <input name="reason" required minlength="3" maxlength="300" />
+            </label>
+            <button type="submit">Add these pieces back to stock</button>
+            <p role="status" data-status></p>
+          </form>
+        </details>
+      )}
+    </section>
+  )}
+  <div class="studio-links studio-order-section">
+    <a href={`/admin/history/?order=${order.id}`}>Order audit history</a>
+  </div>
+</AdminLayout>
+<script>
+  import {
+    action,
+    status,
+    recoverForm,
+    persistentOperation,
+  } from '../../../client/admin';
+  document
+    .querySelectorAll<HTMLFormElement>('[data-order-action]')
+    .forEach((form) => {
+      const operation = persistentOperation(
+          'order:' + form.dataset.orderId + ':' + form.dataset.orderAction,
+        ),
+        clear = recoverForm(
+          form,
+          'gag-order:' + form.dataset.orderId + ':' + form.dataset.orderAction,
+        );
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const d = Object.fromEntries(new FormData(form)),
+          s = form.querySelector('[data-status]')!,
+          b = form.querySelector<HTMLButtonElement>('[type=submit]')!;
+        let amountCents: number | undefined;
+        if (d.amount) {
+          const match = /^(0|[1-9]\d{0,4})(\.\d{1,2})?$/.exec(String(d.amount));
+          if (!match) {
+            status(s, 'Enter dollars with at most two decimal places.');
+            return;
+          }
+          const [a, f = ''] = String(d.amount).split('.');
+          amountCents = Number(a) * 100 + Number(f.padEnd(2, '0'));
+        }
+        b.disabled = true;
+        try {
+          const result = await action<{ status?: string }>(
+            form.dataset.orderAction!,
+            {
+              ...d,
+              orderId: form.dataset.orderId,
+              revision: Number(form.dataset.revision),
+              operationKey: operation.get(d),
+              amountCents,
+              quantity: Number(d.quantity),
+              condition: d.condition === 'on',
+            },
+          );
+          if (
+            result.status &&
+            ['pending', 'requested', 'failed'].includes(result.status)
+          ) {
+            status(
+              s,
+              'Refund status: ' +
+                result.status +
+                '. It has not been reported as successful. Refresh for updates.',
+            );
+            return;
+          }
+          clear();
+          operation.clear();
+          location.reload();
+        } catch (error) {
+          operation.rejected(error);
+          status(s, (error as Error).message, error as Error);
+        } finally {
+          b.disabled = false;
+        }
+      });
+    });
+</script>

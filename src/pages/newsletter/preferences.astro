@@ -1,0 +1,33 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PageHero from '../../components/PageHero.astro';
+export const prerender = false;
+const token = Astro.url.searchParams.get('token') ?? '';
+const validShape = token.length >= 40 && token.length <= 100;
+---
+
+<Layout title="Newsletter preferences — Good Apollo Goods" description="Manage Good Apollo Goods newsletter preferences." privatePage>
+  <meta slot="head" name="referrer" content="no-referrer" />
+  <PageHero eyebrow="Good Apollo Goods" title="Newsletter preferences." intro="This page changes only Good Apollo Goods newsletter messages. Your orders, shipment updates, and account messages are separate." />
+  <section class="container preference-panel">
+    {validShape ? (
+      <form data-newsletter-form action="/api/newsletter/unsubscribe" method="post">
+        <input type="hidden" name="token" value={token} />
+        <p>Unsubscribe from Good Apollo Goods newsletter messages?</p>
+        <button class="button button--primary" type="submit">Unsubscribe</button>
+        <p data-newsletter-status role="status" aria-live="polite" tabindex="-1"></p>
+      </form>
+    ) : <p>This preference link is invalid or expired.</p>}
+  </section>
+</Layout>
+
+<script>
+  import '../../client/newsletter';
+</script>
+
+<style>
+  .preference-panel { max-width: 780px; padding-block: var(--space-12) var(--space-section); }
+  form { display: grid; justify-items: start; gap: var(--space-5); }
+  .button { width: fit-content; }
+  p { color: var(--color-muted); }
+</style>

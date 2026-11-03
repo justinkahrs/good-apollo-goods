@@ -1,40 +1,164 @@
 ---
-import { products, shopCategories, type ProductKind } from '../data/products';
+import { publicCatalog } from '../server/catalog';
 import ProductCard from './ProductCard.astro';
 
 interface Props {
-  kind?: ProductKind | 'all';
+  kind?: 'hat' | 'accessory' | 'other' | 'wearables' | 'art' | 'all';
   compact?: boolean;
 }
 const { kind = 'all', compact = false } = Astro.props;
-const visibleProducts = kind === 'all' ? products : products.filter((product) => product.kind === kind);
+let unavailable = false;
+const products = await publicCatalog().catch(() => {
+  unavailable = true;
+  return [];
+});
+const visibleProducts =
+  kind === 'all'
+    ? products
+    : products.filter((product) => {
+        if (kind === 'wearables') return product.category !== 'other';
+        if (kind === 'art') return product.category === 'other';
+        return product.category === kind;
+      });
+const shopCategories = [
+  { id: 'all', label: 'All pieces', href: '/shop/' },
+  { id: 'wearables', label: 'Wearables', href: '/shop/wearables/' },
+  { id: 'art', label: 'Art', href: '/shop/art/' },
+];
 const category = shopCategories.find((item) => item.id === kind);
 ---
-<section id="collection" class:list={['container collection', { compact }]} aria-labelledby="collection-title">
+
+<section
+  id="collection"
+  class:list={['container collection', { compact }]}
+  aria-labelledby="collection-title"
+>
   <div class="collection-heading">
-    <div><p class="eyebrow">The small batch</p><h2 id="collection-title" class="display-heading">{compact ? 'From the small batch.' : `${category?.label ?? 'All pieces'}.`}</h2></div>
-    <p>A small, evolving collection.<br />Made slowly in Grand Rapids.</p>
+    <div>
+      <p class="eyebrow">The small batch</p>
+      <h2 id="collection-title" class="display-heading">
+        {compact
+          ? 'From the small batch.'
+          : kind === 'all'
+            ? 'All pieces.'
+            : `${category?.label ?? 'All pieces'}.`}
+      </h2>
+    </div>
+    <p>
+      A small, evolving collection.
+      <br />
+      Made slowly in Grand Rapids.
+    </p>
   </div>
   <nav class="collection-filters" aria-label="Shop categories">
-    {shopCategories.map((category) => <a href={category.href} aria-current={category.id === kind ? 'page' : undefined}>{category.label}</a>)}
+    {shopCategories.map((category) => (
+      <a
+        href={category.href}
+        aria-current={category.id === kind ? 'page' : undefined}
+      >
+        {category.label}
+      </a>
+    ))}
   </nav>
-  {visibleProducts.length > 0 ? <div class="product-grid">{visibleProducts.map((product) => <ProductCard product={product} />)}</div> : <p class="empty-collection">New pieces coming soon.</p>}
-  {compact && <a class="text-link shop-all" href="/shop/">Shop the collection <span aria-hidden="true">↗</span></a>}
+  <div class="product-grid">
+    {visibleProducts.map((product) => (
+      <ProductCard product={product} />
+    ))}
+  </div>
+  {!visibleProducts.length && (
+    <p>
+      {unavailable
+        ? 'The collection is temporarily unavailable. Please check back shortly.'
+        : 'A new small batch is on its way. Check back for available pieces.'}
+    </p>
+  )}
+  {compact && (
+    <a class="text-link shop-all" href="/shop/">
+      Shop the collection <span aria-hidden="true">↗</span>
+    </a>
+  )}
 </section>
 <style>
-  .collection { padding-block: var(--space-section); }
-  .collection.compact { padding-top: var(--space-20); }
-  .collection-heading { display: flex; align-items: end; justify-content: space-between; gap: var(--space-6); }
-  .collection-heading h2 { margin-top: var(--space-3); }
-  .collection-heading > p { font-size: var(--text-sm); color: var(--color-muted); line-height: 1.7; }
-  .collection-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-10); }
-  .collection-filters a { min-height: 44px; display: inline-flex; align-items: center; padding: var(--space-2) var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-pill); font-size: var(--text-sm); text-decoration: none; transition: background var(--duration-fast), color var(--duration-fast), transform var(--duration-fast); }
-  .collection-filters a[aria-current='page'] { color: var(--color-page); background: var(--color-brand); border-color: var(--color-brand); }
-  .collection-filters a:hover:not([aria-current='page']) { background: var(--color-surface); }
-  .collection-filters a:active { transform: scale(.98); }
-  .product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-12) var(--space-6); margin-top: var(--space-8); }
-  .empty-collection { margin-top: var(--space-8); color: var(--color-muted); }
-  .shop-all { margin-top: var(--space-10); }
-  @media(min-width: 1000px) { .compact .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  @media(max-width: 700px) { .collection-heading { display: block; } .collection-heading > p { margin-top: var(--space-5); } .collection-heading br { display: none; } .product-grid { grid-template-columns: 1fr; } .collection-filters { margin-top: var(--space-6); } }
+  .collection {
+    padding-block: var(--space-section);
+  }
+  .collection.compact {
+    padding-top: var(--space-20);
+  }
+  .collection-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-6);
+  }
+  .collection-heading h2 {
+    margin-top: var(--space-3);
+  }
+  .collection-heading > p {
+    font-size: var(--text-sm);
+    color: var(--color-muted);
+    line-height: 1.7;
+  }
+  .collection-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-10);
+  }
+  .collection-filters a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-2) var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    transition:
+      background var(--duration-fast),
+      color var(--duration-fast),
+      transform var(--duration-fast);
+  }
+  .collection-filters a[aria-current='page'] {
+    color: var(--color-page);
+    background: var(--color-brand);
+    border-color: var(--color-brand);
+  }
+  .collection-filters a:hover:not([aria-current='page']) {
+    background: var(--color-surface);
+  }
+  .collection-filters a:active {
+    transform: scale(0.98);
+  }
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-12) var(--space-6);
+    margin-top: var(--space-8);
+  }
+  .shop-all {
+    margin-top: var(--space-10);
+  }
+  @media (min-width: 1000px) {
+    .compact .product-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 700px) {
+    .collection-heading {
+      display: block;
+    }
+    .collection-heading > p {
+      margin-top: var(--space-5);
+    }
+    .collection-heading br {
+      display: none;
+    }
+    .product-grid {
+      grid-template-columns: 1fr;
+    }
+    .collection-filters {
+      margin-top: var(--space-6);
+    }
+  }
 </style>

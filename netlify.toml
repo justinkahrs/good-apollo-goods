@@ -1,0 +1,14 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  GAG_NETLIFY = "true"
+
+[[redirects]]
+  from = "/*"
+  to = "https://n8n.senna-automation.com/_gag-origin/:splat"
+  status = 200
+  force = true
+  signed = "GAG_NETLIFY_PROXY_SECRET"

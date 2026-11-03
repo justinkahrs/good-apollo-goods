@@ -1,8 +1,44 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import PageHero from '../components/PageHero.astro';
+import { db } from '../server/db';
+import { money } from '../server/domain';
+export const prerender = false;
+const settings = await db()
+  .storeSettings.findUnique({ where: { id: 'store' } })
+  .catch(() => null);
 ---
-<Layout title="Shipping — Good Apollo Goods" description="Shipping information for Good Apollo Goods hats.">
-  <PageHero eyebrow="Help / Shipping" title="From the studio to you." intro="Every order ships from the Good Apollo Goods studio in Grand Rapids, Michigan." />
-  <section class="container info-grid"><h2>What to expect</h2><div><h3>Ready-to-ship pieces</h3><p>Good Apollo Goods is released in small batches. Ready-to-ship status appears on the product page, and final processing and delivery estimates will be shown at checkout.</p><h3>Rates and tracking</h3><p>Available services, shipping rates, and tracking details will be confirmed during checkout.</p></div></section>
+
+<Layout
+  title="Shipping — Good Apollo Goods"
+  description="Shipping information for Good Apollo Goods hats."
+>
+  <PageHero
+    eyebrow="Help / Shipping"
+    title="From the studio to you."
+    intro="Every order ships from the Good Apollo Goods studio in Grand Rapids, Michigan."
+  />
+  <section class="container info-grid">
+    <h2>What to expect</h2>
+    <div>
+      <h3>Ready-to-ship pieces</h3>
+      <p>
+        Good Apollo Goods ships ready-made pieces in small batches.{' '}
+        {settings
+          ? `Orders are processed in ${settings.processingWindow}.`
+          : 'Current processing and rates are temporarily unavailable.'}{' '}
+        Carrier transit time follows processing and depends on the destination;
+        it is not a guaranteed delivery date.
+      </p>
+      <h3>U.S. shipping and tracking</h3>
+      <p>
+        {settings
+          ? `${money(settings.shippingCents)} flat-rate shipping per order within the United States, including Alaska and Hawaii.`
+          : ''}{' '}
+        International shipping is not available. The shipping amount and
+        applicable tax are confirmed in Stripe before payment. We email tracking
+        when the complete order ships.
+      </p>
+    </div>
+  </section>
 </Layout>

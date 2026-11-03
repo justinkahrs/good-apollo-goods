@@ -1,0 +1,78 @@
+---
+import '@fontsource-variable/fraunces';
+import '@fontsource-variable/dm-sans';
+import '../styles/global.css';
+import '../styles/admin.css';
+import '../styles/studio.css';
+interface Props {
+  title: string;
+  authPage?: boolean;
+  studioPage?: boolean;
+}
+const { title, authPage = false, studioPage = false } = Astro.props;
+const nav = [
+  ['Products', '/admin/'],
+  ['Inventory', '/admin/inventory/'],
+  ['Orders', '/admin/orders/'],
+  ['Settings & help', '/admin/settings/'],
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>{title} — Good Apollo studio</title>
+    <link rel="icon" href="/favicon.svg" />
+  </head>
+  <body class="admin-body">
+    <a class="skip-link" href="#main">
+      Skip to content
+    </a>
+    <header class="admin-header">
+      <a href="/admin/" class="admin-brand">
+        Good Apollo <span>studio</span>
+      </a>
+      <a href="/shop/">View shop</a>
+      {!authPage && (
+        <button type="button" data-sign-out>
+          Sign out
+        </button>
+      )}
+    </header>
+    {!authPage && (
+      <nav class="admin-nav" aria-label="Studio">
+        {nav.map(([label, href]) => (
+          <a
+            href={href}
+            aria-current={
+              Astro.url.pathname === href ||
+              (href !== '/admin/' && Astro.url.pathname.startsWith(href)) ||
+              (href === '/admin/' &&
+                Astro.url.pathname.startsWith('/admin/products/'))
+                ? 'page'
+                : undefined
+            }
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+    )}
+    <main id="main" class:list={['admin-main', { 'studio-page': studioPage }]}>
+      <slot />
+    </main>
+  </body>
+</html>
+<script>
+  import { post } from '../client/cart';
+  document
+    .querySelector('[data-sign-out]')
+    ?.addEventListener('click', async () => {
+      await post('/api/auth/sign-out/', {});
+      location.assign('/admin/sign-in/');
+    });
+</script>

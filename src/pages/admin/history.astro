@@ -1,0 +1,51 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { db } from '../../server/db';
+export const prerender = false;
+const variant = Astro.url.searchParams.get('variant'),
+  order = Astro.url.searchParams.get('order');
+const movements = variant
+  ? await db().stockMovement.findMany({
+      where: { variantId: variant },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    })
+  : [];
+const audits = await db().audit.findMany({
+  where: variant ? { entityId: variant } : order ? { entityId: order } : {},
+  orderBy: { createdAt: 'desc' },
+  take: 200,
+});
+---
+
+<AdminLayout title="History">
+  <h1>Studio history.</h1>
+  <p>
+    Changes are recorded with their reason, time and actor. Stock entries are
+    retained permanently.
+  </p>
+  <div class="cards">
+    {movements.map((m) => (
+      <article class="card">
+        <h2>{m.reason}</h2>
+        <p>
+          Unsold {m.unsoldDelta > 0 ? '+' : ''}
+          {m.unsoldDelta} · Held {m.heldDelta > 0 ? '+' : ''}
+          {m.heldDelta}
+        </p>
+        <p class="muted">
+          {m.createdAt.toLocaleString('en-US')} ·{' '}
+          {m.actorId ? 'Operator' : 'Checkout reconciliation'}
+        </p>
+      </article>
+    ))}
+    {audits.map((a) => (
+      <article class="card">
+        <h2>{a.action}</h2>
+        <p>{a.createdAt.toLocaleString('en-US')}</p>
+        <p class="muted">Actor reference: {a.actorId}</p>
+        <pre style="white-space:pre-wrap;overflow-wrap:anywhere">{JSON.stringify(a.metadata,null,2)}</pre>
+      </article>
+    ))}
+  </div>
+</AdminLayout>

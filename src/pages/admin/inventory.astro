@@ -1,0 +1,297 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import StudioHeading from '../../components/StudioHeading.astro';
+import { db } from '../../server/db';
+import { stockDrift } from '../../server/stock';
+export const prerender = false;
+function stockState(v: {
+  active: boolean;
+  lowStockThreshold: number;
+  stock: { unsoldQty: number; heldQty: number } | null;
+}) {
+  const available = (v.stock?.unsoldQty ?? 0) - (v.stock?.heldQty ?? 0);
+  return !v.active
+    ? 'Inactive'
+    : available === 0
+      ? 'Sold out'
+      : available <= v.lowStockThreshold
+        ? 'Low stock'
+        : 'In stock';
+}
+const search = Astro.url.searchParams.get('q')?.slice(0, 100) ?? '',
+  filter = Astro.url.searchParams.get('filter') ?? 'all';
+const all = await db().variant.findMany({
+  where: {
+    product: { status: { not: 'archived' } },
+    OR: [
+      { sku: { contains: search, mode: 'insensitive' } },
+      { product: { name: { contains: search, mode: 'insensitive' } } },
+    ],
+  },
+  include: {
+    product: {
+      include: {
+        images: {
+          where: { archivedAt: null, verified: true, placeholder: false },
+          orderBy: { position: 'asc' },
+          take: 1,
+        },
+      },
+    },
+    stock: true,
+  },
+  orderBy: { sku: 'asc' },
+  take: 500,
+});
+const variants = all.filter((v) => {
+  const n = (v.stock?.unsoldQty ?? 0) - (v.stock?.heldQty ?? 0);
+  return filter === 'low'
+    ? n <= v.lowStockThreshold
+    : filter === 'sold-out'
+      ? n === 0
+      : true;
+});
+const drift = await stockDrift();
+const holds = await db().checkoutAttempt.findMany({
+  where: {
+    status: { in: ['uncertain', 'attention', 'processing'] },
+    createdAt: { lt: new Date(Date.now() - 3600000) },
+  },
+  include: { order: true },
+  take: 20,
+});
+---
+
+<AdminLayout title="Inventory" studioPage>
+  <StudioHeading
+    section="Inventory"
+    title="A place for every piece."
+    description="Know what’s ready to sell. Record new batches, in-person sales and count corrections here."
+  />
+  <form class="studio-toolbar">
+    <label>
+      Find product or SKU
+      <input name="q" value={search} placeholder="Search your stock" />
+    </label>
+    <label>
+      <span id="filter-label">Show</span>
+      <select name="filter" aria-labelledby="filter-label">
+        <option value="all" selected={filter === 'all'}>
+          All stock
+        </option>
+        <option value="low" selected={filter === 'low'}>
+          Low stock
+        </option>
+        <option value="sold-out" selected={filter === 'sold-out'}>
+          Sold out
+        </option>
+      </select>
+    </label>
+    <button>Find</button>
+  </form>
+  <div class="studio-view-summary">
+    <p class="studio-meta">
+      {variants.length} stock {variants.length === 1 ? 'entry' : 'entries'} in
+      this view
+      {all.length === 500 && ' · First 500 results; narrow your search'}
+    </p>
+    <a href="/api/admin/export/?kind=stock">Export stock</a>
+  </div>
+  {(drift.length > 0 || holds.length > 0) && (
+    <section class="notice">
+      <h2>Needs review</h2>
+      <p>
+        {drift.length} ledger differences · {holds.length} uncertain or
+        processing checkouts older than one hour.
+      </p>
+      <p>
+        Run payment reconciliation from Settings. Holds are released only after
+        Stripe confirms expiration. Contact the developer for ledger
+        differences.
+      </p>
+      <a href="/admin/settings/">Review maintenance</a>
+    </section>
+  )}
+  <div>
+    {variants.map((v) => (
+      <article class="studio-stock-card">
+        <div class="studio-stock-heading">
+          {v.product.images[0] ? (
+            <img
+              class="studio-photo"
+              src={`/media/${v.product.images[0].id}/400/`}
+              alt={v.product.images[0].alt}
+              loading="lazy"
+            />
+          ) : (
+            <div class="studio-photo studio-photo-empty">No photo yet</div>
+          )}
+          <div>
+            <h2>
+              <a href={`/admin/products/${v.productId}/`}>{v.product.name}</a>
+            </h2>
+            <p class="studio-meta">
+              {Object.keys(v.options ?? {}).length ? `${v.label} · ` : ''}
+              {v.sku}
+            </p>
+          </div>
+          <span class="studio-pill" data-state={stockState(v)}>
+            {stockState(v)}
+          </span>
+        </div>
+        <dl class="studio-balances">
+          <div class="available">
+            <dt>Available to sell</dt>
+            <dd>{(v.stock?.unsoldQty ?? 0) - (v.stock?.heldQty ?? 0)}</dd>
+          </div>
+          <div>
+            <dt>Held in checkout</dt>
+            <dd>{v.stock?.heldQty ?? 0}</dd>
+          </div>
+          <div>
+            <dt>Unsold total</dt>
+            <dd>{v.stock?.unsoldQty ?? 0}</dd>
+          </div>
+        </dl>
+        <details class="studio-disclosure">
+          <summary>Record a stock change</summary>
+          <form
+            class="grid"
+            data-stock
+            data-variant-id={v.id}
+            data-revision={v.stock?.revision}
+            data-unsold={v.stock?.unsoldQty}
+            data-held={v.stock?.heldQty}
+          >
+            <label>
+              Action
+              <select name="mode">
+                <option value="add">Add new stock</option>
+                <option value="remove">Remove stock</option>
+                <option value="set">Set actual unsold count</option>
+              </select>
+            </label>
+            <label>
+              Number of pieces
+              <input
+                name="quantity"
+                type="number"
+                min="0"
+                max="100000"
+                required
+              />
+            </label>
+            <label class="full">
+              Reason
+              <input
+                name="reason"
+                required
+                minlength="3"
+                maxlength="300"
+                placeholder="New batch, in-person sale, consignment, damage, count correction"
+              />
+            </label>
+            <p class="full" data-preview aria-live="polite"></p>
+            <button class="primary" type="submit">
+              Record stock change
+            </button>
+            <p role="status" data-status></p>
+          </form>
+        </details>
+        <div class="studio-links">
+          <a href={`/admin/history/?variant=${v.id}`}>Stock history</a>
+        </div>
+      </article>
+    ))}
+  </div>
+  {!variants.length && (
+    <section class="studio-empty">
+      <h2>No stock in this view.</h2>
+      <p>
+        {search || filter !== 'all'
+          ? 'Try another search or choose All stock.'
+          : 'Save a product first, then record how many pieces you have ready.'}
+      </p>
+      <a
+        class="action"
+        href={
+          search || filter !== 'all'
+            ? '/admin/inventory/'
+            : '/admin/products/new/'
+        }
+      >
+        {search || filter !== 'all' ? 'Show all stock' : 'Add a product'}
+      </a>
+    </section>
+  )}
+  <details class="studio-disclosure studio-guide">
+    <summary>How the counts work</summary>
+    <p class="studio-meta">
+      Unsold excludes paid pieces waiting to be packed. Held pieces are reserved
+      in checkout. Available is unsold minus held; checkout holds stay protected
+      until payment or expiration is confirmed.
+    </p>
+  </details>
+</AdminLayout>
+<script>
+  import {
+    action,
+    status,
+    recoverForm,
+    persistentOperation,
+  } from '../../client/admin';
+  document.querySelectorAll<HTMLFormElement>('[data-stock]').forEach((form) => {
+    const key = 'gag-stock:' + form.dataset.variantId;
+    const clear = recoverForm(form, key);
+    const operation = persistentOperation(key);
+    const update = () => {
+      const d = new FormData(form),
+        n = Number(d.get('quantity')),
+        unsold = Number(form.dataset.unsold),
+        held = Number(form.dataset.held),
+        next =
+          d.get('mode') === 'set'
+            ? n
+            : d.get('mode') === 'remove'
+              ? unsold - n
+              : unsold + n;
+      form.querySelector('[data-preview]')!.textContent =
+        'After this change: ' +
+        next +
+        ' unsold, ' +
+        held +
+        ' held, ' +
+        (next - held) +
+        ' available.';
+    };
+    form.addEventListener('input', update);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const d = Object.fromEntries(new FormData(form)),
+        s = form.querySelector('[data-status]')!,
+        b = form.querySelector<HTMLButtonElement>('[type=submit]')!;
+      b.disabled = true;
+      try {
+        await action('stock.adjust', {
+          ...d,
+          variantId: form.dataset.variantId,
+          revision: Number(form.dataset.revision),
+          quantity: Number(d.quantity),
+          operationKey: operation.get({
+            mode: d.mode,
+            quantity: Number(d.quantity),
+            reason: d.reason,
+          }),
+        });
+        operation.clear();
+        clear();
+        location.reload();
+      } catch (error) {
+        operation.rejected(error);
+        status(s, (error as Error).message, error as Error);
+      } finally {
+        b.disabled = false;
+      }
+    });
+  });
+</script>

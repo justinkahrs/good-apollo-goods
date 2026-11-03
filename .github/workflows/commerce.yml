@@ -1,0 +1,51 @@
+name: Commerce validation
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: good_apollo_test
+          POSTGRES_USER: good_apollo_fixture
+          POSTGRES_PASSWORD: isolated-fixture-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://good_apollo_fixture:isolated-fixture-password@localhost:5432/good_apollo_test
+      TEST_DATABASE_URL: postgresql://good_apollo_fixture:isolated-fixture-password@localhost:5432/good_apollo_test
+      APP_URL: http://localhost:4371
+      BETTER_AUTH_SECRET: isolated-ci-auth-secret-at-least-thirty-two-characters
+      QUOTE_SECRET: isolated-ci-quote-secret-at-least-thirty-two-characters
+      CRON_SECRET: isolated-ci-cron-secret-at-least-thirty-two-characters
+      SALES_ENABLED: "false"
+      STRIPE_LIVE_MODE_APPROVED: "false"
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: local-development
+      AWS_SECRET_ACCESS_KEY: local-development-only
+      S3_BUCKET: good-apollo-local
+      S3_ENDPOINT: http://localhost:19000
+      S3_FORCE_PATH_STYLE: "true"
+      SMTP_HOST: localhost
+      SMTP_PORT: "11025"
+      LOCAL_MAIL: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: docker compose up -d --wait
+      - run: npx tsx scripts/setup-storage.ts
+      - run: npm test
+      - run: npx tsx scripts/verify-validation.ts
+      - run: npm run check
+      - run: npm run build
+      - run: npm run build:local
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: npm audit --audit-level=moderate

@@ -5,3 +5,9 @@
 node_modules/
 dist/
 .git/
+.local/
+.generated/
+.playwright-cli/
+output/
+test-results/
+playwright-report/

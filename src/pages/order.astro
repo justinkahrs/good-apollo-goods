@@ -1,0 +1,165 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { config } from '../server/config';
+export const prerender = false;
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+---
+
+<Layout title="Your order — Good Apollo Goods" privatePage>
+  <section class="container order-status">
+    <p class="eyebrow">Your order</p>
+    <h1 data-title>Checking your order…</h1>
+    <p data-state role="status"></p>
+    <div data-items></div>
+    <a href="/cart/" class="text-link">
+      Back to cart
+    </a>
+    <button class="button button--secondary" type="button" data-cancel hidden>
+      Cancel this unpaid checkout
+    </button>
+    <a class="button button--primary" data-resume hidden>
+      Return to secure checkout
+    </a>
+    <p>
+      For order help,{' '}
+      <a href={`mailto:${config().SUPPORT_EMAIL}`}>
+        email {config().SUPPORT_EMAIL}
+      </a>{' '}
+      from the address you used at checkout.
+    </p>
+  </section>
+</Layout>
+<script>
+  import { clearPurchased, post } from '../client/cart';
+  const token = new URL(location.href).searchParams.get('token') ?? '',
+    state = document.querySelector<HTMLElement>('[data-state]')!,
+    title = document.querySelector<HTMLElement>('[data-title]')!,
+    cancel = document.querySelector<HTMLButtonElement>('[data-cancel]')!,
+    resume = document.querySelector<HTMLAnchorElement>('[data-resume]')!;
+  type Order = {
+    number: number;
+    paymentStatus: string;
+    attention: boolean;
+    fulfillmentStatus: string;
+    canceled: boolean;
+    refundedCents: number;
+    totalCents: number;
+    items: Array<{
+      name: string;
+      label: string;
+      variantId: string;
+      quantity: number;
+    }>;
+    checkoutUrl: string | null;
+    shipment: {
+      carrier: string;
+      trackingNumber: string;
+      trackingUrl: string;
+    } | null;
+  };
+  let polls = 0;
+  async function refresh() {
+    try {
+      const r = await fetch('/api/order/?token=' + encodeURIComponent(token), {
+          cache: 'no-store',
+        }),
+        o = (await r.json()) as Order & { error?: string };
+      if (!r.ok) throw new Error(o.error);
+      title.textContent = 'Order #' + o.number;
+      state.textContent =
+        o.paymentStatus === 'paid'
+          ? o.refundedCents >= o.totalCents
+            ? 'Payment received and fully refunded.'
+            : o.canceled
+              ? 'Your order has been canceled. For refund details, contact the maker.'
+              : o.fulfillmentStatus === 'shipped'
+                ? 'Your order has shipped. Thank you!'
+                : o.attention
+                  ? 'Payment received. The maker is reviewing your order before packing.'
+                  : 'Payment received. Thank you! We will email you when your order ships.'
+          : o.paymentStatus === 'expired'
+            ? 'Checkout expired without payment. Your cart is saved.'
+            : 'Payment has not been confirmed yet. Your cart is saved; the secure checkout may still be open.';
+      const root = document.querySelector('[data-items]')!;
+      root.replaceChildren();
+      if (o.paymentStatus === 'paid') {
+        const total = document.createElement('p');
+        total.textContent =
+          'Paid: $' +
+          (o.totalCents / 100).toFixed(2) +
+          ' USD' +
+          (o.refundedCents > 0
+            ? ' · Refund recorded: $' +
+              (o.refundedCents / 100).toFixed(2) +
+              ' USD'
+            : '');
+        root.append(total);
+      }
+      for (const i of o.items) {
+        const p = document.createElement('p');
+        p.textContent = i.quantity + ' × ' + i.name + ' — ' + i.label;
+        root.append(p);
+      }
+      if (o.shipment) {
+        const a = document.createElement('a');
+        a.href = o.shipment.trackingUrl;
+        a.rel = 'noopener noreferrer';
+        a.textContent = 'Track your ' + o.shipment.carrier + ' shipment';
+        root.append(a);
+      }
+      cancel.hidden = !o.checkoutUrl;
+      resume.hidden = !o.checkoutUrl;
+      if (o.checkoutUrl) resume.href = o.checkoutUrl;
+      if (['paid', 'expired', 'failed'].includes(o.paymentStatus)) {
+        try {
+          const pending = JSON.parse(
+            sessionStorage.getItem('gag-checkout-pending') ?? 'null',
+          );
+          if (
+            pending?.statusUrl &&
+            new URL(pending.statusUrl, location.origin).searchParams.get(
+              'token',
+            ) === token
+          )
+            sessionStorage.removeItem('gag-checkout-pending');
+        } catch {}
+      }
+      if (o.paymentStatus === 'paid') clearPurchased(token, o.items);
+      else if (!['expired', 'failed'].includes(o.paymentStatus) && polls++ < 12)
+        setTimeout(() => void refresh(), 5000);
+    } catch (e) {
+      title.textContent = 'Order status unavailable';
+      state.textContent = (e as Error).message;
+    }
+  }
+  cancel.addEventListener('click', async () => {
+    cancel.disabled = true;
+    try {
+      await post('/api/order/', { token });
+      await refresh();
+    } catch (e) {
+      state.textContent = (e as Error).message;
+    } finally {
+      cancel.disabled = false;
+    }
+  });
+  void refresh();
+</script>
+<style>
+  .order-status {
+    max-width: 800px;
+    padding-block: 4rem;
+    display: grid;
+    gap: 1.5rem;
+  }
+  .order-status h1 {
+    font-size: var(--text-3xl);
+  }
+  .order-status button,
+  .order-status .button {
+    width: fit-content;
+  }
+  [hidden] {
+    display: none !important;
+  }
+</style>

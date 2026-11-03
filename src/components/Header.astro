@@ -84,13 +84,17 @@ const isActive = (href: string) => pathname === href || pathname.startsWith(href
 </script>
 
 <script>
+  import { readCart } from '../client/cart';
   const updateCartCount = () => {
-    let count = 0;
-    try {
-      const cart = JSON.parse(localStorage.getItem('good-apollo-cart') ?? '[]');
-      count = Array.isArray(cart) ? cart.reduce((total, item) => total + (Number(item.quantity) || 0), 0) : 0;
-    } catch { count = 0; }
-    document.querySelectorAll<HTMLElement>('[data-cart-count]').forEach((element) => { element.textContent = String(count); });
+    const count = readCart().lines.reduce(
+      (total, item) => total + item.quantity,
+      0,
+    );
+    document
+      .querySelectorAll<HTMLElement>('[data-cart-count]')
+      .forEach((element) => {
+        element.textContent = String(count);
+      });
   };
   updateCartCount();
   window.addEventListener('storage', updateCartCount);

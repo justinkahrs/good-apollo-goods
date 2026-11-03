@@ -1,48 +1,70 @@
-# Good Apollo
+# Good Apollo Goods
 
-A prelaunch storefront for Good Apollo Goods, a one-woman label making small-batch child and adult hats in Grand Rapids, Michigan. The site is built with Astro, TypeScript, and a token-based design system.
+An Astro merchandise storefront and private studio admin for products, variants, photos, inventory and physical orders. The commerce implementation is local and **prelaunch**. Public sales default off; real provider, merchandise, operations and primary-operator acceptance gates remain in [the release checklist](docs/launch-checklist.md).
 
 ## Development
 
-Requires Node.js 22.12 or newer within the 22.x release line, and npm.
+Requires Node 22.12+ in the 22.x line, PostgreSQL 16+, npm and Docker for isolated S3/mail.
 
 ```sh
 npm ci
+npm run local:setup
+docker compose up -d
+npx tsx scripts/setup-storage.ts
+npm run db:migrate
+npm run db:seed
+npm run admin:bootstrap
 npm run dev
-npm run build
-npm run preview
 ```
 
-The development URL is printed by Astro (normally `http://localhost:4321`). This Astro version manages its development server in the background; `npx astro dev stop` stops it. `npm run build` runs Astro's type checker before generating the static site in `dist/`.
+On this Mac, local setup uses the existing Homebrew PostgreSQL service and creates independent development/test databases with a non-superuser role. On another machine, create equivalent databases and fill private `.env` from `.env.example`. Never copy Vesper's database, auth/session secrets or webhook secret. The seed creates private zero-stock drafts and preserves existing edits on repeat.
 
-## Design and content
+The studio is at `http://localhost:4371/admin/`; Mailpit is at `http://localhost:18025`. Bootstrap includes the primary `ADMIN_EMAIL` (`hello@annakahrs.com`) and optional comma-separated `ADDITIONAL_ADMIN_EMAILS`. The private local configuration currently includes `justin@justinkahrs.com` for testing. Both accounts need email sign-in and their own authenticator enrollment. Remove the testing address from the extra allowlist and restart when finished; existing sessions then lose admin access. Sign-in links use local mail; nothing is sent to a real inbox in local setup. Astro manages its development server in the background; `npx astro dev stop` stops this project's server.
 
-- `src/styles/tokens.css` — colors, typography, spacing, shape, motion, and page dimensions.
-- `src/styles/global.css` — shared styles and Tailwind's token bridge.
-- `src/components/` — reusable storefront components.
-- `src/data/products.ts` — typed hat catalog data, sizing, availability, and draft prices in USD.
-- `src/assets/` — the branded Coming Soon product-art placeholder, optimized by Astro at build time.
-- `docs/design-system.md` — design rationale, editing guide, accessibility, and launch boundary.
-- `/design-system/` — live component and foundation reference.
+```sh
+npm test
+npm run check
+npm run build
+npm run build:local
+npx playwright install chromium
+npm run test:browser
+npm run start:local
+npm run maintenance
+```
 
-The catalog, category pages, product details, sizing guide, About page, Consignment / Stockists page, and help content are static HTML. The cart is a lightweight client-side preview stored in browser storage; all browsing content works without JavaScript. Fonts and images are local, with responsive WebP derivatives generated during the build.
+Tests migrate and truncate only a localhost database whose name ends in `_test`. Browser tests use the standalone build on port 4372 and the same disposable test database; run them after integration tests, never concurrently. Provider fixtures exercise recovery and stock invariants; actual Stripe test-mode acceptance is separately required. The Dockerfile builds Astro's standalone Node adapter for the VPS. `build:local` and `start:local` validate that same runtime. CI uses disposable services. See [architecture/setup](docs/commerce-architecture.md) and [deployment](docs/deployment.md).
 
-## Prelaunch status
+## Store operation
 
-The current product names, prices, availability, and branded placeholder art are working launch content and should be confirmed before opening sales. No payments, email collection, or authoritative inventory reservations are implemented. All pages remain marked `noindex, nofollow` pending final product photography, policies, contact details, and commerce setup.
+Products, Inventory, Orders and Settings are the main admin workflows. Upload JPEG/PNG/WebP photos, generate up to two variant options, enter dollar prices, count unsold stock and publish verified listings. Checkout reserves whole carts atomically, reconciles signed Stripe events and queues durable notifications. Packing, tracking, refunds and deliberate physical restocking preserve immutable purchase history.
 
-Replace each placeholder with finished product photography and connect a commerce provider before enabling checkout. Final inventory, payment confirmation, shipping, and tax rules belong in that provider; the preview cart must not become the authoritative stock ledger.
+Defaults are $6.95 uniform U.S. shipping including Alaska/Hawaii and 3–5 business day processing; both are configurable. Automatic tax is proposed-on but requires recorded verification. Shared Stripe routing is independently scoped to Good Apollo. The current Vesper `.env` Stripe entry was empty, so its real provider credentials still need to be located.
+
+Read the [operator guide](docs/store-operator-guide.md), [Stripe setup](docs/stripe-setup.md), [operations](docs/store-operations.md), [backup/restore](docs/backup-restore.md) and [launch checklist](docs/launch-checklist.md).
+
+## Design and code
+
+- `src/styles/tokens.css` and `global.css`: existing brand, typography and responsive storefront foundations.
+- `src/components/`: request-time catalog cards and shared Astro components.
+- `src/server/`: validated server-only commerce, auth, inventory, photos and recovery boundaries.
+- `src/client/`: bounded cart storage and progressively enhanced operator forms.
+- `prisma/`: schema, migrations and database-enforced inventory/snapshot invariants.
+- `src/data/products.ts`: original draft import source, never an authoritative saleable catalog.
+- [Design system](docs/design-system.md) and `/design-system/`: visual guidance and foundations.
+
+Catalog/home/shop/detail/admin/API/shipping pages render on demand. Informational pages remain static. Product images are processed during verified upload. Private responses are not cached or indexed; public discovery remains disabled until live launch.
+
+## OpenSpec
+
+Implementation is tracked in [launch-physical-merchandise](openspec/changes/launch-physical-merchandise/proposal.md), its [design](openspec/changes/launch-physical-merchandise/design.md), [specs](openspec/changes/launch-physical-merchandise/specs/) and [tasks](openspec/changes/launch-physical-merchandise/tasks.md). Saving code does not complete external launch or primary-operator acceptance tasks.
+
+```sh
+openspec status --change launch-physical-merchandise
+openspec validate launch-physical-merchandise --strict --no-interactive
+```
 
 ## Deployment
 
-Production hosting uses Vercel project `good-apollo-goods` in `justinkahrs-projects`. The working production URL is https://good-apollo-goods.vercel.app/. The primary domain is `goodapollogoods.com`; `www.goodapollogoods.com` redirects to it with HTTP 308 after DNS is configured.
+The current public preview is [good-apollo-goods-shop.netlify.app](https://good-apollo-goods-shop.netlify.app/). The selected commerce target is the existing Senna VPS; its private origin deployment is under validation. Admin and checkout remain unavailable until production services and credentials are configured.
 
-`vercel.json` configures Astro, `npm ci`, `npm run build`, the `dist/` output directory, and trailing slashes. Vercel builds with Node.js 22.x. After authenticating to Vercel, deploy future changes with:
-
-```sh
-npx vercel --prod --scope justinkahrs-projects
-```
-
-The local `.vercel/` link is ignored by Git. `.vercelignore` excludes `.env` files and the earlier Sites configuration from uploads. `VERCEL_TOKEN` is only a local deployment credential; it is not a site runtime variable. The old `.openai/hosting.json` is retained as a record of the unsuccessful Sites preview setup, not the production host.
-
-See `docs/deployment.md` for the exact GoDaddy DNS records and verification steps. The output remains portable static HTML and assets in `dist/`; an Astro server adapter is not needed.
+The primary domain is `goodapollogoods.com`. See [deployment and DNS](docs/deployment.md) for the selected VPS architecture, historical provider records, isolated environment/migration requirements, n8n five-minute scheduler and rollback. The scheduler source is maintained in `~/projects/infra`; it calls the commerce endpoint on the web host and does not move commerce processing off that host. New live sales are a separate release after the evidence checklist passes. A sale-disable rollback retains webhook/maintenance processing and historical orders.

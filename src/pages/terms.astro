@@ -2,7 +2,56 @@
 import Layout from '../layouts/Layout.astro';
 import PageHero from '../components/PageHero.astro';
 ---
-<Layout title="Terms — Good Apollo Goods" description="Terms for using and shopping the Good Apollo Goods website.">
-  <PageHero eyebrow="Terms" title="Website & shop terms." intro="These terms cover use of the Good Apollo Goods website and will be expanded with final checkout terms before online purchasing opens." />
-  <section class="container policy"><p class="policy-date">Last updated September 2026</p><h2>Product information</h2><p>Each piece is handmade in a small batch. Minor variations in color, texture, and construction are part of handmade production. Product pages provide the most current materials, sizing, and availability.</p><h2>Pricing and availability</h2><p>Prices and availability may change before an order is placed. An item added to a cart is not reserved until checkout is complete.</p><h2>Review before ordering</h2><p>Customers are responsible for reviewing all product details before ordering, including measurements when provided, listed dimensions, materials, color, care, and intended use. Please contact the studio with questions before purchase.</p><h2>Final sale</h2><p>All sales are final. Good Apollo Goods does not offer returns, exchanges, repairs, or refunds.</p><h2>Questions</h2><p>Email <a href="mailto:hello@goodapollogoods.com">hello@goodapollogoods.com</a> with questions about these terms.</p></section>
+
+<Layout
+  title="Terms — Good Apollo Goods"
+  description="Terms for using and shopping the Good Apollo Goods website."
+>
+  <PageHero
+    eyebrow="Terms"
+    title="Website & shop terms."
+    intro="Practical terms for browsing and ordering ready-to-ship pieces from Good Apollo Goods."
+  />
+  <section class="container policy">
+    <p class="policy-date">Last updated September 2026</p>
+    <h2>Product information</h2>
+    <p>
+      Each piece is handmade in a small batch. Minor variations in color,
+      texture, and construction are part of handmade production. Product pages
+      provide the most current materials, sizing, and availability.
+    </p>
+    <h2>Pricing and availability</h2>
+    <p>
+      Prices are in U.S. dollars, excluding applicable tax. Shipping and tax are
+      shown before payment in Stripe checkout. A cart does not reserve stock.
+      Starting checkout creates a temporary reservation, normally for 35
+      minutes. Payment must be confirmed before an order can be packed.
+    </p>
+    <h2>Review before ordering</h2>
+    <p>
+      Customers are responsible for reviewing all product details before
+      ordering, including measurements when provided, listed dimensions,
+      materials, color, care, and intended use. Please contact the studio with
+      questions before purchase.
+    </p>
+    <h2>Final sale</h2>
+    <p>
+      All sales are final. Good Apollo Goods does not offer returns, exchanges,
+      repairs, or routine refunds. For an incorrect, damaged or missing order,
+      contact the studio so the problem can be reviewed.
+    </p>
+    <h2>Delivery</h2>
+    <p>
+      The shop ships ready-to-ship stock within the United States, including
+      Alaska and Hawaii. The current flat shipping charge and processing window
+      appear on <a href="/shipping/">the shipping page</a> and are confirmed
+      before payment. Carrier transit time is separate from processing time.
+    </p>
+    <h2>Questions</h2>
+    <p>
+      Email{' '}
+      <a href="mailto:hello@goodapollogoods.com">hello@goodapollogoods.com</a>{' '}
+      with questions about these terms.
+    </p>
+  </section>
 </Layout>

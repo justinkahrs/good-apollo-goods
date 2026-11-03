@@ -1,0 +1,350 @@
+generator client {
+  provider = "prisma-client"
+  output = "../.generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id String @id @default(uuid())
+  name String
+  email String @unique
+  emailVerified Boolean @default(false)
+  image String?
+  role String @default("user")
+  banned Boolean @default(false)
+  banReason String?
+  banExpires DateTime?
+  twoFactorEnabled Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions Session[]
+  accounts Account[]
+  twoFactor TwoFactor?
+}
+model Session {
+  id String @id @default(uuid())
+  token String @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  impersonatedBy String?
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stepUp AdminStepUp?
+  @@index([userId])
+}
+model Account {
+  id String @id @default(uuid())
+  accountId String
+  providerId String
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId])
+}
+model Verification {
+  id String @id @default(uuid())
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([identifier])
+}
+model TwoFactor {
+  id String @id @default(uuid())
+  secret String
+  backupCodes String
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified Boolean @default(false)
+  failedVerificationCount Int @default(0)
+  lockedUntil DateTime?
+}
+model RateLimit {
+  id String @id @default(uuid())
+  key String @unique
+  count Int
+  lastRequest BigInt
+}
+model AdminStepUp {
+  sessionId String @id
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@index([expiresAt])
+}
+model Product {
+  id String @id @default(uuid())
+  slug String @unique
+  name String
+  description String @default("")
+  category String @default("hat")
+  taxClass String @default("hats")
+  audience String @default("all")
+  materials String @default("")
+  care String @default("")
+  detail String @default("")
+  status String @default("draft")
+  publishedAt DateTime?
+  revision Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  variants Variant[]
+  images ProductImage[]
+  uploads UploadIntent[]
+  @@index([status, updatedAt])
+}
+model Variant {
+  id String @id @default(uuid())
+  productId String
+  product Product @relation(fields: [productId], references: [id])
+  sku String @unique
+  label String @default("One size")
+  options Json @default("{}")
+  combination String @default("default")
+  priceCents Int
+  active Boolean @default(true)
+  lowStockThreshold Int @default(3)
+  revision Int @default(1)
+  createdAt DateTime @default(now())
+  stock StockBalance?
+  movements StockMovement[]
+  reservations Reservation[]
+  items OrderItem[]
+  @@unique([productId, combination])
+}
+model ProductImage {
+  id String @id @default(uuid())
+  productId String
+  product Product @relation(fields: [productId], references: [id])
+  originalKey String?
+  derivatives Json @default("[]")
+  storageBytes BigInt @default(0)
+  alt String @default("")
+  position Int @default(0)
+  variantId String?
+  verified Boolean @default(false)
+  placeholder Boolean @default(false)
+  archivedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([productId, archivedAt, position])
+}
+model UploadIntent {
+  id String @id @default(uuid())
+  productId String
+  product Product @relation(fields: [productId], references: [id])
+  actorId String
+  key String @unique
+  contentType String
+  expectedBytes Int
+  expiresAt DateTime
+  completedAt DateTime?
+  imageId String? @unique
+  createdAt DateTime @default(now())
+}
+model StockBalance {
+  variantId String @id
+  variant Variant @relation(fields: [variantId], references: [id])
+  unsoldQty Int @default(0)
+  heldQty Int @default(0)
+  revision Int @default(1)
+  updatedAt DateTime @updatedAt
+}
+model StockMovement {
+  id String @id @default(uuid())
+  variantId String
+  variant Variant @relation(fields: [variantId], references: [id])
+  unsoldDelta Int
+  heldDelta Int
+  reason String
+  operationKey String @unique
+  actorId String?
+  orderId String?
+  createdAt DateTime @default(now())
+  @@index([variantId, createdAt])
+}
+model Order {
+  id String @id @default(uuid())
+  number Int @unique @default(autoincrement())
+  guestHash String
+  statusTokenHash String @unique
+  paymentStatus String @default("pending")
+  fulfillmentStatus String @default("unfulfilled")
+  attention String?
+  email String?
+  customerName String?
+  address Json?
+  currency String @default("usd")
+  subtotalCents Int
+  shippingCents Int
+  taxCents Int @default(0)
+  totalCents Int @default(0)
+  refundedCents Int @default(0)
+  stripeSessionId String? @unique
+  stripePaymentId String? @unique
+  settingsSnapshot Json
+  paidAt DateTime?
+  canceledAt DateTime?
+  revision Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items OrderItem[]
+  attempt CheckoutAttempt?
+  reservations Reservation[]
+  refunds Refund[]
+  dispute Dispute?
+  shipment Shipment?
+  @@index([paymentStatus, fulfillmentStatus, createdAt])
+}
+model OrderItem {
+  id String @id @default(uuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id])
+  variantId String
+  variant Variant @relation(fields: [variantId], references: [id])
+  productName String
+  variantLabel String
+  sku String
+  slug String
+  imageKey String?
+  quantity Int
+  unitPriceCents Int
+  lineTotalCents Int
+  restockedQty Int @default(0)
+  @@unique([orderId, variantId])
+}
+model CheckoutAttempt {
+  id String @id
+  orderId String @unique
+  order Order @relation(fields: [orderId], references: [id])
+  guestHash String
+  fingerprint String
+  request Json
+  status String @default("creating")
+  idempotencyKey String @unique
+  sessionId String? @unique
+  sessionUrl String?
+  expiresAt DateTime
+  retryUntil DateTime
+  leaseUntil DateTime?
+  failures Int @default(0)
+  lastError String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status, expiresAt])
+}
+model Reservation {
+  id String @id @default(uuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id])
+  variantId String
+  variant Variant @relation(fields: [variantId], references: [id])
+  quantity Int
+  state String @default("held")
+  createdAt DateTime @default(now())
+  @@unique([orderId, variantId])
+}
+model StripeEvent {
+  id String @id
+  type String
+  objectId String
+  status String @default("pending")
+  attempts Int @default(0)
+  leaseUntil DateTime?
+  lastError String?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([status, createdAt])
+}
+model Refund {
+  id String @id @default(uuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id])
+  operationKey String @unique
+  stripeId String? @unique
+  amountCents Int
+  reason String
+  status String @default("requested")
+  actorId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Dispute {
+  id String @id
+  orderId String @unique
+  order Order @relation(fields: [orderId], references: [id])
+  status String
+  reason String
+  deadline DateTime?
+  updatedAt DateTime @updatedAt
+}
+model Shipment {
+  id String @id @default(uuid())
+  orderId String @unique
+  order Order @relation(fields: [orderId], references: [id])
+  operationKey String @unique
+  carrier String
+  trackingNumber String
+  trackingUrl String
+  shippedAt DateTime @default(now())
+  actorId String
+}
+model EmailOutbox {
+  id String @id @default(uuid())
+  dedupeKey String @unique
+  kind String
+  payload Json
+  status String @default("pending")
+  attempts Int @default(0)
+  availableAt DateTime @default(now())
+  leaseUntil DateTime?
+  lastError String?
+  deliveredAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([status, availableAt])
+}
+model Audit {
+  id String @id @default(uuid())
+  actorId String
+  action String
+  entityId String
+  metadata Json @default("{}")
+  createdAt DateTime @default(now())
+  @@index([entityId, createdAt])
+}
+model StoreSettings {
+  id String @id @default("store")
+  shippingCents Int @default(695)
+  processingWindow String @default("3–5 business days")
+  taxEnabled Boolean @default(true)
+  taxConfigured Boolean @default(false)
+  taxDecision String @default("Owner expects automatic tax; verify registration before live launch")
+  revision Int @default(1)
+  updatedAt DateTime @updatedAt
+}
+model MaintenanceJob {
+  id String @id @default("commerce")
+  leaseUntil DateTime?
+  lastStartedAt DateTime?
+  lastSucceededAt DateTime?
+  lastError String?
+}
+model RequestLimit {
+  key String @id
+  count Int @default(1)
+  expiresAt DateTime
+}
