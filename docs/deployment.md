@@ -4,7 +4,15 @@
 
 The selected commerce host is the existing `senna-infra` VPS. Good Apollo runs as a capped standalone Node container behind Traefik, using only its isolated `good_apollo_goods` database and `good_apollo_app`/`good_apollo_migrator` roles on shared PostgreSQL. Its five-minute maintenance workflow is installed in the existing Senna n8n instance and remains inactive pending protected-preview acceptance. Media uses a private, dedicated Garage bucket. The Good Apollo transactional outbox signs requests to a separate private Mautic gateway route; its durable mail ledger is deployed with the commerce gate disabled. Keep sales and newsletter gates disabled.
 
-## Most recent production state (October 18, 2026, 03:16 UTC)
+## Storefront release (November 3, 2026, 02:55 UTC)
+
+Deployed `gag-commerce:20261103-hat-storefront` to `good-apollo-web`, based on the prior running `gag-commerce:20261103-variant-css` image. The image retains the deployed backend and dependencies; only the reviewed storefront source, hats category controls/import data, and the already-live variant stylesheet were overlaid and rebuilt. Storefront source is commit `293c959` on `jk/hat-storefront`. The parked commerce work was not promoted wholesale. No migrations or catalog writes ran.
+
+The VPS build passed with zero Astro errors, warnings or hints. Live Google Chrome verification on The Sterling confirmed one of five photos displayed at a time, next/previous navigation, padded piece choices, and 56cm size/details in metadata. Shop/footer navigation presents Hats only. The art, wearables, adult and child collection routes each return HTTP 301 to `/shop/hats/`; shop, The Sterling and admin sign-in return HTTP 200. The focused local Google Chrome mobile/desktop workflow and standalone build passed before release.
+
+The image tag is persisted in the private Infra runtime file, whose prior version was preserved. `SALES_ENABLED=false` and `NEWSLETTER_ENABLED=false` remain verified. The prior image is retained for rollback; select it in the Infra image setting and recreate only `good-apollo-web`. Existing launch/maintenance/provider gates below remain open.
+
+## Earlier production state (October 18, 2026, 03:16 UTC)
 
 The apex and `www` resolve to the VPS and use valid HTTPS certificates. The AMD64 app image is `gag-commerce:20261017-commerce-mail`; the private Garage production bucket and Mautic gateway are running. The Settings page's HTTP 500 was caused by a missing `StoreSettings` row. A scoped encrypted checkpoint, `gag-store-settings-repair-20261018T0255Z`, was captured before initializing it; one PostgreSQL database and three media/configuration archives restored in isolation, and all four temporary containers and volumes were removed. The checkpoint is accepted in the local lifecycle ledger.
 
