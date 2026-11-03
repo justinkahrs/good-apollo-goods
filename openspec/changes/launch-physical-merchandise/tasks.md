@@ -127,3 +127,9 @@ Covers integrated `production-readiness` and primary-operator acceptance across 
 - [x] 10.2 Place size/details in metadata and add horizontal padding to piece choices.
 - [x] 10.3 Present only Hats in public collections and product category controls, preserve legacy category URLs with redirects, and align draft imports.
 - [x] 10.4 Verify the standalone build and Google Chrome mobile/desktop gallery flow, metadata and legacy redirects.
+
+## 11. Dot gallery and collection spacing follow-up
+
+- [x] 11.1 Replace arrow/count presentation with accessible overlaid dots and preserve keyboard/swipe navigation.
+- [x] 11.2 Fill a square image frame using a bottom-aligned cover crop, remove colored padding and rounded corners, and fix collection sentence spacing.
+- [x] 11.3 Verify Chrome mobile/desktop dot navigation and cropping, then commit, push and deploy the scoped storefront update.

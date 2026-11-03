@@ -86,37 +86,34 @@ const structured = {
               sizes="(max-width:850px) 92vw, 48vw"
               alt={image.alt}
               width="1200"
-              height="1500"
+              height="1200"
               loading={index === 0 ? 'eager' : 'lazy'}
             />
           </figure>
         ))}
         {product.images.length > 1 && (
-          <div class="gallery-controls" data-gallery-controls hidden>
-            <button
-              class="gallery-arrow"
-              type="button"
-              data-gallery-previous
-              aria-label="Previous photo"
-            >
-              <span aria-hidden="true">←</span>
-            </button>
-            <button
-              class="gallery-arrow"
-              type="button"
-              data-gallery-next
-              aria-label="Next photo"
-            >
-              <span aria-hidden="true">→</span>
-            </button>
+          <div
+            class="gallery-dots"
+            data-gallery-navigation
+            hidden
+            role="group"
+            aria-label="Choose a photo"
+          >
+            {product.images.map((_, index) => (
+              <button
+                type="button"
+                class="gallery-dot"
+                data-gallery-dot={index}
+                aria-label={`Show photo ${index + 1}`}
+                aria-pressed={index === 0 ? 'true' : 'false'}
+              >
+                <span class="sr-only">Photo {index + 1}</span>
+              </button>
+            ))}
           </div>
         )}
       </div>
-      {product.images.length > 1 && (
-        <div class="gallery-navigation" data-gallery-navigation hidden>
-          <p class="gallery-status" data-gallery-status aria-live="polite"></p>
-        </div>
-      )}
+      <p class="sr-only" data-gallery-status aria-live="polite"></p>
     </div>
     <div class="product-copy">
       <p class="eyebrow">
@@ -307,48 +304,46 @@ const structured = {
   }
   .product-gallery img {
     width: 100%;
-    aspect-ratio: 4 / 5;
-    object-fit: contain;
-    background: var(--color-surface);
-    border-radius: var(--radius-md);
+    display: block;
+    aspect-ratio: 1;
+    object-fit: cover;
+    object-position: center bottom;
+    background: transparent;
+    border-radius: 0;
   }
-  .gallery-controls {
+  .gallery-dots {
     position: absolute;
-    inset: 50% var(--space-4) auto;
+    inset: auto 0 var(--space-3);
     display: flex;
-    justify-content: space-between;
-    transform: translateY(-50%);
-    pointer-events: none;
+    justify-content: center;
+    flex-wrap: wrap;
   }
-  .gallery-arrow {
-    width: 2.75rem;
-    height: 2.75rem;
+  .gallery-dot {
     display: grid;
     place-items: center;
-    border: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
-    border-radius: var(--radius-pill);
-    color: var(--color-text);
-    background: color-mix(in srgb, var(--color-page) 92%, transparent);
-    font-size: 1.5rem;
-    line-height: 1;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
     cursor: pointer;
-    pointer-events: auto;
-    box-shadow: 0 2px 10px rgb(53 44 46 / 12%);
   }
-  .gallery-arrow:hover {
-    background: var(--color-page);
+  .gallery-dot::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid var(--color-brand);
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 0 0 1px white;
   }
-  .gallery-arrow:focus-visible {
+  .gallery-dot[aria-pressed='true']::after {
+    background: var(--color-brand);
+  }
+  .gallery-dot:focus-visible {
     outline: 2px solid var(--color-focus);
-    outline-offset: 3px;
-  }
-  .gallery-navigation {
-    margin-top: var(--space-3);
-  }
-  .gallery-status {
-    color: var(--color-muted);
-    font-size: var(--text-sm);
-    text-align: center;
+    outline-offset: -4px;
+    border-radius: 50%;
   }
   .product-placeholder {
     width: 100%;

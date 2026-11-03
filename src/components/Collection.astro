@@ -30,9 +30,8 @@ const visibleProducts = products.filter(
       </h2>
     </div>
     <p>
-      A small, evolving collection.
-      <br />
-      Made slowly in Grand Rapids.
+      <span>A small, evolving collection.</span>{' '}
+      <span>Made slowly in Grand Rapids.</span>
     </p>
   </div>
   <div class="product-grid">
@@ -69,6 +68,9 @@ const visibleProducts = products.filter(
   .collection-heading h2 {
     margin-top: var(--space-3);
   }
+  .collection-heading > p span {
+    display: block;
+  }
   .collection-heading > p {
     font-size: var(--text-sm);
     color: var(--color-muted);
@@ -90,6 +92,9 @@ const visibleProducts = products.filter(
   }
   @media (max-width: 700px) {
     .collection-heading {
+      display: block;
+    }
+    .collection-heading > p span {
       display: block;
     }
     .collection-heading > p {

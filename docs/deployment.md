@@ -4,6 +4,12 @@
 
 The selected commerce host is the existing `senna-infra` VPS. Good Apollo runs as a capped standalone Node container behind Traefik, using only its isolated `good_apollo_goods` database and `good_apollo_app`/`good_apollo_migrator` roles on shared PostgreSQL. Its five-minute maintenance workflow is installed in the existing Senna n8n instance and remains inactive pending protected-preview acceptance. Media uses a private, dedicated Garage bucket. The Good Apollo transactional outbox signs requests to a separate private Mautic gateway route; its durable mail ledger is deployed with the commerce gate disabled. Keep sales and newsletter gates disabled.
 
+## Dot gallery release (November 2, 2026, 10:39 p.m. America/Detroit)
+
+Deployed `gag-commerce:20261103-dot-gallery`, derived from the current hats-storefront image with only the product page, gallery client and collection component overlaid. Images now fill a square frame through a bottom-aligned cover crop, without colored padding or rounded corners; dot buttons overlay the image and replace arrows and the visible counter. Originals and catalog photo identities/order are preserved. The collection introduction uses separate block spans and an explicit sentence space.
+
+Local standalone and VPS builds passed with zero diagnostics. The focused Google Chrome mobile/desktop workflow passed dot selection, one visible photo, metadata and legacy redirects. Live Chrome confirms dot navigation and edge-to-edge real product photos. The runtime image setting is persisted; the preceding image and runtime configuration are retained for rollback. Sales/newsletter gates remain disabled; no migrations or catalog writes ran for this release.
+
 ## Storefront release (November 3, 2026, 02:55 UTC)
 
 Deployed `gag-commerce:20261103-hat-storefront` to `good-apollo-web`, based on the prior running `gag-commerce:20261103-variant-css` image. The image retains the deployed backend and dependencies; only the reviewed storefront source, hats category controls/import data, and the already-live variant stylesheet were overlaid and rebuilt. Storefront source is commit `293c959` on `jk/hat-storefront`. The parked commerce work was not promoted wholesale. No migrations or catalog writes ran.

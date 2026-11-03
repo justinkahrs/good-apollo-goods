@@ -76,7 +76,7 @@ This implementation remains prelaunch. PostgreSQL owns stock, reservations and i
 
 Operator forms preserve unsaved entries and reject stale revisions. Photo ordering uses keyboard-accessible buttons and describes the first visible photo as cover. Products and Inventory use open rows with cover photos, readable counts and restrained dividers. Orders distinguish payment, packing, refund and dispute states.
 
-Product detail pages show one featured photo with previous/next controls and a horizontally scrollable thumbnail rail. Thumbnails, arrow keys, and touch swipes navigate the gallery; variant-linked photos filter with the selected option. The markup keeps the full photo set visible if scripting is unavailable, and the gallery uses the catalog's responsive WebP derivatives without cropping the featured image.
+Product detail pages show one photo with overlaid dot controls. Dots, arrow keys and touch swipes navigate the gallery; variant-linked photos filter with the selected option. The first photo remains visible without scripting. Responsive WebP derivatives fill a consistent square frame using a bottom-aligned cover crop.
 
 The product editor uses a quiet, open two-column workspace: name, description and fixed size/details on the left; one dollar price, available stock, visibility and save action in a flax-tinted sidebar. On phones the sidebar follows the content. Keep Fraunces headings, DM Sans controls, buttercream inputs, restrained dividers and burgundy actions. `src/styles/product-editor.css` scopes this presentation to the editor. **Offer sizes or colors** and **A little more detail** start folded, so an optionless piece requires no visible SKU or option fields. Variant generation, per-option prices, SKU overrides, stock thresholds, materials, care, tax category and stable URLs remain available through those sections. Photos stay private until a valid publication; saving a new draft opens its photo workflow. Shop pages automatically select an optionless product's one underlying stock identity.
 
@@ -84,4 +84,6 @@ The remaining studio pages share `StudioHeading` and `src/styles/studio.css`, sc
 
 ### Hats storefront refinement
 
-The public collection has one category, Hats. Legacy art, wearables, adult and child collection URLs redirect to `/shop/hats/`. Product galleries show one photo at a time from the initial render, with previous/next controls, keyboard and touch navigation, and a visible photo count; no thumbnail strip appears. Size/details sit in the product metadata table. Piece-choice controls retain touch-sized targets and horizontal padding.
+The public collection has one category, Hats. Legacy art, wearables, adult and child collection URLs redirect to `/shop/hats/`. Product galleries show one photo at a time from the initial render, with overlaid dot controls, keyboard and touch navigation, and a screen-reader photo count; no arrows or thumbnail strip appears. The square frame uses a bottom-aligned cover crop, without colored padding or rounded image corners. Size/details sit in the product metadata table. Piece-choice controls retain touch-sized targets and horizontal padding.
+
+Collection introduction lines are separate block spans with an explicit text space so both visual layout and extracted text keep the sentences distinct.

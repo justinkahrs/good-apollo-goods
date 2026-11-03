@@ -464,17 +464,23 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
   ).toBeVisible();
   await expect(page.locator('[data-gallery-slide]:visible')).toHaveCount(1);
   await expect(page.locator('[data-gallery-thumb]')).toHaveCount(0);
+  await expect(page.locator('[data-gallery-dot]')).toHaveCount(2);
+  await expect(
+    page.getByRole('button', { name: 'Next photo', exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator('[data-gallery-dot]').first()).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   await expect(page.locator('[data-gallery-status]')).toHaveText(
     'Photo 1 of 2',
   );
-  await page.getByRole('button', { name: 'Next photo', exact: true }).click();
+  await page.getByRole('button', { name: 'Show photo 2', exact: true }).click();
   await expect(page.locator('[data-gallery-status]')).toHaveText(
     'Photo 2 of 2',
   );
   await expect(page.locator('[data-gallery-slide]:visible')).toHaveCount(1);
-  await page
-    .getByRole('button', { name: 'Previous photo', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Show photo 1', exact: true }).click();
   await expect(page.locator('[data-gallery-status]')).toHaveText(
     'Photo 1 of 2',
   );

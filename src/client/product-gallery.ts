@@ -9,17 +9,13 @@ export function initProductGallery(
   ];
   if (slides.length < 2) return;
 
-  const controls = gallery.querySelector<HTMLElement>(
-      '[data-gallery-controls]',
-    ),
-    navigation = gallery.querySelector<HTMLElement>(
-      '[data-gallery-navigation]',
-    ),
-    status = gallery.querySelector<HTMLElement>('[data-gallery-status]'),
-    previous = gallery.querySelector<HTMLButtonElement>(
-      '[data-gallery-previous]',
-    ),
-    next = gallery.querySelector<HTMLButtonElement>('[data-gallery-next]');
+  const dots = [
+    ...gallery.querySelectorAll<HTMLButtonElement>('[data-gallery-dot]'),
+  ];
+  const navigation = gallery.querySelector<HTMLElement>(
+    '[data-gallery-navigation]',
+  );
+  const status = gallery.querySelector<HTMLElement>('[data-gallery-status]');
 
   let visibleSlides = slides.map((_, index) => index);
   let activeSlide = visibleSlides[0];
@@ -63,10 +59,13 @@ export function initProductGallery(
       const isActive = index === activeSlide;
       slide.hidden = !isVisible || !isActive;
       slide.toggleAttribute('data-gallery-active', isActive);
+      if (dots[index]) {
+        dots[index].hidden = !isVisible;
+        dots[index].setAttribute('aria-pressed', String(isActive));
+      }
     }
 
     const hasNavigation = visibleSlides.length > 1;
-    if (controls) controls.hidden = !hasNavigation;
     if (navigation) navigation.hidden = !hasNavigation;
     if (status) {
       status.textContent = `Photo ${activePosition + 1} of ${visibleSlides.length}`;
@@ -80,8 +79,9 @@ export function initProductGallery(
     render(visibleSlides[nextPosition]);
   };
 
-  previous?.addEventListener('click', () => move(-1));
-  next?.addEventListener('click', () => move(1));
+  dots.forEach((dot, index) =>
+    dot.addEventListener('click', () => render(index)),
+  );
   form?.addEventListener('change', () => render(visibleSlides[0]));
   gallery.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
@@ -95,6 +95,9 @@ export function initProductGallery(
       event.pointerType === 'touch'
         ? { x: event.clientX, y: event.clientY }
         : undefined;
+  });
+  gallery.addEventListener('pointercancel', () => {
+    pointerStart = undefined;
   });
   gallery.addEventListener('pointerup', (event) => {
     if (!pointerStart) return;

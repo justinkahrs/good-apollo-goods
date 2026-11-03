@@ -84,12 +84,20 @@ The system SHALL hide drafts, archived products, and inactive variants from new 
 
 ### Requirement: Focused hats storefront
 
-The public storefront SHALL present Hats as its only category and redirect legacy collection category URLs to the hats collection. Product galleries SHALL display one image at a time from initial rendering, with accessible previous/next navigation and a visible count, without displaying a thumbnail strip. Fixed size/details SHALL appear with the other product metadata, and selectable piece controls SHALL have horizontal padding.
+The public storefront SHALL present Hats as its only category and redirect legacy collection category URLs to the hats collection. Product galleries SHALL display one image at a time from initial rendering, with accessible dot navigation and a screen-reader count, without arrows or a thumbnail strip. Fixed size/details SHALL appear with the other product metadata, and selectable piece controls SHALL have horizontal padding.
 
 #### Scenario: Browse photos and hat details
 - **WHEN** a shopper opens a hat with multiple photos
-- **THEN** one photo is visible, previous/next controls navigate the gallery, and size/details appear in the metadata table
+- **THEN** one photo is visible, dot controls navigate the gallery, and size/details appear in the metadata table
 
 #### Scenario: Follow a legacy category link
 - **WHEN** a shopper visits an art, wearables, adult or child collection URL
 - **THEN** the request redirects permanently to the hats collection
+
+### Requirement: Filled product gallery
+
+Images SHALL fill a consistent square frame with no colored padding or rounded corners, preserving the hat through a bottom-aligned cover crop. Dot controls SHALL overlay the image.
+
+#### Scenario: View a product photo
+- **WHEN** a shopper views a gallery slide
+- **THEN** the photo fills the frame edge to edge and dots appear over the image
