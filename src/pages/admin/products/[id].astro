@@ -241,11 +241,7 @@ const visibleImages = defaults.images.filter(
               <label>
                 Category
                 <select name="category">
-                  {[
-                    ['hat', 'Hat'],
-                    ['accessory', 'Accessory'],
-                    ['other', 'Other'],
-                  ].map(([value, label]) => (
+                  {[['hat', 'Hat']].map(([value, label]) => (
                     <option
                       value={value}
                       selected={defaults.category === value}

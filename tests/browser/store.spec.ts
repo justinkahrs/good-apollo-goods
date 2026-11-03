@@ -348,6 +348,7 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
   await page
     .getByRole('textbox', { name: 'Description', exact: true })
     .fill('A synthetic browser fixture with a clearly described gallery.');
+  await page.locator('textarea[name=detail]').fill('60 cm');
   await page.locator('[data-variant-settings] > summary').click();
   await page.getByText('Generate sizes and colors', { exact: true }).click();
   await page
@@ -455,10 +456,43 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
     'Browser workflow hat edited',
   );
   await expect(page.getByRole('radio')).toHaveCount(4);
+  await expect(page.locator('.product-facts')).toContainText('60 cm');
+  await expect(page.locator('.product-copy > .product-detail')).toHaveCount(0);
   await expect(page.getByRole('radio').first()).toBeDisabled();
   await expect(
     page.getByRole('img', { name: 'Second green test image' }),
   ).toBeVisible();
+  await expect(page.locator('[data-gallery-slide]:visible')).toHaveCount(1);
+  await expect(page.locator('[data-gallery-thumb]')).toHaveCount(0);
+  await expect(page.locator('[data-gallery-status]')).toHaveText(
+    'Photo 1 of 2',
+  );
+  await page.getByRole('button', { name: 'Next photo', exact: true }).click();
+  await expect(page.locator('[data-gallery-status]')).toHaveText(
+    'Photo 2 of 2',
+  );
+  await expect(page.locator('[data-gallery-slide]:visible')).toHaveCount(1);
+  await page
+    .getByRole('button', { name: 'Previous photo', exact: true })
+    .click();
+  await expect(page.locator('[data-gallery-status]')).toHaveText(
+    'Photo 1 of 2',
+  );
+  await page.screenshot({
+    path: 'output/playwright/hat-carousel-mobile.png',
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(page.locator('[data-gallery-slide]:visible')).toHaveCount(1);
+  await page.screenshot({
+    path: 'output/playwright/hat-carousel-desktop.png',
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect((await request.get('/shop/art/')).url()).toContain('/shop/hats/');
+  await expect(
+    page.getByRole('link', { name: 'Wearables', exact: true }),
+  ).toHaveCount(0);
   expect((await request.get(`/media/${draftPhoto.id}/800/`)).status()).toBe(
     200,
   );

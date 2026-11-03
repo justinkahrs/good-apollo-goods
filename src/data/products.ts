@@ -2,9 +2,7 @@ import type { ImageMetadata } from 'astro';
 import comingSoonImage from '../assets/good-apollo-coming-soon.png';
 
 export const shopCategories = [
-  { id: 'all', label: 'All pieces', href: '/shop/' },
-  { id: 'wearables', label: 'Wearables', href: '/shop/wearables/' },
-  { id: 'art', label: 'Art', href: '/shop/art/' },
+  { id: 'hat', label: 'Hats', href: '/shop/hats/' },
 ] as const;
 
 export type ProductKind = Exclude<(typeof shopCategories)[number]['id'], 'all'>;
@@ -42,7 +40,7 @@ export const products: Product[] = [
   {
     slug: 'mulberry-corduroy-hat',
     name: 'Mulberry corduroy hat',
-    kind: 'wearables',
+    kind: 'hat',
     price: 72,
     color: 'Mulberry',
     materials: ['Cotton corduroy', 'Cotton'],
@@ -57,7 +55,7 @@ export const products: Product[] = [
   {
     slug: 'ochre-cotton-twill-hat',
     name: 'Ochre cotton twill hat',
-    kind: 'wearables',
+    kind: 'hat',
     price: 68,
     color: 'Warm ochre',
     materials: ['Cotton twill', 'Cotton'],
@@ -72,7 +70,7 @@ export const products: Product[] = [
   {
     slug: 'moss-corduroy-hat',
     name: 'Moss corduroy hat',
-    kind: 'wearables',
+    kind: 'hat',
     price: 58,
     color: 'Garden moss',
     materials: ['Cotton corduroy', 'Cotton'],
@@ -87,7 +85,7 @@ export const products: Product[] = [
   {
     slug: 'oat-cotton-hat',
     name: 'Oat cotton hat',
-    kind: 'wearables',
+    kind: 'hat',
     price: 56,
     color: 'Natural oat',
     materials: ['Cotton', 'Cotton twill'],

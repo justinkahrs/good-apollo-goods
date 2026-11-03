@@ -9,10 +9,9 @@ export function initProductGallery(
   ];
   if (slides.length < 2) return;
 
-  const thumbnails = [
-      ...gallery.querySelectorAll<HTMLButtonElement>('[data-gallery-thumb]'),
-    ],
-    controls = gallery.querySelector<HTMLElement>('[data-gallery-controls]'),
+  const controls = gallery.querySelector<HTMLElement>(
+      '[data-gallery-controls]',
+    ),
     navigation = gallery.querySelector<HTMLElement>(
       '[data-gallery-navigation]',
     ),
@@ -64,18 +63,13 @@ export function initProductGallery(
       const isActive = index === activeSlide;
       slide.hidden = !isVisible || !isActive;
       slide.toggleAttribute('data-gallery-active', isActive);
-      if (thumbnails[index]) {
-        thumbnails[index].hidden = !isVisible;
-        thumbnails[index].setAttribute('aria-pressed', String(isActive));
-      }
     }
 
     const hasNavigation = visibleSlides.length > 1;
     if (controls) controls.hidden = !hasNavigation;
     if (navigation) navigation.hidden = !hasNavigation;
     if (status) {
-      const image = slides[activeSlide]?.querySelector('img');
-      status.textContent = `Photo ${activePosition + 1} of ${visibleSlides.length}${image?.alt ? `: ${image.alt}` : ''}`;
+      status.textContent = `Photo ${activePosition + 1} of ${visibleSlides.length}`;
     }
   };
 
@@ -88,9 +82,6 @@ export function initProductGallery(
 
   previous?.addEventListener('click', () => move(-1));
   next?.addEventListener('click', () => move(1));
-  thumbnails.forEach((thumbnail, index) =>
-    thumbnail.addEventListener('click', () => render(index)),
-  );
   form?.addEventListener('change', () => render(visibleSlides[0]));
   gallery.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;

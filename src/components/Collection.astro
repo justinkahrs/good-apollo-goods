@@ -3,29 +3,18 @@ import { publicCatalog } from '../server/catalog';
 import ProductCard from './ProductCard.astro';
 
 interface Props {
-  kind?: 'hat' | 'accessory' | 'other' | 'wearables' | 'art' | 'all';
+  kind?: 'hat' | 'all';
   compact?: boolean;
 }
-const { kind = 'all', compact = false } = Astro.props;
+const { compact = false } = Astro.props;
 let unavailable = false;
 const products = await publicCatalog().catch(() => {
   unavailable = true;
   return [];
 });
-const visibleProducts =
-  kind === 'all'
-    ? products
-    : products.filter((product) => {
-        if (kind === 'wearables') return product.category !== 'other';
-        if (kind === 'art') return product.category === 'other';
-        return product.category === kind;
-      });
-const shopCategories = [
-  { id: 'all', label: 'All pieces', href: '/shop/' },
-  { id: 'wearables', label: 'Wearables', href: '/shop/wearables/' },
-  { id: 'art', label: 'Art', href: '/shop/art/' },
-];
-const category = shopCategories.find((item) => item.id === kind);
+const visibleProducts = products.filter(
+  (product) => product.category === 'hat',
+);
 ---
 
 <section
@@ -37,11 +26,7 @@ const category = shopCategories.find((item) => item.id === kind);
     <div>
       <p class="eyebrow">The small batch</p>
       <h2 id="collection-title" class="display-heading">
-        {compact
-          ? 'From the small batch.'
-          : kind === 'all'
-            ? 'All pieces.'
-            : `${category?.label ?? 'All pieces'}.`}
+        {compact ? 'From the small batch.' : 'Hats.'}
       </h2>
     </div>
     <p>
@@ -50,16 +35,6 @@ const category = shopCategories.find((item) => item.id === kind);
       Made slowly in Grand Rapids.
     </p>
   </div>
-  <nav class="collection-filters" aria-label="Shop categories">
-    {shopCategories.map((category) => (
-      <a
-        href={category.href}
-        aria-current={category.id === kind ? 'page' : undefined}
-      >
-        {category.label}
-      </a>
-    ))}
-  </nav>
   <div class="product-grid">
     {visibleProducts.map((product) => (
       <ProductCard product={product} />
@@ -99,37 +74,6 @@ const category = shopCategories.find((item) => item.id === kind);
     color: var(--color-muted);
     line-height: 1.7;
   }
-  .collection-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    margin-top: var(--space-10);
-  }
-  .collection-filters a {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    padding: var(--space-2) var(--space-5);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    font-size: var(--text-sm);
-    text-decoration: none;
-    transition:
-      background var(--duration-fast),
-      color var(--duration-fast),
-      transform var(--duration-fast);
-  }
-  .collection-filters a[aria-current='page'] {
-    color: var(--color-page);
-    background: var(--color-brand);
-    border-color: var(--color-brand);
-  }
-  .collection-filters a:hover:not([aria-current='page']) {
-    background: var(--color-surface);
-  }
-  .collection-filters a:active {
-    transform: scale(0.98);
-  }
   .product-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -156,9 +100,6 @@ const category = shopCategories.find((item) => item.id === kind);
     }
     .product-grid {
       grid-template-columns: 1fr;
-    }
-    .collection-filters {
-      margin-top: var(--space-6);
     }
   }
 </style>

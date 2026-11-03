@@ -34,7 +34,7 @@ export async function importDrafts() {
     { timeout: 1000 },
   ) as Legacy[];
   const categoryFor = (kind: string) => {
-    if (kind === 'wearables') return 'hat';
+    if (kind === 'hat' || kind === 'wearables') return 'hat';
     if (kind === 'art') return 'other';
     return 'other';
   };

@@ -8,7 +8,7 @@ import { salesReady, discoveryEnabled } from '../../server/config';
 export const prerender = false;
 const products = await publicCatalog();
 const product = products.find((p) => p.slug === Astro.params.slug);
-if (!product) return Astro.redirect('/404/', 404);
+if (!product || product.category !== 'hat') return Astro.redirect('/404/', 404);
 const related = products
   .filter((p) => p.slug !== product.slug && p.category === product.category)
   .slice(0, 2);
@@ -20,9 +20,8 @@ const singlePiece =
   product.variants.length === 1 &&
   Object.keys(product.variants[0].options ?? {}).length === 0;
 const price = Math.min(...product.variants.map((v) => v.priceCents));
-const categoryLabel = product.category === 'other' ? 'Art' : 'Wearables';
-const categoryHref =
-  product.category === 'other' ? '/shop/art/' : '/shop/wearables/';
+const categoryLabel = 'Hats';
+const categoryHref = '/shop/hats/';
 const structured = {
   '@context': 'https://schema.org',
   '@type': 'Product',
@@ -75,6 +74,7 @@ const structured = {
         {product.images.map((image, index) => (
           <figure
             data-gallery-slide
+            hidden={index !== 0}
             data-variant-photo={image.variantId ?? ''}
             role="group"
             aria-roledescription="slide"
@@ -114,37 +114,7 @@ const structured = {
       </div>
       {product.images.length > 1 && (
         <div class="gallery-navigation" data-gallery-navigation hidden>
-          <div
-            class="gallery-thumbnails"
-            role="group"
-            aria-label="Choose a photo"
-          >
-            {product.images.map((image, index) => (
-              <button
-                class="gallery-thumbnail"
-                type="button"
-                data-gallery-thumb={index}
-                data-variant-photo={image.variantId ?? ''}
-                aria-label={`Show photo ${index + 1}: ${image.alt}`}
-                aria-pressed={index === 0 ? 'true' : 'false'}
-              >
-                <img
-                  src={image.url}
-                  srcset={image.srcset}
-                  sizes="72px"
-                  alt=""
-                  width="72"
-                  height="90"
-                  loading="lazy"
-                />
-              </button>
-            ))}
-          </div>
-          <p
-            class="gallery-status sr-only"
-            data-gallery-status
-            aria-live="polite"
-          ></p>
+          <p class="gallery-status" data-gallery-status aria-live="polite"></p>
         </div>
       )}
     </div>
@@ -157,7 +127,6 @@ const structured = {
         {money(price)}
       </p>
       <p class="product-description">{product.description}</p>
-      <p class="product-detail">{product.detail}</p>
       <form class="purchase-form" data-add-to-cart>
         {singlePiece ? (
           <input type="hidden" name="variant" value={product.variants[0].id} />
@@ -202,6 +171,12 @@ const structured = {
         <a href="/cart/">View cart</a>
       </form>
       <dl class="product-facts">
+        {product.detail && (
+          <div>
+            <dt>Size & details</dt>
+            <dd>{product.detail}</dd>
+          </div>
+        )}
         <div>
           <dt>Materials</dt>
           <dd>{product.materials}</dd>
@@ -302,9 +277,10 @@ const structured = {
     padding-bottom: var(--space-section);
   }
   .product-gallery {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-4);
+    display: block;
+  }
+  .product-gallery [hidden] {
+    display: none;
   }
   .product-gallery[data-gallery-ready] {
     display: block;
@@ -313,6 +289,7 @@ const structured = {
     grid-template-columns: 1fr;
   }
   .gallery-stage {
+    touch-action: pan-y;
     position: relative;
   }
   .product-gallery figure {
@@ -361,40 +338,17 @@ const structured = {
   .gallery-arrow:hover {
     background: var(--color-page);
   }
-  .gallery-arrow:focus-visible,
-  .gallery-thumbnail:focus-visible {
+  .gallery-arrow:focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: 3px;
   }
   .gallery-navigation {
     margin-top: var(--space-3);
   }
-  .gallery-thumbnails {
-    display: flex;
-    gap: var(--space-2);
-    overflow-x: auto;
-    padding: 3px 3px var(--space-2);
-    scrollbar-color: var(--color-border) transparent;
-    scrollbar-width: thin;
-  }
-  .gallery-thumbnail {
-    flex: 0 0 4.5rem;
-    padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-surface);
-    cursor: pointer;
-  }
-  .gallery-thumbnail[aria-pressed='true'] {
-    border: 2px solid var(--color-brand);
-  }
-  .gallery-thumbnail img {
-    display: block;
-    width: 100%;
-    aspect-ratio: 4 / 5;
-    object-fit: cover;
-    border-radius: 0;
+  .gallery-status {
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    text-align: center;
   }
   .product-placeholder {
     width: 100%;
@@ -493,6 +447,7 @@ const structured = {
   .size-options span {
     min-width: 50px;
     min-height: 46px;
+    padding: var(--space-3) var(--space-5);
     display: grid;
     place-items: center;
     border: 1px solid var(--color-border);

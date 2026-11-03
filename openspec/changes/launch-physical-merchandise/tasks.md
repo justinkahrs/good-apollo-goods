@@ -120,3 +120,10 @@ Covers integrated `production-readiness` and primary-operator acceptance across 
 - [ ] 9.6 Record launch revision/time and perform the ordinary first-real-order operational check after an actual customer sale; verify payment, reserved/consumed stock, notifications, and packing agree and hand off the operator/operations guides with working support contacts.
 
 - [x] 9.7 Produce and inspect a narrated internal studio walkthrough using the supplied hat photo and Justin/LuxTTS; demonstrate product/photo creation, stock/publication, storefront, real order queues and configurable settings, restore demo changes, and document any unshown provider/packing steps without claiming independent operator acceptance.
+
+## 10. Owner-requested hats storefront refinement
+
+- [x] 10.1 Display a single gallery photo from initial rendering, remove thumbnails, and retain previous/next, keyboard, touch and count controls.
+- [x] 10.2 Place size/details in metadata and add horizontal padding to piece choices.
+- [x] 10.3 Present only Hats in public collections and product category controls, preserve legacy category URLs with redirects, and align draft imports.
+- [x] 10.4 Verify the standalone build and Google Chrome mobile/desktop gallery flow, metadata and legacy redirects.

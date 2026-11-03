@@ -1,8 +1,4 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import Collection from '../../components/Collection.astro';
 export const prerender = false;
+return Astro.redirect('/shop/hats/', 301);
 ---
-<Layout title="Art — Good Apollo Goods" description="Original work by Good Apollo Goods.">
-  <Collection kind="art" />
-</Layout>
