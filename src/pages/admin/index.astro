@@ -93,7 +93,7 @@ const products = await db().product.findMany({
             <div class="studio-links">
               <a href={`/admin/products/${p.id}/`}>Edit product</a>
               {p.status === 'published' && (
-                <a href={`/pieces/${p.slug}/`}>View listing</a>
+                <a href={`/shop/hats/${p.slug}/`}>View listing</a>
               )}
             </div>
           </div>

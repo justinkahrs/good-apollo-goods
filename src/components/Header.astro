@@ -7,7 +7,7 @@ const navigation = [
   { label: 'About', href: '/about/' },
   { label: 'Contact', href: '/contact/' },
 ];
-const isActive = (href: string) => pathname === href || pathname.startsWith(href) || (href === '/shop/' && pathname.startsWith('/pieces/'));
+const isActive = (href: string) => pathname === href || pathname.startsWith(href);
 ---
 <div class="announcement">Handmade in Grand Rapids, Michigan</div>
 <header class="container site-header">

@@ -150,7 +150,7 @@ export const prerender = false;
         row.className = 'cart-item';
         const h = el('h2'),
           a = el('a', line.name) as HTMLAnchorElement;
-        a.href = '/pieces/' + encodeURIComponent(line.slug) + '/';
+        a.href = '/shop/hats/' + encodeURIComponent(line.slug) + '/';
         h.append(a);
         copy.append(
           h,
