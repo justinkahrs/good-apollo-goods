@@ -59,6 +59,7 @@ compose=(docker compose --env-file "$env_file" \
   -f docker-compose.good-apollo.yaml)
 
 old_tag="$(awk -F= '$1=="GOOD_APOLLO_IMAGE_TAG" {print substr($0,index($0,"=")+1)}' "$env_file")"
+old_tag="gag-commerce:$old_tag"
 if [[ ! "$old_tag" =~ ^gag-commerce:[A-Za-z0-9][A-Za-z0-9._-]{5,80}$ ]]; then
   echo "Could not read exactly one valid current Good Apollo image tag." >&2
   exit 5
@@ -114,7 +115,7 @@ data = path.read_text()
 pattern = re.compile(r"(?m)^GOOD_APOLLO_IMAGE_TAG=.*$")
 if len(pattern.findall(data)) != 1:
     raise SystemExit("Expected one GOOD_APOLLO_IMAGE_TAG setting")
-updated = pattern.sub("GOOD_APOLLO_IMAGE_TAG=" + tag, data, count=1)
+updated = pattern.sub("GOOD_APOLLO_IMAGE_TAG=" + tag.removeprefix("gag-commerce:"), data, count=1)
 fd, temporary = tempfile.mkstemp(prefix=".good-apollo-env.", dir=path.parent)
 try:
     with os.fdopen(fd, "w") as output:

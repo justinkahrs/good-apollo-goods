@@ -16,13 +16,12 @@ The live app image and private runtime configuration are managed from the separa
 
 **For a routine source change:**
 
-1. Merge the reviewed app change to GitHub `main`. The deploy scripts in this change must also be merged before their first use.
+1. Review the intended app diff, run relevant validation, commit the intended files, and push to GitHub `main`. A request to deploy authorizes the agent to complete this routine release without asking again. Preserve unrelated local work.
 2. On Anna's Mac, run:
 
    ```sh
    cd ~/Projects/good-apollo-goods
    git switch main
-   git pull --ff-only origin main
    ./scripts/deploy-vps.sh
    ```
 
@@ -40,3 +39,5 @@ Anna's VPS key is restricted to this Good Apollo deploy command. It does not pro
 - Follow [the launch checklist](launch-checklist.md) before enabling checkout or public discovery.
 
 For dated release records and obsolete hosting/DNS details, see [deployment history](deployment-history.md).
+
+The deploy script automatically fast-forwards a clean main checkout when it is behind origin/main. The private runtime image setting contains only the tag suffix; Compose supplies `gag-commerce:`. Server-script changes must also be installed using Justin’s existing `senna-infra` access at `/home/senna/Projects/infra/.runtime/good-apollo/deploy-remote.sh`; Anna’s restricted deploy key does not grant this administration capability.

@@ -11,11 +11,14 @@ if [[ "$branch" != "main" ]]; then
 fi
 
 if [[ -n "$(git status --porcelain)" ]]; then
-  echo "Working tree is not clean; commit or discard local changes first." >&2
+  echo "Working tree has local changes. Review and commit the intended release files first; preserve unrelated work. Run git status --short." >&2
   exit 2
 fi
 
 git fetch --quiet origin main
+if git merge-base --is-ancestor HEAD origin/main; then
+  git merge --ff-only origin/main
+fi
 commit="$(git rev-parse HEAD)"
 if [[ "$commit" != "$(git rev-parse origin/main)" ]]; then
   echo "Local main must match origin/main. Pull the reviewed release commit first." >&2

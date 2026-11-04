@@ -75,3 +75,12 @@ the durable `.state/` ledger. Keep credentials in `~/projects/.env`; never copy
 them into this repository. No paid features, trial, additional users or Jira
 automation rules are needed or authorized.
 
+
+## Deploy requests from Anna or Justin
+
+A request to deploy or publish application changes authorizes the agent to complete the routine application release: inspect the intended diff, run relevant checks, commit only intended release files, push main, run `./scripts/deploy-vps.sh`, and verify the public result. Do not require another approval merely because the deploy script says “reviewed”; review the diff and validation results as part of the authorized work. Stop for concrete access failures or schema/infrastructure changes outside this routine release scope.
+
+- Deploy from `~/Projects/good-apollo-goods` on Anna's Mac using the existing restricted `senna-gag-deploy` SSH alias. Docker builds on the VPS; do not install Docker Desktop or request general VPS access.
+- Use `./scripts/deploy-vps.sh`. It fetches and fast-forwards a clean main checkout when behind origin/main. Review and commit intended local changes before running it; never discard or include unrelated work to make the checkout clean. Push intended commits if main is ahead.
+- A push alone does not deploy. Continue through the VPS command and public verification, reporting the live commit/image and result. Check `/`, `/admin/sign-in/`, and unauthenticated `/admin` and `/admin/` redirects. Keep sales and newsletter gates disabled.
+- The VPS stores `GOOD_APOLLO_IMAGE_TAG` as a suffix; Compose adds `gag-commerce:`. The restricted server script is installed separately at `/home/senna/Projects/infra/.runtime/good-apollo/deploy-remote.sh`. Editing its repository source does not update that installed copy. Justin's existing `senna-infra` access is needed to install a repaired copy; Anna's restricted key cannot administer the server script.
