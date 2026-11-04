@@ -149,7 +149,13 @@ test('denies protected pages, exports and cross-site mutations; prelaunch stays 
   page,
   request,
 }) => {
-  await page.goto('/admin/');
+  for (const path of ['/admin', '/admin/', '/admin/orders', '/admin/orders/']) {
+    const response = await request.get(path, { maxRedirects: 0 });
+    expect(response.status()).toBe(302);
+    expect(response.headers().location).toBe('/admin/sign-in/');
+    expect(await response.text()).not.toContain('Your small batch');
+  }
+  await page.goto('/admin');
   await expect(page).toHaveURL(/\/admin\/sign-in\//);
   const denied = await request.get('/api/admin/export/?kind=orders');
   expect(denied.status()).toBe(401);

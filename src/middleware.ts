@@ -8,7 +8,8 @@ import {
   shouldVerifyNetlifyProxy,
 } from './server/netlify-proxy';
 export const onRequest = defineMiddleware(async (context, next) => {
-  const p = context.url.pathname;
+  // Astro routes accept both spellings, so authorization must do the same.
+  const p = context.url.pathname.replace(/\/+$/, '') || '/';
   const e = config();
   if (
     shouldVerifyNetlifyProxy(
@@ -32,8 +33,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
   if (
-    p.startsWith('/admin/') &&
-    !['/admin/sign-in/', '/admin/verify/'].includes(p)
+    (p === '/admin' || p.startsWith('/admin/')) &&
+    !['/admin/sign-in', '/admin/verify'].includes(p)
   ) {
     try {
       await adminSession(context.request);
@@ -48,7 +49,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       });
     }
   }
-  if (p.startsWith('/api/admin/') && p !== '/api/admin/verify/') {
+  if ((p === '/api/admin' || p.startsWith('/api/admin/')) && p !== '/api/admin/verify') {
     try {
       await adminSession(context.request);
     } catch (e) {
@@ -57,10 +58,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
   const response = await next();
   if (
+    p === '/admin' ||
     p.startsWith('/admin/') ||
     p.startsWith('/api/') ||
-    p === '/cart/' ||
-    p === '/order/'
+    p === '/cart' ||
+    p === '/order'
   ) {
     for (const [k, v] of Object.entries(privateHeaders))
       response.headers.set(k, v);

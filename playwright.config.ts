@@ -23,6 +23,7 @@ export default defineConfig({
   reporter: 'dot',
   use: {
     baseURL: process.env.APP_URL,
+    channel: 'chrome',
     trace: 'off',
     screenshot: 'only-on-failure',
   },
