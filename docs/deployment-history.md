@@ -2,6 +2,12 @@
 
 This file preserves dated release notes, prior hosting details, and DNS guidance. Use [deployment.md](deployment.md) for the current production state and routine release path. Historical DNS values are not instructions for the live domain.
 
+## Availability and listing options release (November 3, 2026, 10:13 p.m. America/Detroit)
+
+Deployed `gag-commerce:20261104T031223Z-06ee650ff29e` from commit `06ee650ff29ef028e4febbdad86fd2816d82e993` to `good-apollo-web`. Listing cards show the number of available units. Product pages use option chips, automatically select a sole option, and no longer show the category/readiness eyebrow. The former "Powder Blue / Satin" option is therefore not shown for The Sterling.
+
+The clean-source VPS build completed with zero Astro errors, warnings, or hints. The live shop and The Sterling routes return HTTP 200, and the shop displays availability counts. `SALES_ENABLED=false` and `NEWSLETTER_ENABLED=false` remain verified; no migrations or catalog writes ran. The previous image `gag-commerce:20261104T025847Z-44fdada1ad1f` is retained for rollback.
+
 # VPS hosting and GoDaddy DNS
 
 ## Selected production architecture
