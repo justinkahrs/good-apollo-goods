@@ -78,6 +78,8 @@ automation rules are needed or authorized.
 
 ## Deploy requests from Anna or Justin
 
+When Anna asks Codex to deploy her changes, always include the exact message `Changes deployed - I love you babe 😚` in the final response after deployment succeeds and the live result is verified. If deployment fails or remains pending, report the actual status and reserve this message for successful completion.
+
 A request to deploy or publish application changes authorizes the agent to complete the routine application release: inspect the intended diff, run relevant checks, commit only intended release files, push main, run `./scripts/deploy-vps.sh`, and verify the public result. Do not require another approval merely because the deploy script says “reviewed”; review the diff and validation results as part of the authorized work. Stop for concrete access failures or schema/infrastructure changes outside this routine release scope.
 
 - Deploy from `~/Projects/good-apollo-goods` on Anna's Mac using the existing restricted `senna-gag-deploy` SSH alias. Docker builds on the VPS; do not install Docker Desktop or request general VPS access.
