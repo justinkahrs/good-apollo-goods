@@ -427,13 +427,12 @@ it('rejects invalid publication and stale saves; duplicate gets independent zero
   await expect(
     saveProduct(actor, { ...edit, revision: 2, description: '' }),
   ).rejects.toThrow();
-  await expect(
-    saveProduct(actor, {
-      ...edit,
-      revision: 2,
-      slug: 'changed-published-address',
-    }),
-  ).rejects.toThrow();
+  const renamed = await saveProduct(actor, {
+    ...edit, revision: 2, slug: 'changed-published-address',
+  });
+  expect(renamed).toMatchObject({ slug: 'changed-published-address', status: 'published', revision: 3 });
+  const collision = await fixture();
+  await expect(saveProduct(actor, { ...edit, revision: 3, slug: collision.p.slug })).rejects.toThrow('already in use');
   expect(
     (await db().product.findUniqueOrThrow({ where: { id: p.id } })).description,
   ).toBe(edit.description);

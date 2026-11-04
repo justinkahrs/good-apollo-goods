@@ -4,9 +4,10 @@ An Astro merchandise storefront and private studio admin for products, variants,
 
 ## Development
 
-Requires Node 22.12+ in the 22.x line, PostgreSQL 16+, npm and Docker for isolated S3/mail.
+Requires Node 22.23.4+ in the 22.x line, PostgreSQL 16+, npm and Docker for isolated S3/mail.
 
 ```sh
+nvm install && nvm use # when using nvm
 npm ci
 npm run local:setup
 docker compose up -d

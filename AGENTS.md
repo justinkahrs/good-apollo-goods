@@ -21,7 +21,7 @@ Read the selected skill's `SKILL.md` fully before using it. OpenSpec configurati
 
 ## Runtime and validation
 
-- Node.js 22.x, at least 22.12; npm and `package-lock.json`.
+- Node.js 22.x, at least 22.23.4; npm and `package-lock.json`.
 - `npm ci` installs dependencies.
 - `npm run dev` starts Astro development at localhost:4371; Astro manages its background server (`npx astro dev stop` stops this project's server).
 - `npm run db:migrate`, `npm run db:seed`, and `npm run admin:bootstrap` prepare the isolated development environment.

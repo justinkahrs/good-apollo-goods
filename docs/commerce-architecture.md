@@ -14,7 +14,7 @@ The VPS, shared PostgreSQL, Garage and Mautic are existing self-hosted services;
 
 ## Local setup
 
-Node 22.12+ is required. Install with `npm ci`; postinstall generates Prisma 7.10. Keep matching Prisma client/adapter/CLI versions pinned. Stripe 22.6 and Better Auth 1.7 are pinned. Transitive security overrides are in package.json and must be checked when dependencies change.
+Node 22.23.4+ is required. Install with `npm ci`; postinstall generates Prisma 7.10. Keep matching Prisma client/adapter/CLI versions pinned. Stripe 22.6 and Better Auth 1.7 are pinned. Transitive security overrides are in package.json and must be checked when dependencies change.
 
 On this Mac, `npm run local:setup` creates independent `good_apollo_dev` and `good_apollo_test` databases and a non-superuser role using the existing Homebrew PostgreSQL. It preserves existing `.env` entries and writes random independent secrets privately. On another machine, create those two databases with your PostgreSQL tools and fill `.env` from `.env.example`. Do not point tests at customer data.
 

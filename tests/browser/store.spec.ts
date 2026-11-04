@@ -316,7 +316,7 @@ test('creates an optionless piece with one price, recovers edits and preserves i
     .getByLabel('Visibility', { exact: true })
     .selectOption('published');
   await saveAndReload(page, 'Save product');
-  await page.goto('/pieces/watermelon-studio-fixture/');
+  await page.goto('/shop/hats/watermelon-studio-fixture/');
   await expect(page.getByRole('radio')).toHaveCount(0);
   await expect(
     page.locator('[data-add-to-cart] input[name=variant]'),
@@ -329,7 +329,7 @@ test('creates an optionless piece with one price, recovers edits and preserves i
   await page.goto('/shop/');
   await expect(
     page.getByRole('link', { name: /Watermelon studio fixture/ }),
-  ).toContainText('For everyone');
+  ).toContainText('4 available');
 });
 test('creates variants/photos, recovers edits, detects stale saves, publishes sold-out and changes stock on mobile', async ({
   page,
@@ -457,7 +457,7 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
     'Stale name must not overwrite',
   );
   await other.close();
-  await page.goto('/pieces/browser-workflow-hat/');
+  await page.goto('/shop/hats/browser-workflow-hat/');
   await expect(page.locator('#product-title')).toHaveText(
     'Browser workflow hat edited',
   );
@@ -535,7 +535,7 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
   await page.screenshot({
     path: 'output/playwright/browser-inventory-mobile.png',
   });
-  await page.goto('/pieces/browser-workflow-hat/');
+  await page.goto('/shop/hats/browser-workflow-hat/');
   await expect(
     page.getByRole('radio', { name: /Small \/ Moss/ }),
   ).toBeEnabled();
@@ -544,7 +544,7 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
     .getByRole('combobox', { name: 'Visibility', exact: true })
     .selectOption('archived');
   await saveAndReload(page, 'Save product');
-  expect((await page.goto('/pieces/browser-workflow-hat/'))?.status()).toBe(
+  expect((await page.goto('/shop/hats/browser-workflow-hat/'))?.status()).toBe(
     404,
   );
   await page.goto('/admin/settings/');

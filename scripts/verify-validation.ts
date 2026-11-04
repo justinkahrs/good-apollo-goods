@@ -1,6 +1,7 @@
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { resolve, join } from 'node:path';
+await mkdir(resolve('.local'), { recursive: true });
 const dir = await mkdtemp(resolve('.local/validation-probe-'));
 try {
   const probe = join(dir, 'probe.test.ts'),
