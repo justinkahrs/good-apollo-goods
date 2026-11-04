@@ -21,6 +21,9 @@ const schema = z
       .regex(/^[a-z0-9.-]+$/i)
       .optional(),
     DATABASE_URL: z.string().min(1).optional(),
+    LOCAL_CATALOG_MEDIA_ORIGIN: z
+      .literal('https://goodapollogoods.com')
+      .optional(),
     BETTER_AUTH_SECRET: z.string().min(32).optional(),
     QUOTE_SECRET: z.string().min(32).optional(),
     CRON_SECRET: z.string().min(32).optional(),
@@ -66,6 +69,17 @@ const schema = z
     NEWSLETTER_HMAC_SECRET: z.string().min(32).optional(),
   })
   .superRefine((value, context) => {
+    if (
+      value.LOCAL_CATALOG_MEDIA_ORIGIN &&
+      (value.NODE_ENV !== 'development' ||
+        !['localhost', '127.0.0.1'].includes(new URL(value.APP_URL).hostname))
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['LOCAL_CATALOG_MEDIA_ORIGIN'],
+        message: 'Production catalog media override is limited to localhost development',
+      });
+    }
     if (!!value.COMMERCE_EMAIL_API_URL !== !!value.COMMERCE_EMAIL_HMAC_SECRET) {
       context.addIssue({ code: 'custom', path: ['COMMERCE_EMAIL_HMAC_SECRET'], message: 'Commerce email route configuration is incomplete' });
     }

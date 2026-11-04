@@ -65,6 +65,4 @@ openspec validate launch-physical-merchandise --strict --no-interactive
 
 ## Deployment
 
-The current public preview is [good-apollo-goods-shop.netlify.app](https://good-apollo-goods-shop.netlify.app/). The selected commerce target is the existing Senna VPS; its private origin deployment is under validation. Admin and checkout remain unavailable until production services and credentials are configured.
-
-The primary domain is `goodapollogoods.com`. See [deployment and DNS](docs/deployment.md) for the selected VPS architecture, historical provider records, isolated environment/migration requirements, n8n five-minute scheduler and rollback. The scheduler source is maintained in `~/projects/infra`; it calls the commerce endpoint on the web host and does not move commerce processing off that host. New live sales are a separate release after the evidence checklist passes. A sale-disable rollback retains webhook/maintenance processing and historical orders.
+Production currently runs on the Senna VPS at `goodapollogoods.com`; pushing to GitHub does not deploy it. See [production deployment](docs/deployment.md) for the release path and its current manual step, and [the launch checklist](docs/launch-checklist.md) before enabling sales.

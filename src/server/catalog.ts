@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { atomic, db } from './db';
 import { cents, DomainError } from './domain';
+import { config } from './config';
 export const productInput = z.object({
   id: z.uuid().optional(),
   revision: z.number().int().positive().optional(),
@@ -271,6 +272,7 @@ export async function duplicateProduct(actorId: string, id: string) {
   });
 }
 export async function publicCatalog() {
+  const mediaOrigin = config().LOCAL_CATALOG_MEDIA_ORIGIN ?? '';
   const products = await db().product.findMany({
     where: { status: 'published' },
     include: productInclude,
@@ -292,9 +294,9 @@ export async function publicCatalog() {
         id: i.id,
         alt: i.alt,
         variantId: i.variantId,
-        url: `/media/${i.id}/1200/`,
+        url: `${mediaOrigin}/media/${i.id}/1200/`,
         srcset: [400, 800, 1200]
-          .map((w) => `/media/${i.id}/${w}/ ${w}w`)
+          .map((w) => `${mediaOrigin}/media/${i.id}/${w}/ ${w}w`)
           .join(', '),
       })),
     variants: p.variants
