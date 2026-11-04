@@ -9,6 +9,17 @@ import { db } from './db';
 import { enqueue, deliverOutbox } from './email';
 import { DomainError } from './domain';
 let instance: ReturnType<typeof makeAuth> | undefined;
+
+function loopback(hostname: string) {
+  return ['localhost', '127.0.0.1', '[::1]'].includes(hostname);
+}
+
+export function isLocalDevelopmentRequest(request: Request) {
+  if (process.env.NODE_ENV !== 'development') return false;
+  const appUrl = new URL(config().APP_URL);
+  return loopback(new URL(request.url).hostname) && loopback(appUrl.hostname);
+}
+
 function makeAuth() {
   const e = config();
   return betterAuth({
@@ -69,6 +80,26 @@ export function auth() {
   return (instance ??= makeAuth());
 }
 export async function adminSession(request: Request, verified = true) {
+  if (isLocalDevelopmentRequest(request)) {
+    const email = adminEmails()[0];
+    const user = await db().user.upsert({
+      where: { email },
+      create: {
+        email,
+        name: 'Local development operator',
+        emailVerified: true,
+        role: 'admin',
+      },
+      update: { emailVerified: true, role: 'admin', banned: false },
+    });
+    return {
+      user,
+      session: { id: `local-development:${user.id}` },
+    } as unknown as NonNullable<
+      Awaited<ReturnType<ReturnType<typeof auth>['api']['getSession']>>
+    > & { user: typeof user };
+  }
+
   const session = await auth().api.getSession({ headers: request.headers });
   if (!session)
     throw new DomainError(

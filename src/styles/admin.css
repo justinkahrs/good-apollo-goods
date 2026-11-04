@@ -136,6 +136,10 @@
   flex-wrap: wrap;
   margin-top: 1.25rem;
 }
+.admin-main .photo-delete {
+  color: var(--color-brand);
+  border-color: var(--color-brand);
+}
 .admin-main .muted {
   color: var(--color-muted);
   font-size: 0.9rem;

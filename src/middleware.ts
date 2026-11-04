@@ -1,5 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { adminSession } from './server/auth';
+import { adminSession, isLocalDevelopmentRequest } from './server/auth';
 import { failure, privateHeaders } from './server/http';
 import { DomainError } from './server/domain';
 import { config, productionDeployment } from './server/config';
@@ -11,6 +11,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Astro routes accept both spellings, so authorization must do the same.
   const p = context.url.pathname.replace(/\/+$/, '') || '/';
   const e = config();
+  const localAdmin = isLocalDevelopmentRequest(context.request);
   if (
     shouldVerifyNetlifyProxy(
       context.url.hostname,
@@ -32,8 +33,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
       });
     }
   }
+  if (localAdmin && ['/admin/sign-in', '/admin/verify'].includes(p))
+    return context.redirect('/admin/');
   if (
     (p === '/admin' || p.startsWith('/admin/')) &&
+    !localAdmin &&
     !['/admin/sign-in', '/admin/verify'].includes(p)
   ) {
     try {

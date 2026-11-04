@@ -16,7 +16,11 @@ import heroImage from '../assets/good-apollo-hero.jpeg';
     </div>
     <div class="hero-textile"><Image class="hero-image" src={heroImage} alt="Woman wearing a blue hat against a golden yellow wall" widths={[600, 900, 1200]} sizes="(max-width: 800px) 90vw, 48vw" width={1200} height={1500} fit="cover" format="webp" loading="eager" fetchpriority="high" /></div>
   </section>
-  <Collection compact />
+  <Collection
+    compact
+    showEyebrow={false}
+    headingText="Elevate your everyday."
+  />
   <OurStory />
 </Layout>
 <style>

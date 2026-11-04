@@ -88,6 +88,7 @@ const structured = {
               width="1200"
               height="1200"
               loading={index === 0 ? 'eager' : 'lazy'}
+              fetchpriority={index === 0 ? 'high' : 'low'}
             />
           </figure>
         ))}
@@ -128,30 +129,24 @@ const structured = {
         {singlePiece ? (
           <input type="hidden" name="variant" value={product.variants[0].id} />
         ) : (
-          <fieldset>
-            <legend>
-              <span>Choose your piece</span>
-              <a href="/sizing-care/">Size guide</a>
-            </legend>
-            <div class="size-options">
-              {product.variants.map((v) => (
-                <label>
-                  <input
-                    type="radio"
-                    name="variant"
+          <div class="variant-select">
+            <label for="variant">Size</label>
+            <div class="variant-select-row">
+              <select id="variant" name="variant" required>
+                <option value="" disabled selected>Select a size</option>
+                {product.variants.map((v) => (
+                  <option
                     value={v.id}
                     data-price={v.priceCents}
-                    required
                     disabled={v.available === 0}
-                  />
-                  <span>
-                    {v.label}
-                    {v.available === 0 ? ' — Sold out' : ''}
-                  </span>
-                </label>
-              ))}
+                  >
+                    {v.label}{v.available === 0 ? ' — Sold out' : ''}
+                  </option>
+                ))}
+              </select>
+              <a href="/sizing-care/">Size guide</a>
             </div>
-          </fieldset>
+          </div>
         )}
         <button
           class="button button--primary add-button"
@@ -232,13 +227,13 @@ const structured = {
     form,
   );
   form?.addEventListener('change', () => {
-    const selected = form.querySelector<HTMLInputElement>('input:checked');
+    const selected = form.querySelector<HTMLSelectElement>('select[name="variant"]');
     const price = document.querySelector('[data-piece-price]');
-    if (selected && price)
+    if (selected?.selectedOptions[0]?.dataset.price && price)
       price.textContent = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-      }).format(Number(selected.dataset.price) / 100);
+      }).format(Number(selected.selectedOptions[0].dataset.price) / 100);
   });
   form?.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -410,62 +405,35 @@ const structured = {
     color: var(--color-muted);
     line-height: 1.8;
   }
-  fieldset {
-    border: 0;
-    padding: 0;
-    margin: 0 0 var(--space-6);
+  .variant-select {
+    margin-bottom: var(--space-6);
   }
-  legend {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    gap: var(--space-4);
-    margin-bottom: var(--space-4);
+  .variant-select > label {
+    display: block;
+    margin-bottom: var(--space-3);
     font-size: var(--text-sm);
     font-weight: 600;
   }
-  legend a {
-    color: var(--color-muted);
-    font-weight: 400;
-    text-underline-offset: 4px;
-  }
-  .size-options {
+  .variant-select-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
+    align-items: center;
+    gap: var(--space-4);
   }
-  .size-options input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-  .size-options span {
-    min-width: 50px;
-    min-height: 46px;
-    padding: var(--space-3) var(--space-5);
-    display: grid;
-    place-items: center;
+  .variant-select select {
+    min-width: 0;
+    min-height: 48px;
+    flex: 1;
+    padding: var(--space-3) var(--space-4);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    transition:
-      background var(--duration-fast),
-      color var(--duration-fast),
-      border-color var(--duration-fast);
+    color: var(--color-text);
+    background: var(--color-page);
+    font: inherit;
   }
-  .size-options label {
-    cursor: pointer;
-  }
-  .size-options label:hover span {
-    background: var(--color-surface);
-  }
-  .size-options input:checked + span {
-    background: var(--color-brand);
-    border-color: var(--color-brand);
-    color: var(--color-page);
-  }
-  .size-options input:focus-visible + span {
-    outline: 2px solid var(--color-focus);
-    outline-offset: 4px;
+  .variant-select-row a {
+    color: var(--color-muted);
+    font-size: var(--text-sm);
+    text-underline-offset: 4px;
   }
   .add-button {
     width: 100%;

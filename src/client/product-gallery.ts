@@ -26,6 +26,7 @@ export function initProductGallery(
     form?.querySelector<HTMLInputElement>(
       'input[name="variant"][type="hidden"]',
     )?.value ??
+    form?.querySelector<HTMLSelectElement>('select[name="variant"]')?.value ??
     '';
 
   const render = (requestedSlide?: number) => {
@@ -77,12 +78,30 @@ export function initProductGallery(
     const nextPosition =
       (position + offset + visibleSlides.length) % visibleSlides.length;
     render(visibleSlides[nextPosition]);
+    preloadNext();
+  };
+
+  const preloadNext = () => {
+    if (visibleSlides.length < 2) return;
+    const position = visibleSlides.indexOf(activeSlide);
+    const nextSlide = slides[visibleSlides[(position + 1) % visibleSlides.length]];
+    const image = nextSlide.querySelector<HTMLImageElement>('img');
+    if (image) {
+      image.fetchPriority = 'low';
+      image.loading = 'eager';
+    }
   };
 
   dots.forEach((dot, index) =>
-    dot.addEventListener('click', () => render(index)),
+    dot.addEventListener('click', () => {
+      render(index);
+      preloadNext();
+    }),
   );
-  form?.addEventListener('change', () => render(visibleSlides[0]));
+  form?.addEventListener('change', () => {
+    render(visibleSlides[0]);
+    preloadNext();
+  });
   gallery.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
@@ -110,4 +129,5 @@ export function initProductGallery(
 
   gallery.dataset.galleryReady = 'true';
   render();
+  preloadNext();
 }

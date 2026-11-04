@@ -5,8 +5,16 @@ import ProductCard from './ProductCard.astro';
 interface Props {
   kind?: 'hat' | 'all';
   compact?: boolean;
+  showEyebrow?: boolean;
+  eyebrowText?: string;
+  headingText?: string;
 }
-const { compact = false } = Astro.props;
+const {
+  compact = false,
+  showEyebrow = true,
+  eyebrowText = 'The small batch',
+  headingText,
+} = Astro.props;
 let unavailable = false;
 const products = await publicCatalog().catch(() => {
   unavailable = true;
@@ -24,9 +32,9 @@ const visibleProducts = products.filter(
 >
   <div class="collection-heading">
     <div>
-      <p class="eyebrow">The small batch</p>
+      {showEyebrow && <p class="eyebrow">{eyebrowText}</p>}
       <h2 id="collection-title" class="display-heading">
-        {compact ? 'From the small batch.' : 'Hats.'}
+        {headingText ?? (compact ? 'From the small batch.' : 'Hats.')}
       </h2>
     </div>
     <p>
@@ -67,6 +75,9 @@ const visibleProducts = products.filter(
   }
   .collection-heading h2 {
     margin-top: var(--space-3);
+  }
+  .collection-heading > div:not(:has(.eyebrow)) h2 {
+    margin-top: 0;
   }
   .collection-heading > p span {
     display: block;

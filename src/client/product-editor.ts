@@ -267,8 +267,6 @@ if (photos) {
       variantId:
         (row.querySelector('[data-variant-association]') as HTMLSelectElement)
           .value || null,
-      archived: (row.querySelector('[data-archive]') as HTMLInputElement)
-        .checked,
     }));
   const syncPhotos = () => {
     saved.value = JSON.stringify(photoState());
@@ -290,8 +288,6 @@ if (photos) {
         (
           row.querySelector('[data-variant-association]') as HTMLSelectElement
         ).value = image.variantId ?? '';
-        (row.querySelector('[data-archive]') as HTMLInputElement).checked =
-          image.archived;
         list.append(row);
       }
       labels();
@@ -300,19 +296,37 @@ if (photos) {
   function labels() {
     let cover = false;
     [...list.children].forEach((li) => {
-      const visible = !(li.querySelector('[data-archive]') as HTMLInputElement)
-        .checked;
+      const visible = (li as HTMLElement).dataset.archived !== 'true';
       li.querySelector('[data-cover-label]')!.textContent =
-        visible && !cover ? 'Cover' : '';
+        !visible ? 'Hidden from shop' : !cover ? 'Cover' : '';
       if (visible) cover = true;
     });
   }
   labels();
   list.addEventListener('change', labels);
-  list.addEventListener('click', (e) => {
+  list.addEventListener('click', async (e) => {
     const target = e.target as HTMLElement,
       row = target.closest('li');
     if (!row) return;
+    if (target.matches('[data-delete]')) {
+      const confirmed = window.confirm(
+        'Permanently delete this photo and its uploaded files? This cannot be undone. Unsaved photo changes will be lost.',
+      );
+      if (!confirmed) return;
+      const s = photos.querySelector('[data-photo-status]')!;
+      try {
+        await action('photo.delete', {
+          productId: photos.dataset.productId,
+          imageId: row.dataset.photoId,
+          revision: Number(photos.dataset.revision),
+        });
+        clearPhotos();
+        location.reload();
+      } catch (error) {
+        status(s, (error as Error).message, error as Error);
+      }
+      return;
+    }
     if (target.matches('[data-up]') && row.previousElementSibling)
       list.insertBefore(row, row.previousElementSibling);
     if (target.matches('[data-down]') && row.nextElementSibling)
@@ -339,8 +353,6 @@ if (photos) {
                   '[data-variant-association]',
                 ) as HTMLSelectElement
               ).value || null,
-            archived: (row.querySelector('[data-archive]') as HTMLInputElement)
-              .checked,
           }),
         ),
       });

@@ -5,12 +5,11 @@ interface Props {
   product: PublicProduct;
 }
 const { product } = Astro.props;
-const primaryImage = product.images[0];
 const available = product.variants.some((v) => v.available > 0);
 const price = Math.min(...product.variants.map((v) => v.priceCents));
 const audience =
   product.audience === 'all'
-    ? 'For everyone'
+    ? null
     : product.audience === 'child'
       ? 'For children'
       : 'For adults';
@@ -18,18 +17,21 @@ const audience =
 
 <article class="product-card" data-category={product.category}>
   <a href={`/pieces/${product.slug}/`} class="product-link">
-    <div class="product-photo">
-      {primaryImage && (
+    <div class="product-photo" data-product-card-gallery>
+      {product.images.slice(0, 2).map((image, index) => (
         <img
-          src={primaryImage.url}
-          srcset={primaryImage.srcset}
-          alt={primaryImage.alt}
+          src={image.url}
+          srcset={image.srcset}
+          alt={image.alt}
           sizes="(max-width: 700px) 90vw, 45vw"
           width="800"
           height="1000"
-          loading="lazy"
+          loading={index === 1 ? 'eager' : 'lazy'}
+          fetchpriority={index === 1 ? 'low' : 'auto'}
+          data-card-slide
+          hidden={index !== 0}
         />
-      )}
+      ))}
       <span class="badge">{available ? 'Ready to ship' : 'Sold out'}</span>
       <span class="product-arrow" aria-hidden="true">
         ↗
@@ -44,12 +46,17 @@ const audience =
         </span>
       </div>
       <div class="product-detail-row">
-        <span>{audience}</span>
+        {audience && <span>{audience}</span>}
         <span>{product.materials}</span>
       </div>
     </div>
   </a>
 </article>
+<script>
+  import { initProductCardGallery } from '../client/product-card-gallery';
+
+  initProductCardGallery();
+</script>
 <style>
   .product-link {
     display: block;

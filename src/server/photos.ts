@@ -11,6 +11,7 @@ import { config } from './config';
 import { atomic, db } from './db';
 import { DomainError } from './domain';
 export const MAX_UPLOAD = 10 * 1024 * 1024;
+let cachedStorageClient: { signature: string; client: S3Client } | undefined;
 function publicPhoto<T extends { storageBytes: bigint }>(image: T) {
   const { storageBytes: _storageBytes, ...photo } = image;
   return photo;
@@ -24,8 +25,15 @@ export function storage() {
     endpoint: e.S3_ENDPOINT,
     forcePathStyle: e.S3_FORCE_PATH_STYLE,
   };
+  const signature = JSON.stringify(clientOptions);
+  if (!cachedStorageClient || cachedStorageClient.signature !== signature) {
+    cachedStorageClient = {
+      signature,
+      client: new S3Client(clientOptions),
+    };
+  }
   return {
-    client: new S3Client(clientOptions),
+    client: cachedStorageClient.client,
     bucket: e.S3_BUCKET,
   };
 }
@@ -250,7 +258,6 @@ export async function savePhotos(actorId: string, input: unknown) {
             id: z.uuid(),
             alt: z.string().trim().max(400),
             variantId: z.uuid().nullable(),
-            archived: z.boolean(),
           }),
         )
         .max(200),
@@ -276,7 +283,10 @@ export async function savePhotos(actorId: string, input: unknown) {
       )
     )
       throw new DomainError('Photo or variant belongs to another product.');
-    const visible = v.images.filter((i) => !i.archived);
+    const currentImages = new Map(p.images.map((image) => [image.id, image]));
+    const visible = v.images.filter(
+      (image) => !currentImages.get(image.id)?.archivedAt,
+    );
     if (
       p.images.some(
         (i) => !i.archivedAt && !v.images.some((x) => x.id === i.id),
@@ -289,7 +299,7 @@ export async function savePhotos(actorId: string, input: unknown) {
       p.status === 'published' &&
       (!visible.length ||
         visible.some((i) => {
-          const image = p.images.find((x) => x.id === i.id)!;
+          const image = currentImages.get(i.id)!;
           return (
             !i.alt ||
             image.placeholder ||
@@ -307,7 +317,6 @@ export async function savePhotos(actorId: string, input: unknown) {
           alt: image.alt,
           variantId: image.variantId,
           position,
-          archivedAt: image.archived ? new Date() : null,
         },
       });
     await tx.product.update({
@@ -320,6 +329,86 @@ export async function savePhotos(actorId: string, input: unknown) {
         action: 'photo.save',
         entityId: p.id,
         metadata: { count: visible.length },
+      },
+    });
+  });
+}
+
+export async function deletePhoto(actorId: string, input: unknown) {
+  const v = z
+    .object({
+      productId: z.uuid(),
+      imageId: z.uuid(),
+      revision: z.number().int(),
+    })
+    .parse(input);
+  const { client, bucket } = storage();
+  await atomic(async (tx) => {
+    const p = await tx.product.findUniqueOrThrow({
+      where: { id: v.productId },
+      include: { images: { orderBy: { position: 'asc' } } },
+    });
+    if (p.revision !== v.revision)
+      throw new DomainError(
+        'The product changed. Reload before deleting a photo.',
+        409,
+        'revision',
+      );
+    const image = p.images.find((item) => item.id === v.imageId);
+    if (!image)
+      throw new DomainError('That photo no longer exists. Reload the product.', 404);
+
+    const remaining = p.images.filter((item) => item.id !== image.id);
+    const visible = remaining.filter(
+      (item) =>
+        !item.archivedAt &&
+        !item.placeholder &&
+        item.verified &&
+        Boolean(item.alt.trim()) &&
+        Array.isArray(item.derivatives) &&
+        item.derivatives.length > 0,
+    );
+    if (p.status === 'published' && !visible.length)
+      throw new DomainError(
+        'A published product needs at least one visible photo. Add another photo before deleting this one.',
+      );
+
+    const derivativeKeys = Array.isArray(image.derivatives)
+      ? (image.derivatives as Array<{ key?: unknown }>).flatMap((item) =>
+          typeof item.key === 'string' ? [item.key] : [],
+        )
+      : [];
+    const keys = [
+      ...new Set(
+        [image.originalKey, ...derivativeKeys].filter(
+          (key): key is string => Boolean(key),
+        ),
+      ),
+    ];
+    await Promise.all(
+      keys.map((key) =>
+        client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key })),
+      ),
+    );
+
+    await tx.productImage.delete({ where: { id: image.id } });
+    for (const [position, item] of remaining.entries()) {
+      if (item.position !== position)
+        await tx.productImage.update({
+          where: { id: item.id },
+          data: { position },
+        });
+    }
+    await tx.product.update({
+      where: { id: p.id },
+      data: { revision: { increment: 1 } },
+    });
+    await tx.audit.create({
+      data: {
+        actorId,
+        action: 'photo.delete',
+        entityId: p.id,
+        metadata: { imageId: image.id },
       },
     });
   });

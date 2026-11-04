@@ -473,7 +473,11 @@ const visibleImages = defaults.images.filter(
         <form data-photo-form>
           <ol class="photo-list">
             {product.images.map((image, index) => (
-              <li class="photo-row" data-photo-id={image.id}>
+              <li
+                class="photo-row"
+                data-photo-id={image.id}
+                data-archived={image.archivedAt ? 'true' : 'false'}
+              >
                 <div>
                   {image.placeholder ? (
                     <p class="muted">Placeholder</p>
@@ -484,7 +488,11 @@ const visibleImages = defaults.images.filter(
                     />
                   )}
                   <span class="muted" data-cover-label>
-                    {index === 0 ? 'Cover' : ''}
+                    {image.archivedAt
+                      ? 'Hidden from shop'
+                      : index === 0
+                        ? 'Cover'
+                        : ''}
                   </span>
                 </div>
                 <div class="stack">
@@ -512,14 +520,6 @@ const visibleImages = defaults.images.filter(
                       ))}
                     </select>
                   </label>
-                  <label class="check">
-                    <input
-                      data-archive
-                      type="checkbox"
-                      checked={Boolean(image.archivedAt)}
-                    />{' '}
-                    Archived / staged (hidden from shop)
-                  </label>
                   <div class="actions">
                     <button
                       type="button"
@@ -537,6 +537,14 @@ const visibleImages = defaults.images.filter(
                     </button>
                     <button type="button" data-cover>
                       Make cover
+                    </button>
+                    <button
+                      type="button"
+                      class="photo-delete"
+                      data-delete
+                      aria-label={`Delete photo ${index + 1}`}
+                    >
+                      Delete photo
                     </button>
                   </div>
                 </div>

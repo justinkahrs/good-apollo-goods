@@ -5,6 +5,7 @@ import { body, originGuard, limit, json, failure } from '../../../server/http';
 import { saveProduct, duplicateProduct } from '../../../server/catalog';
 import {
   uploadIntent,
+  deletePhoto,
   finalizePhoto,
   savePhotos,
 } from '../../../server/photos';
@@ -32,6 +33,7 @@ export const POST: APIRoute = async ({ request }) => {
           'photo.intent',
           'photo.finalize',
           'photo.save',
+          'photo.delete',
           'stock.adjust',
           'order.ship',
           'order.cancel',
@@ -67,6 +69,9 @@ export const POST: APIRoute = async ({ request }) => {
         );
       case 'photo.save':
         await savePhotos(actor, v.data);
+        return json({ ok: true });
+      case 'photo.delete':
+        await deletePhoto(actor, v.data);
         return json({ ok: true });
       case 'stock.adjust':
         return json(await adjustStock(actor, v.data));
