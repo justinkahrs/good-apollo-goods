@@ -2,6 +2,12 @@
 
 This file preserves dated release notes, prior hosting details, and DNS guidance. Use [deployment.md](deployment.md) for the current production state and routine release path. Historical DNS values are not instructions for the live domain.
 
+## Product URL release (November 3, 2026, 10:46 p.m. America/Detroit)
+
+Deployed `gag-commerce:20261104T034528Z-76c9952aa7b3` from commit `76c9952aa7b37ffcd7f553b4bd16d11f56d81c9c` to `good-apollo-web`. Product detail pages now use `/shop/hats/{slug}/`; product-card, cart, admin and sitemap links use that path. Previous `/pieces/{slug}/` URLs return HTTP 301 to their matching new URL.
+
+The VPS build completed with zero Astro errors, warnings or hints. Live `/shop/hats/` and `/shop/hats/the-sterling/` return HTTP 200; `/pieces/the-sterling/` returns HTTP 301 to the new product URL. `SALES_ENABLED=false` and `NEWSLETTER_ENABLED=false` remain verified; no migrations or catalog writes ran. The previous image `gag-commerce:20261104T031223Z-06ee650ff29e` is retained for rollback.
+
 ## Availability and listing options release (November 3, 2026, 10:13 p.m. America/Detroit)
 
 Deployed `gag-commerce:20261104T031223Z-06ee650ff29e` from commit `06ee650ff29ef028e4febbdad86fd2816d82e993` to `good-apollo-web`. Listing cards show the number of available units. Product pages use option chips, automatically select a sole option, and no longer show the category/readiness eyebrow. The former "Powder Blue / Satin" option is therefore not shown for The Sterling.

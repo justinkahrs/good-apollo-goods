@@ -4,7 +4,7 @@
 
 - **Host:** Senna VPS (`senna-infra`), behind Traefik.
 - **Public domain:** `goodapollogoods.com`; DNS resolves to `143.198.227.162`. `www` redirects to the apex.
-- **Application:** `good-apollo-web`, running standalone Node image `gag-commerce:20261104T031223Z-06ee650ff29e` (latest recorded release: November 3, 2026, 10:13 p.m. America/Detroit).
+- **Application:** `good-apollo-web`, running standalone Node image `gag-commerce:20261104T034528Z-76c9952aa7b3` (latest recorded release: November 3, 2026, 10:46 p.m. America/Detroit).
 - **Data and services:** isolated `good_apollo_goods` PostgreSQL database, private Garage media bucket, and private Mautic mail gateway.
 - **Business gates:** `SALES_ENABLED=false` and `NEWSLETTER_ENABLED=false`. Keep them closed unless the separate launch checklist is accepted.
 
