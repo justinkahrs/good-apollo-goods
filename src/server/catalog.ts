@@ -103,10 +103,12 @@ export async function saveProduct(actorId: string, input: unknown) {
         409,
         'revision',
       );
-    if (old?.publishedAt && v.slug !== old.slug)
-      throw new DomainError(
-        'A published product keeps its original web address.',
-      );
+    const slugOwner = await tx.product.findUnique({
+      where: { slug: v.slug },
+      select: { id: true },
+    });
+    if (slugOwner && slugOwner.id !== old?.id)
+      throw new DomainError('That web address is already in use. Choose another.');
     if (rows.some((r) => r.id && !old?.variants.some((o) => o.id === r.id)))
       throw new DomainError('A variant belongs to another product.');
     // Reintroducing an option combination keeps its stock/history. Generated

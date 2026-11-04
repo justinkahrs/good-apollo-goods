@@ -292,14 +292,13 @@ const visibleImages = defaults.images.filter(
                 value={defaults.slug}
                 pattern="[a-z0-9]+(-[a-z0-9]+)*"
                 maxlength="120"
-                readonly={Boolean(product?.publishedAt)}
                 required
                 aria-describedby="slug-hint"
               />
             </label>
             <p class="editor-hint" id="slug-hint">
-              Created from the name. You can adjust it before the first
-              publication.
+              This becomes the listing’s web address. You can update it
+              whenever you like.
             </p>
             <label>
               Tax category
