@@ -61,6 +61,7 @@ export async function deliverOutbox(
   limit = 10,
   kind?: string,
   deadline = Date.now() + 45000,
+  messageId?: string,
 ) {
   const e = config();
   const commerceRoute = !!e.COMMERCE_EMAIL_API_URL && !!e.COMMERCE_EMAIL_HMAC_SECRET;
@@ -78,12 +79,13 @@ export async function deliverOutbox(
   }) : undefined;
   let delivered = 0,
     failed = 0;
-  for (let n = 0; n < limit; n++) {
+  for (let n = 0; n < limit;) {
     if (Date.now() >= deadline) break;
     const now = new Date();
     const candidate = await db().emailOutbox.findFirst({
       where: {
         ...(kind ? { kind } : {}),
+        ...(messageId ? { id: messageId } : {}),
         status: { in: ['pending', 'retry'] },
         availableAt: { lte: now },
         OR: [{ leaseUntil: null }, { leaseUntil: { lt: now } }],
@@ -121,6 +123,7 @@ export async function deliverOutbox(
       },
     });
     if (!claim.count) continue;
+    n++;
     try {
       const message = content(
         candidate.kind,

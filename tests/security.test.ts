@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, afterAll, it, expect, vi } from 'vitest';
 import { randomUUID, createHmac } from 'node:crypto';
 import { db } from '../src/server/db';
+import { deliverOutbox } from '../src/server/email';
 import { adminSession, auth, verifyStepUp } from '../src/server/auth';
 import { config, requiredSecret, adminEmails } from '../src/server/config';
 import { originGuard, body, limit } from '../src/server/http';
@@ -114,6 +115,9 @@ it('disables signup and bootstraps only both allowlisted operators idempotently'
   expect(
     notices.map((notice) => (notice.payload as { email: string }).email).sort(),
   ).toEqual(adminEmails().sort());
+  for (const notice of notices) {
+    expect(deliverOutbox).toHaveBeenCalledWith(1, 'signin', undefined, notice.id);
+  }
 });
 it('requires MFA for the extra admin and denies a removed allowlist entry immediately', async () => {
   vi.stubEnv('ADDITIONAL_ADMIN_EMAILS', 'justin@justinkahrs.com');

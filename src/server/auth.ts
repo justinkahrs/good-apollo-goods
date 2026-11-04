@@ -54,13 +54,18 @@ function makeAuth() {
         rateLimit: { window: 60, max: 5 },
         sendMagicLink: async ({ email, url }) => {
           if (!adminEmails().includes(email.trim().toLowerCase())) return;
+          const dedupeKey = `signin:${createHash('sha256').update(url).digest('hex')}`;
           await enqueue(
             db(),
-            `signin:${createHash('sha256').update(url).digest('hex')}`,
+            dedupeKey,
             'signin',
             { email, url },
           );
-          await deliverOutbox(1, 'signin');
+          const message = await db().emailOutbox.findUniqueOrThrow({
+            where: { dedupeKey },
+            select: { id: true },
+          });
+          await deliverOutbox(1, 'signin', undefined, message.id);
         },
       }),
       twoFactor({

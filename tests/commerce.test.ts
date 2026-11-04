@@ -1417,6 +1417,37 @@ it('expires stale sign-in retries without contacting the mail provider', async (
     lastError: 'signin_link_expired',
   });
 });
+it('delivers a fresh sign-in after expiring older requests within a one-message budget', async () => {
+  await db().emailOutbox.createMany({ data: [1, 2].map((n) => ({
+    dedupeKey: `old-signin-${n}-${randomUUID()}`, kind: 'signin',
+    payload: { email: 'fixture@example.invalid', url: 'https://example.invalid/expired' },
+    createdAt: new Date(Date.now() - 16 * 60_000),
+  })) });
+  const fresh = await db().emailOutbox.create({ data: {
+    dedupeKey: `fresh-signin-${randomUUID()}`, kind: 'signin',
+    payload: { email: 'fixture@example.invalid', url: 'https://example.invalid/fresh' },
+  } });
+  expect(await deliverOutbox(1, 'signin')).toEqual({ delivered: 1, failed: 0 });
+  expect(fake.mail).toHaveLength(1);
+  expect(fake.mail[0].messageId).toBe(`<${fresh.id}@goodapollogoods.com>`);
+  expect(await db().emailOutbox.count({ where: { status: 'expired' } })).toBe(2);
+});
+it('delivers the requested sign-in without retrying older queued links or duplicating delivery', async () => {
+  const older = await db().emailOutbox.create({ data: {
+    dedupeKey: `older-signin-${randomUUID()}`, kind: 'signin', status: 'retry', attempts: 2,
+    createdAt: new Date(Date.now() - 60_000),
+    payload: { email: 'fixture@example.invalid', url: 'https://example.invalid/older' },
+  } });
+  const fresh = await db().emailOutbox.create({ data: {
+    dedupeKey: `target-signin-${randomUUID()}`, kind: 'signin',
+    payload: { email: 'fixture@example.invalid', url: 'https://example.invalid/target' },
+  } });
+  expect(await deliverOutbox(1, 'signin', undefined, fresh.id)).toEqual({ delivered: 1, failed: 0 });
+  expect(await deliverOutbox(1, 'signin', undefined, fresh.id)).toEqual({ delivered: 0, failed: 0 });
+  expect(fake.mail).toHaveLength(1);
+  expect(fake.mail[0].text).toContain('https://example.invalid/target');
+  expect(await db().emailOutbox.findUniqueOrThrow({ where: { id: older.id } })).toMatchObject({ status: 'retry', attempts: 2 });
+});
 it('preserves durable mail during failure and leases concurrent recovery', async () => {
   const { variants } = await fixture(),
     { session } = await checkout(variants[0].id);
