@@ -5,7 +5,7 @@ interface Props {
   product: PublicProduct;
 }
 const { product } = Astro.props;
-const available = product.variants.some((v) => v.available > 0);
+const availableCount = product.variants.reduce((total, v) => total + v.available, 0);
 const price = Math.min(...product.variants.map((v) => v.priceCents));
 const audience =
   product.audience === 'all'
@@ -32,7 +32,11 @@ const audience =
           hidden={index !== 0}
         />
       ))}
-      <span class="badge">{available ? 'Ready to ship' : 'Sold out'}</span>
+      <span class="badge">
+        {availableCount > 0
+          ? `${availableCount} available`
+          : 'Sold out'}
+      </span>
       <span class="product-arrow" aria-hidden="true">
         ↗
       </span>
