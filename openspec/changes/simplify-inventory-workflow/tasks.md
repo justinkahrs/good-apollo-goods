@@ -49,6 +49,8 @@ Implementation tasks are checked only after their recorded verification; externa
 - [x] 6.3 After separately authorized schema release/preview deployment, verify actual Garage upload/processing, published-photo visibility within five seconds, legacy review, delete/restore, copied-image safety, cleanup recovery, and held-payment settlement; record environment/revision/results in launch evidence and verify sales/newsletter gates remain disabled.
 - [ ] 6.4 Observe independent primary-operator desktop/mobile/keyboard acceptance: fixed listing with three photos/stock within five minutes excluding transfer, two-option listing within ten, edit within two, stock change within one; record timings and resolve failures before marking acceptance complete.
 
+- [ ] 6.5 After Justin’s explicit production deployment authorization, restore-check the encrypted production database/media/config checkpoint, rehearse the inventory migration on its isolated copy, preserve original business/auth signatures, migrate with the dedicated identity and runtime grants, stage a deletion-aware rollback baseline, run the routine deploy from reviewed main, and verify production inventory assets/media/public routes with sales/newsletter disabled.
+
 ## Workflow follow-up
 
 - Review the completed plan before requesting implementation; planning itself does not authorize application edits or deployment.
