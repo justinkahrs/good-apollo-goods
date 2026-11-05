@@ -2338,3 +2338,45 @@ it('serializes duplication, source photo removal and cleanup without a broken co
       await db().mediaAsset.findUnique({ where: { id: image.assetId! } }),
     ).toBeNull();
 });
+
+it('retains a removed gallery asset referenced by an immutable purchased image snapshot', async () => {
+  const { p, variants } = await fixture();
+  const bytes = await sharp({
+    create: { width: 30, height: 40, channels: 3, background: 'green' },
+  })
+    .jpeg()
+    .toBuffer();
+  const intent = await uploadIntent(actor, {
+    productId: p.id,
+    type: 'image/jpeg',
+    bytes: bytes.length,
+  });
+  await storePhotoUpload(actor, intent.id, 'image/jpeg', bytes);
+  const image = await finalizePhoto(actor, intent.id);
+  let current = await db().product.findUniqueOrThrow({ where: { id: p.id } });
+  const gallery = await db().productImage.findMany({
+    where: { productId: p.id },
+  });
+  await savePhotos(actor, {
+    productId: p.id,
+    revision: current.revision,
+    images: [
+      gallery.find((i) => i.id === image.id)!,
+      ...gallery.filter((i) => i.id !== image.id),
+    ].map((i) => ({ id: i.id, alt: '', variantId: null })),
+  });
+  const { order } = await checkout(variants[0].id);
+  expect(order.items[0].imageKey).toBe(
+    (image.derivatives as Array<{ key: string }>).at(-1)?.key,
+  );
+  current = await db().product.findUniqueOrThrow({ where: { id: p.id } });
+  await deletePhoto(actor, {
+    productId: p.id,
+    imageId: image.id,
+    revision: current.revision,
+  });
+  expect((await cleanupMedia()).cleaned).toBe(0);
+  expect(
+    await db().mediaAsset.findUnique({ where: { id: image.assetId! } }),
+  ).not.toBeNull();
+});

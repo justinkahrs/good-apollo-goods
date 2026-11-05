@@ -9,7 +9,7 @@ The inventory improvements are implemented and verified locally. The application
 ## Verified behavior
 
 - One editor creates fixed-piece and two-option listings, accepts initial quantities and selected photos, and keeps prices/SKUs/stock identities stable. Product/photo/stock actions update in place without clearing other entries.
-- Verified photos are visible by default, generated descriptions are editable, legacy hidden photos can be reviewed/shown, and failed files do not stop other valid files. Same-intent retries, limits, shared-copy references, orphan cleanup and provider-failure recovery are covered.
+- Verified photos are visible by default, generated descriptions are editable, legacy hidden photos can be reviewed/shown, and failed files do not stop other valid files. Same-intent retries, limits, shared-copy and historical-order references, orphan cleanup and provider-failure recovery are covered.
 - Structured drafts recover details, variant rows, unnamed generator tools and gallery state in the same tab. Conflict choices preserve newer saved data. Session expiry, unavailable browser storage, lost creation responses and typing during a pending save are exercised.
 - Trash removes listings from normal views and new purchases; Restore returns a private draft. Guarded permanent deletion preserves history/audits. Existing held orders still settle, expire, ship, refund and explicitly restock correctly. Immutable snapshots, append-only stock, security and exports remain covered.
 
@@ -17,7 +17,7 @@ The inventory improvements are implemented and verified locally. The application
 
 | Check | Observed result |
 | --- | --- |
-| `npm test` | 93 passed across 7 files |
+| `npm test` | 94 passed across 7 files |
 | `npm run check` | 0 errors, warnings or hints across 123 files |
 | `npm run build:local` | Passed standalone Node build |
 | `npm run test:browser` | 15 passed in Google Chrome |
@@ -39,3 +39,7 @@ The previously configured localhost photo service was absent. Verification used 
 ## Remaining release boundary
 
 The additive migration `20261105021500_inventory_workflow` is prepared and verified only on disposable/temporary fixtures. Follow `docs/deployment.md` for the separately approved preview/schema rollout and compatibility rollback. Do not roll back to code that ignores Trash state. Preserve existing launch gates; local tests do not establish actual Garage/provider readiness or Anna's independent five/ten/two/one-minute operator acceptance targets.
+
+## Approved preview rollout in progress
+
+Justin approved the isolated preview schema migration and deployment on November 4. Checkpoint `gag-inventory-preview-20261105T031552Z` passed independent network-none restore of the preview database, shared Garage media and private configuration before migration. The preview migration preserved existing catalog/gallery/order/stock signatures and closed its previously enabled sandbox-sales gate. Production image/database remain unchanged. A release review added retention for media referenced by immutable order image snapshots; 94 domain/integration and 15 Chrome tests pass. Final preview acceptance is recorded after deploying that repair.

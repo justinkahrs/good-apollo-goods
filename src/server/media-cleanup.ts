@@ -36,6 +36,16 @@ export async function cleanupMedia(deadline = Date.now() + 10000) {
       const current = await tx.mediaAsset.findUniqueOrThrow({
         where: { id: job.assetId },
       });
+      // Purchased image keys are immutable snapshot references too. Retain the
+      // asset after gallery removal so order history and backups stay complete.
+      if (
+        await tx.orderItem.count({
+          where: { imageKey: { in: current.keys as string[] } },
+        })
+      ) {
+        await tx.mediaCleanup.deleteMany({ where: { assetId: current.id } });
+        return null;
+      }
       if (current.state === 'uploading') {
         const intent = await tx.uploadIntent.findUnique({
           where: { id: current.id },

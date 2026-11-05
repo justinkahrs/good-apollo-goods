@@ -52,7 +52,7 @@ Operators SHALL be able to delete a listing through a clearly named confirmed ac
 - **THEN** operations serialize or reject visibly so no new purchase starts after deletion and no stale save resurrects the listing
 
 ### Requirement: Guarded permanent removal and media cleanup
-Permanent deletion SHALL require separate confirmation and server-verified eligibility as an unused never-published draft with zero stock, no movements, no orders/reservations, and no active uploads. Audit records SHALL survive. File cleanup SHALL preserve objects referenced by other listings and SHALL be recoverable after provider failure.
+Permanent deletion SHALL require separate confirmation and server-verified eligibility as an unused never-published draft with zero stock, no movements, no orders/reservations, and no active uploads. Audit records SHALL survive. File cleanup SHALL preserve objects referenced by other listings or historical orders and SHALL be recoverable after provider failure.
 
 #### Scenario: Remove an unused draft
 - **WHEN** an operator permanently deletes an eligible trashed draft
@@ -65,3 +65,7 @@ Permanent deletion SHALL require separate confirmation and server-verified eligi
 #### Scenario: Copied image and storage failure
 - **WHEN** deleting a source photo or eligible listing whose files are shared with a duplicate, or storage cleanup fails
 - **THEN** the duplicate keeps usable photos, and failed unreferenced cleanup remains retryable without falsely restoring the deleted listing
+
+#### Scenario: Purchased photo removed from a gallery
+- **WHEN** a removed photo's media key is referenced by an immutable order snapshot
+- **THEN** cleanup retains that asset for historical integrity and complete backups even when no current gallery references it
