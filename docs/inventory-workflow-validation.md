@@ -1,10 +1,10 @@
 # Inventory workflow verification
 
-Updated November 04, 2026 at 10:48 PM EST (November 05 UTC). Change: `simplify-inventory-workflow`.
+Updated November 04, 2026 at 11:26 PM EST (November 05 UTC). Change: `simplify-inventory-workflow`.
 
 ## Result
 
-The inventory improvements are implemented, locally verified and deployed to the protected preview after Justin’s approval. Actual Garage uploads, cleanup recovery and Stripe Sandbox held-payment settlement passed. Production schema/content/image are unchanged. Sales and newsletter are disabled on both environments. OpenSpec is 24/25 tasks complete; independent primary-operator timed acceptance (6.4) remains open.
+The inventory improvements are implemented, locally verified and deployed to the protected preview after Justin’s approval. Actual Garage uploads, cleanup recovery and Stripe Sandbox held-payment settlement passed. Production schema/content/image are unchanged. Sales and newsletter are disabled on both environments. OpenSpec is 25/26 tasks complete; independent primary-operator timed acceptance (6.4) remains open.
 
 ## Verified behavior
 
@@ -20,7 +20,7 @@ The inventory improvements are implemented, locally verified and deployed to the
 | `npm test` | 94 passed across 7 files |
 | `npm run check` | 0 errors, warnings or hints across 123 files |
 | `npm run build:local` | Passed standalone Node build |
-| `npm run test:browser` | 15 passed in Google Chrome |
+| `npm run test:browser` | 18 passed in Google Chrome (single-save refinement) |
 | `npm run build` | Passed configured Vercel adapter build |
 | `npx tsx scripts/verify-inventory-migration.ts` | Passed transaction-local temporary fixture backfill; shared references, hidden state, alt source and unique bytes preserved |
 | Strict OpenSpec validation | Both this change and `launch-physical-merchandise` passed |
@@ -38,7 +38,7 @@ The previously configured localhost photo service was absent. Verification used 
 
 ## Approved preview release and real runtime evidence
 
-Justin approved isolated preview migration/deployment on November 4. The protected site is https://preview.goodapollogoods.com. Application revision `4cf0ad091542c4aa8110c84c493c6c463a44a0f4` runs as `gag-commerce:inventory-preview-20261105-4cf0ad0`, image ID `sha256:46a4532cab65e18344331bba475ffd6aa74972031595948be98cafb7a36f567d`. The additive migration `20261105021500_inventory_workflow` was applied using the preview migrator; only the three new preview tables received runtime grants.
+Justin approved isolated preview migration/deployment on November 4. The protected site is https://preview.goodapollogoods.com. Initial application revision `4cf0ad091542c4aa8110c84c493c6c463a44a0f4` ran as `gag-commerce:inventory-preview-20261105-4cf0ad0`, image ID `sha256:46a4532cab65e18344331bba475ffd6aa74972031595948be98cafb7a36f567d`. The additive migration `20261105021500_inventory_workflow` was applied using the preview migrator; only the three new preview tables received runtime grants.
 
 Checkpoint `gag-inventory-preview-20261105T031552Z` was captured with preview paused and independently restored before migration: 27 database tables plus shared Garage media and private configuration, in disposable network-none containers without published ports or provider/production writes. Encrypted artifacts and the restore receipt are retained in the managed recovery ledger and ignored local mirror. Technical release acceptance was recorded in the checkpoint ledger after live verification; this does not claim independent operator acceptance. Rollback requires deletion-aware compatible code; never restore this checkpoint over newer orders.
 
@@ -62,7 +62,7 @@ Private runtime evidence and scripts are ignored under `output/preview-release/`
 
 ## Operator authenticator handoff
 
-During operator handoff, Justin’s production phone code did not match the separate preview enrollment created during agent verification. The developer confirmed the preview enrollment matched the saved agent enrollment, removed it through Better Auth’s native authenticated disable API, revoked preview step-up grants, and recorded requested/completed recovery audits. Production authentication was untouched. A fresh real email-link Chrome session showed **Set up authenticator**, and protected access remained denied pending the operator’s own enrollment. No replacement authenticator was created by the agent. Justin must scan the new preview QR code and verify his phone; independent operator acceptance remains open.
+During operator handoff, Justin’s production phone code did not match the separate preview enrollment created during agent verification. The developer confirmed the preview enrollment matched the saved agent enrollment, removed it through Better Auth’s native authenticated disable API, revoked preview step-up grants, and recorded requested/completed recovery audits. Production authentication was untouched. A fresh real email-link Chrome session showed **Set up authenticator**, and protected access remained denied pending the operator’s own enrollment. No replacement authenticator was created by the agent. The handoff returned phone enrollment to Justin; the subsequent single-save deployment preserved the operator’s authenticator record exactly. Independent inventory acceptance remains open.
 
 ## Remaining acceptance boundary
 
@@ -74,4 +74,6 @@ Justin requested one save action after preview review. The editor now offers **C
 
 The revised local run passed 94 domain/integration tests and 18 Google Chrome tests, Astro checking and both adapter builds. Added Chrome cases cover one-click creation/publication with three photos/stock, keyboard combined detail/gallery saving back to Draft, failed-file recovery without duplicate identity/movements, and typing during upload without accidental publication. `output/validation/single-save-*.log` holds the final sequential validation logs. The first browser attempt exposed an older test that left an unsupported file queued before publishing; it now explicitly removes that failed file. A prematurely overlapping adapter build was stopped and the complete standalone build/browser/configured-build sequence rerun successfully.
 
-Preview application update and independent operator acceptance are recorded separately below.
+The refinement is deployed on protected preview at application revision `19626e477fcc58678e6118261d705cd3a7995626`, image `gag-commerce:inventory-preview-20261105-19626e4`, image ID `sha256:c273f484fe56391e87195b59be2054463897556d6a063d463a2c876ef02537fd`. Current source hash is `a09ce9838ecf8c63d84da9913a72936d9933644c308258e831ba3dea9ac1be1d` over the 143 files in ignored `output/validation/single-save-source-manifest.json`. No schema changes were required.
+
+Code-only checkpoint `gag-single-save-preview-20261105T042202Z` encrypted the existing preview image pointer and independently restored that file archive in network-none resources before the rollout. The prior image remains retrievable. The deployed server template contains the unified control and no old save controls. A Google Chrome check fetched the live editor asset and matched its SHA-256 to the running image; storefront/sign-in returned 200 and both unauthenticated admin paths redirected correctly. The runtime environment, BasicAuth users, operator authenticator records and production image were unchanged. Both preview gates remain disabled. Independent authenticated operator testing of the refreshed editor remains part of task 6.4; this release verification did not enroll or alter the operator’s phone.

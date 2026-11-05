@@ -32,7 +32,7 @@ Implementation tasks are checked only after their recorded verification; externa
 - [x] 4.5 Extract shared stock controls for editor and Inventory with presets/custom reasons, preview, history, and per-row pending state; Chrome checks must prove one row's success leaves other rows and dirty listing fields intact and that corrections still respect holds (Inline audited stock changes; Stock action recovery across workspaces).
 - [x] 4.6 Add saved/unsaved/failed/uncertain feedback, scope-specific action labels, publication checklist links, and accessible mobile/keyboard focus and live announcements; verify no routine successful action reloads the editor and publish waits for uploads; update design-system and operator workflow documentation (Clear publication and save feedback; Complete listing workspace).
 
-- [ ] 4.7 Replace separate product/draft/photo-save buttons with one Create listing / Save changes action; coordinate new draft creation, queued uploads and requested visibility, reconcile retries and old photo-save receipts, preserve later edits, and verify combined gallery/detail saves, draft fallback, failed uploads, keyboard submission and one-click publication in Chrome; update operator/design guidance and verify protected preview with sales/newsletter disabled.
+- [x] 4.7 Replace separate product/draft/photo-save buttons with one Create listing / Save changes action; coordinate new draft creation, queued uploads and requested visibility, reconcile retries and old photo-save receipts, preserve later edits, and verify combined gallery/detail saves, draft fallback, failed uploads, keyboard submission and one-click publication in Chrome; update operator/design guidance and verify protected preview with sales/newsletter disabled.
 
 ## 5. Listing deletion and retained commerce
 
@@ -54,4 +54,6 @@ Implementation tasks are checked only after their recorded verification; externa
 
 ## Verification record
 
-Local and approved preview evidence: `docs/inventory-workflow-validation.md` (94 domain/integration and 15 Chrome tests; both builds, migration fixtures and strict OpenSpec checks passed). Task 6.3 passed on protected preview revision `4cf0ad0`, including actual Garage cleanup recovery and real Stripe Sandbox settlement after Trash. Task 6.4 remains unchecked for independent primary-operator timings. Production image/schema/data are unchanged; sales and newsletter gates remain disabled.
+Local and approved preview evidence: `docs/inventory-workflow-validation.md` (94 domain/integration and 18 Chrome tests; both builds, migration fixtures and strict OpenSpec checks passed). Task 6.3 passed on protected preview revision `4cf0ad0`, including actual Garage cleanup recovery and real Stripe Sandbox settlement after Trash. Task 6.4 remains unchecked for independent primary-operator timings. Production image/schema/data are unchanged; sales and newsletter gates remain disabled.
+
+Single-save refinement 4.7: revision `19626e4` is deployed on protected preview; local Chrome verifies one-click publication, unified gallery/detail saves and recovery, while live server/asset identity, disabled gates and unchanged operator authentication were verified. Independent operator acceptance 6.4 remains open.
