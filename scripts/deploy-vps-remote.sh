@@ -142,7 +142,9 @@ rollback() {
 }
 
 set_image_tag "$image_tag"
-if ! "${compose[@]}" config --services | grep -Fxq good-apollo-web; then
+# Consume the full service list: grep -q can close the pipe early and make
+# Compose fail under pipefail even when the service was found.
+if ! "${compose[@]}" config --services | grep -Fx good-apollo-web >/dev/null; then
   rollback
   echo "Good Apollo Compose service validation failed." >&2
   exit 7
