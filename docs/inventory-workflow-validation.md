@@ -1,10 +1,10 @@
 # Inventory workflow verification
 
-Updated November 04, 2026 after the sticky-panel preview release (November 05 UTC). Change: `simplify-inventory-workflow`.
+Updated November 05, 2026 after the production release. Change: `simplify-inventory-workflow`.
 
 ## Result
 
-The inventory improvements are implemented, locally verified and deployed to the protected preview after Justin’s approval. Actual Garage uploads, cleanup recovery and Stripe Sandbox held-payment settlement passed. Production schema/content/image are unchanged. Sales and newsletter are disabled on both environments. OpenSpec is 26/27 tasks complete; independent primary-operator timed acceptance (6.4) remains open.
+The inventory improvements are implemented and deployed to production after Justin’s explicit approval. The additive migration and live release passed, preserving original business/authentication records. Actual Garage uploads, cleanup recovery and Stripe Sandbox held-payment settlement passed on preview; production catalog/media/permissions and public assets/routes passed verification. Sales and newsletter remain disabled on both environments. OpenSpec is 27/28 tasks complete; independent primary-operator timed acceptance (6.4) remains open.
 
 ## Verified behavior
 
@@ -66,7 +66,7 @@ During operator handoff, Justin’s production phone code did not match the sepa
 
 ## Remaining acceptance boundary
 
-Independent Anna desktop/mobile/keyboard timing remains unchecked: fixed listing with three photos/stock within five minutes excluding transfer, two-option listing within ten, edit within two, stock adjustment within one. These timings cannot be claimed from agent-operated Chrome checks. Production migration/deployment, launch activation and unrelated checklist gates remain separately authorized work. Keep the OpenSpec change active until operator acceptance is recorded.
+Independent Anna desktop/mobile/keyboard timing remains unchecked: fixed listing with three photos/stock within five minutes excluding transfer, two-option listing within ten, edit within two, stock adjustment within one. These timings cannot be claimed from agent-operated Chrome checks. The production inventory migration/deployment was subsequently authorized and verified below. Launch activation and unrelated checklist gates remain separate work. Keep the OpenSpec change active until timed operator acceptance is recorded.
 
 ## Single-save refinement — November 4, 2026
 
@@ -86,3 +86,16 @@ Local Google Chrome geometry checks passed all 20 combinations of details/photos
 
 
 The sticky panel is deployed on protected preview at application revision `8ed3a031fa2375dd49155538bda4053c2c5573e2`, image `gag-commerce:inventory-preview-20261105-8ed3a03`, image ID `sha256:f330e9682c7c79f1150d6c540cc43ebcde68903275739853b4499a65eea46bb0`. The 143-file source hash is `36857266eed67b13a38cbc136b722c8f0cb92feded0ab76d65fed8c00c8b2621` (`output/validation/scroll-panel-source-manifest.json`). Code-only checkpoint `gag-scroll-panel-preview-20261105T043847Z` independently restored the encrypted preview image pointer before rollout; the prior image remains available. The live CSS SHA-256 matched the running image, and the server template contains the full-workspace wrapper. Preview and production storefront/sign-in returned 200 and both admin paths redirected to sign-in. Runtime settings, BasicAuth users, operator authenticator records, database schema and production image are unchanged; both preview gates remain disabled. Independent authenticated operator acceptance remains task 6.4.
+
+
+## Verified production release — November 5, 2026
+
+Justin explicitly authorized deploying the inventory improvements after preview review. Live application commit: `8faa076c28ac3377676d413ca165044a3e289078`; image: `gag-commerce:20261105T050847Z-8faa076c28ac`; image ID: `sha256:7e429b8d49befa2a749c4fd1f5fb441932106e147c09196cbe567f8d49579c80`. The 143-file source hash is `ea3c9fd72c229656405b878f8e474a627364fbaaae12c2bad2e915d8976b34f6` in `output/validation/production-release-source-manifest.json`.
+
+Fresh validation passed 94 domain/integration tests, 18 Chrome workflows, Astro checking, both builds and strict OpenSpec validation. Checkpoint `gag-inventory-production-20261105T045322Z` independently restored one production database and two media/configuration archives in network-none disposable resources, with zero production/provider writes. The exact inventory migration applied successfully to the restored copy and preserved nine business/auth table signatures and all backfill references. Production then migrated through the dedicated identity and existing grant service; a verified deletion-aware image became the real rollback baseline before the normal deployment from clean reviewed `main`.
+
+The first normal build hit an intermittent Compose/`grep -q` pipeline false failure and automatically returned to the compatible inventory image. Read-only checks reproduced eight failures in 30 attempts despite finding the service. The reviewed full-stream guard passed 20 repetitions and rejected a missing service; it was installed atomically after verifying/preserving the original. The normal deploy retry succeeded. No database rollback or authentication reset occurred.
+
+Actual production verification read seven listings, seven variants and 27 photos through the runtime identity. All 108 original/derivative Garage objects exist; unique bytes total 29,974,716; all 12 required table/permission combinations pass. Final Product, Variant, StockBalance, StockMovement, Order, OrderItem, ProductImage, User and TwoFactor signatures match the original baseline (new additive fields excluded). All 21 visible public images serve correctly, originals stay private, and served inventory CSS/JS hashes match the running image. Home/sign-in return 200, both admin URL forms redirect to sign-in, and a real Chrome observation confirms the sign-in screen. Pending email delivery is zero; no eligible delivery was missed. Sales/newsletter stay disabled, and preview/operator authentication remain unchanged.
+
+Private receipts/scripts are under `output/production-release/` and VPS `.runtime/good-apollo/inventory-production-20261105`; final logs are `output/validation/production-release-*.log`. Managed checkpoint release acceptance is recorded. Seven temporary source copies/archives matched their recoverable Git blobs before removal; rollback images, current code and encrypted recovery were retained. The unused failed-attempt image was removed after checking its label and absence of container references. VPS space remains constrained at approximately 4.1 GB free (98% used), requiring separate broader cleanup. Independent timed primary-operator acceptance remains task 6.4; this deployment does not check unrelated launch gates.

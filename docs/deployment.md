@@ -4,7 +4,7 @@
 
 - **Host:** Senna VPS (`senna-infra`), behind Traefik.
 - **Public domain:** `goodapollogoods.com`; DNS resolves to `143.198.227.162`. `www` redirects to the apex.
-- **Application:** `good-apollo-web`, running standalone Node image `gag-commerce:20261104T034528Z-76c9952aa7b3` (latest recorded release: November 3, 2026, 10:46 p.m. America/Detroit).
+- **Application:** `good-apollo-web`, running standalone Node image `gag-commerce:20261105T050847Z-8faa076c28ac` (inventory release: November 5, 2026, about 12:10 a.m. America/Detroit; commit `8faa076c28ac3377676d413ca165044a3e289078`).
 - **Data and services:** isolated `good_apollo_goods` PostgreSQL database, private Garage media bucket, and private Mautic mail gateway.
 - **Business gates:** `SALES_ENABLED=false` and `NEWSLETTER_ENABLED=false`. Keep them closed unless the separate launch checklist is accepted.
 
@@ -46,7 +46,7 @@ The deploy script automatically fast-forwards a clean main checkout when it is b
 
 The `20261105021500_inventory_workflow` migration adds product Trash state, generated/custom alt metadata, mutation receipts, shared media references and durable cleanup jobs. It does not change existing visibility or balances. Backfill groups already-shared originals into one asset and preserves nonempty legacy alt as custom; blank alt uses generated descriptions. Review legacy hidden photos explicitly rather than publishing them during migration.
 
-Before production migration, validate a disposable copy for image/reference counts, distinct original/derivative keys, unique storage bytes, custom alt, hidden state, orders and append-only stock. Production schema rollout remains a separate approval boundary. Keep sales and newsletter gates disabled and retain existing maintenance/payment/email reconciliation.
+Before production migration, validate a disposable copy for image/reference counts, distinct original/derivative keys, unique storage bytes, custom alt, hidden state, orders and append-only stock. Future production schema rollouts require separate authorization; Justin authorized this inventory migration, whose verified release is recorded below. Keep sales and newsletter gates disabled and retain existing maintenance/payment/email reconciliation.
 
 Media cleanup runs through the existing maintenance lifecycle, without a new scheduler. Listing/photo removal commits reference changes first. Cleanup claims unreferenced assets and retries provider failures outside catalog transactions; copies, Trash references and immutable purchased image keys retain files. Keep byte accounting until cleanup succeeds. Inspect MediaCleanup retry status for a storage failure.
 
@@ -73,3 +73,13 @@ Justin’s Mac currently lacks Anna’s `senna-gag-deploy` SSH alias. A one-run 
 ### Production service-check repair
 
 The first normal inventory release built successfully but its Compose service-list check falsely failed and rolled back to the deletion-aware compatibility image. The `grep -q` consumer closed the pipe before Compose finished, causing a nonzero producer exit under `pipefail` despite finding the service. The failure reproduced eight times in 30 read-only checks. The guard now consumes the complete stream with `grep -Fx ... >/dev/null`; all 20 repeated checks passed and an absent service still failed correctly. Install the reviewed repository script atomically on the VPS after preserving/verifying the original version; this repair changes neither the schema guard nor runtime gates.
+
+## November 5 production inventory release
+
+The full inventory improvements are live in production at revision `8faa076c28ac3377676d413ca165044a3e289078`, image `gag-commerce:20261105T050847Z-8faa076c28ac`, image ID `sha256:7e429b8d49befa2a749c4fd1f5fb441932106e147c09196cbe567f8d49579c80`. Migration `20261105021500_inventory_workflow` is applied (six migrations total). Original catalog/gallery/stock/order/user/authenticator signatures match the pre-migration baseline: seven listings, seven variants, 27 photos and the existing stock ledger were preserved. All 108 Garage objects were verified, with 29,974,716 unique bytes and no byte-accounting correction needed. The runtime has all required privileges on the three new tables.
+
+Checkpoint `gag-inventory-production-20261105T045322Z` captured the production database, shared Garage and private configuration; independent network-none restore plus the exact migration rehearsal passed before production schema mutation. Technical acceptance is recorded in the managed ledger after live verification. Application rollback is `gag-commerce:inventory-compatible-20261105-8ed3a03`; retain deletion-aware code and newer data, and do not restore the original historical binary over the migrated store. The original installed deployment script was preserved before installing the reviewed service-check repair.
+
+Live CSS/JS hashes match the release image. `/` and `/admin/sign-in/` return 200, `/admin` and `/admin/` redirect to sign-in, all 21 currently visible photo routes serve images, and originals remain private. Chrome visibly reaches the production sign-in page from `/admin/`. Existing production authentication and mail routing are unchanged. Sales/newsletter remain disabled, preview is unchanged, and no eligible delivery was missed (pending outbox zero). Independent timed operator acceptance and other launch gates remain open.
+
+Only seven agent-created temporary source copies/archives were removed after exact Git-blob verification, recovering 497,616,368 bytes; active code, all rollback images and encrypted checkpoints remain. The unused image from the failed production attempt was also removed after verifying its release label and absence of container references. The VPS still has about 4.1 GB free (98% used). Broader storage cleanup is separate work; no unrelated application, configuration, volume or build cache was pruned.

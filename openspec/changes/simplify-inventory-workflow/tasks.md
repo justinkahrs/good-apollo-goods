@@ -1,6 +1,6 @@
 # Tasks
 
-Implementation tasks are checked only after their recorded verification; external runtime and operator acceptance remain pending. Requirement names below refer to the three specs in this change. Keep sales/newsletter disabled and existing launch evidence gates open.
+Implementation tasks are checked only after their recorded verification; independent timed operator acceptance remains pending. Requirement names below refer to the three specs in this change. Keep sales/newsletter disabled and existing launch evidence gates open.
 
 ## 1. Baseline evidence and compatible data foundations
 
@@ -49,7 +49,7 @@ Implementation tasks are checked only after their recorded verification; externa
 - [x] 6.3 After separately authorized schema release/preview deployment, verify actual Garage upload/processing, published-photo visibility within five seconds, legacy review, delete/restore, copied-image safety, cleanup recovery, and held-payment settlement; record environment/revision/results in launch evidence and verify sales/newsletter gates remain disabled.
 - [ ] 6.4 Observe independent primary-operator desktop/mobile/keyboard acceptance: fixed listing with three photos/stock within five minutes excluding transfer, two-option listing within ten, edit within two, stock change within one; record timings and resolve failures before marking acceptance complete.
 
-- [ ] 6.5 After Justin’s explicit production deployment authorization, restore-check the encrypted production database/media/config checkpoint, rehearse the inventory migration on its isolated copy, preserve original business/auth signatures, migrate with the dedicated identity and runtime grants, stage a deletion-aware rollback baseline, run the routine deploy from reviewed main, and verify production inventory assets/media/public routes with sales/newsletter disabled.
+- [x] 6.5 After Justin’s explicit production deployment authorization, restore-check the encrypted production database/media/config checkpoint, rehearse the inventory migration on its isolated copy, preserve original business/auth signatures, migrate with the dedicated identity and runtime grants, stage a deletion-aware rollback baseline, run the routine deploy from reviewed main, and verify production inventory assets/media/public routes with sales/newsletter disabled.
 
 ## Workflow follow-up
 
@@ -58,8 +58,10 @@ Implementation tasks are checked only after their recorded verification; externa
 
 ## Verification record
 
-Local and approved preview evidence: `docs/inventory-workflow-validation.md` (94 domain/integration and 18 Chrome tests; both builds, migration fixtures and strict OpenSpec checks passed). Task 6.3 passed on protected preview revision `4cf0ad0`, including actual Garage cleanup recovery and real Stripe Sandbox settlement after Trash. Task 6.4 remains unchecked for independent primary-operator timings. Production image/schema/data are unchanged; sales and newsletter gates remain disabled.
+Local and approved preview evidence: `docs/inventory-workflow-validation.md` (94 domain/integration and 18 Chrome tests; both builds, migration fixtures and strict OpenSpec checks passed). Task 6.3 passed on protected preview revision `4cf0ad0`, including actual Garage cleanup recovery and real Stripe Sandbox settlement after Trash. Task 6.4 remains unchecked for independent primary-operator timings. Production release 6.5 is recorded below; original business/authentication data are unchanged and sales/newsletter gates remain disabled.
 
 Single-save refinement 4.7: revision `19626e4` is deployed on protected preview; local Chrome verifies one-click publication, unified gallery/detail saves and recovery, while live server/asset identity, disabled gates and unchanged operator authentication were verified. Independent operator acceptance 6.4 remains open.
 
 Sticky-panel refinement 4.8: revision `8ed3a03` is deployed on protected preview. Twenty measured desktop scroll positions (including short screens and internal panel scrolling), mobile flow/form ownership, all 18 existing Chrome workflows, both builds, and matching live CSS/server template passed. Independent operator acceptance 6.4 remains open.
+
+Production 6.5: Justin authorized the release; commit `8faa076` is live after production checkpoint restore/migration rehearsal, dedicated migration/grants, compatible rollback staging and successful normal deployment. Original nine business/auth signatures, 27 photos/108 Garage objects, 21 public photo routes, live assets and public/admin redirects passed. The intermittent deploy pipeline guard was repaired and verified. Sales/newsletter remain disabled; independent timed acceptance 6.4 remains unchecked.
