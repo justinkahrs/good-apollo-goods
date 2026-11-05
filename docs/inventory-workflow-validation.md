@@ -60,6 +60,10 @@ The deployed preview sales gate stayed false throughout. Creating the one exact 
 
 Private runtime evidence and scripts are ignored under `output/preview-release/` and `.local/`; server evidence is retained under `.runtime/good-apollo/inventory-preview-20261105`. Verification credentials and encrypted operator recovery were saved in the dedicated agent Vaultwarden account, separate from production authentication.
 
+## Operator authenticator handoff
+
+During operator handoff, Justin’s production phone code did not match the separate preview enrollment created during agent verification. The developer confirmed the preview enrollment matched the saved agent enrollment, removed it through Better Auth’s native authenticated disable API, revoked preview step-up grants, and recorded requested/completed recovery audits. Production authentication was untouched. A fresh real email-link Chrome session showed **Set up authenticator**, and protected access remained denied pending the operator’s own enrollment. No replacement authenticator was created by the agent. Justin must scan the new preview QR code and verify his phone; independent operator acceptance remains open.
+
 ## Remaining acceptance boundary
 
 Independent Anna desktop/mobile/keyboard timing remains unchecked: fixed listing with three photos/stock within five minutes excluding transfer, two-option listing within ten, edit within two, stock adjustment within one. These timings cannot be claimed from agent-operated Chrome checks. Production migration/deployment, launch activation and unrelated checklist gates remain separately authorized work. Keep the OpenSpec change active until operator acceptance is recorded.
