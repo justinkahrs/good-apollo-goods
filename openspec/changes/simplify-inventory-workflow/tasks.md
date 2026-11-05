@@ -34,7 +34,7 @@ Implementation tasks are checked only after their recorded verification; externa
 
 - [x] 4.7 Replace separate product/draft/photo-save buttons with one Create listing / Save changes action; coordinate new draft creation, queued uploads and requested visibility, reconcile retries and old photo-save receipts, preserve later edits, and verify combined gallery/detail saves, draft fallback, failed uploads, keyboard submission and one-click publication in Chrome; update operator/design guidance and verify protected preview with sales/newsletter disabled.
 
-- [ ] 4.8 Keep the desktop right-side save panel visible through details, photos, stock and listing actions, including short viewports; verify actual Chrome scroll positions and screenshots, mobile flow, existing form workflows and the protected preview release.
+- [x] 4.8 Keep the desktop right-side save panel visible through details, photos, stock and listing actions, including short viewports; verify actual Chrome scroll positions and screenshots, mobile flow, existing form workflows and the protected preview release.
 
 ## 5. Listing deletion and retained commerce
 
@@ -59,3 +59,5 @@ Implementation tasks are checked only after their recorded verification; externa
 Local and approved preview evidence: `docs/inventory-workflow-validation.md` (94 domain/integration and 18 Chrome tests; both builds, migration fixtures and strict OpenSpec checks passed). Task 6.3 passed on protected preview revision `4cf0ad0`, including actual Garage cleanup recovery and real Stripe Sandbox settlement after Trash. Task 6.4 remains unchecked for independent primary-operator timings. Production image/schema/data are unchanged; sales and newsletter gates remain disabled.
 
 Single-save refinement 4.7: revision `19626e4` is deployed on protected preview; local Chrome verifies one-click publication, unified gallery/detail saves and recovery, while live server/asset identity, disabled gates and unchanged operator authentication were verified. Independent operator acceptance 6.4 remains open.
+
+Sticky-panel refinement 4.8: revision `8ed3a03` is deployed on protected preview. Twenty measured desktop scroll positions (including short screens and internal panel scrolling), mobile flow/form ownership, all 18 existing Chrome workflows, both builds, and matching live CSS/server template passed. Independent operator acceptance 6.4 remains open.

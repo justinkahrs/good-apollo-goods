@@ -1,10 +1,10 @@
 # Inventory workflow verification
 
-Updated November 04, 2026 at 11:26 PM EST (November 05 UTC). Change: `simplify-inventory-workflow`.
+Updated November 04, 2026 after the sticky-panel preview release (November 05 UTC). Change: `simplify-inventory-workflow`.
 
 ## Result
 
-The inventory improvements are implemented, locally verified and deployed to the protected preview after Justin’s approval. Actual Garage uploads, cleanup recovery and Stripe Sandbox held-payment settlement passed. Production schema/content/image are unchanged. Sales and newsletter are disabled on both environments. OpenSpec is 25/26 tasks complete; independent primary-operator timed acceptance (6.4) remains open.
+The inventory improvements are implemented, locally verified and deployed to the protected preview after Justin’s approval. Actual Garage uploads, cleanup recovery and Stripe Sandbox held-payment settlement passed. Production schema/content/image are unchanged. Sales and newsletter are disabled on both environments. OpenSpec is 26/27 tasks complete; independent primary-operator timed acceptance (6.4) remains open.
 
 ## Verified behavior
 
@@ -83,3 +83,6 @@ Code-only checkpoint `gag-single-save-preview-20261105T042202Z` encrypted the ex
 The desktop save panel previously stopped following at the product form boundary, above Photos/Stock. The full editor now shares one grid containing details, photos, stock and listing actions, while native form ownership remains unchanged. The panel spans that complete workspace. Its single save control appears first and stays pinned while the rest of a short panel scrolls. The viewport cap includes the page footer allowance, keeping the action visible at the document end. Phones retain normal single-column flow.
 
 Local Google Chrome geometry checks passed all 20 combinations of details/photos/stock/listing-actions and internal panel scrolling at 1280-pixel width with heights 900, 720, 600 and 500: the button remained fully visible at y=50–98. A 390×844 phone check confirmed no horizontal overflow, one save button, static panel flow and intact native listing-form ownership. Screenshots were visually reviewed: `output/playwright/inventory-sticky-save-desktop.png` and `inventory-sticky-save-mobile.png`. Position/mobile evidence is in `output/validation/scroll-panel-positions.log` and `scroll-panel-mobile.log`. Astro checking and both builds passed, and all 18 existing Chrome workflows passed against isolated localhost `_test` data. No additional domain tests were needed for this markup/CSS-only change. Preview release verification follows separately.
+
+
+The sticky panel is deployed on protected preview at application revision `8ed3a031fa2375dd49155538bda4053c2c5573e2`, image `gag-commerce:inventory-preview-20261105-8ed3a03`, image ID `sha256:f330e9682c7c79f1150d6c540cc43ebcde68903275739853b4499a65eea46bb0`. The 143-file source hash is `36857266eed67b13a38cbc136b722c8f0cb92feded0ab76d65fed8c00c8b2621` (`output/validation/scroll-panel-source-manifest.json`). Code-only checkpoint `gag-scroll-panel-preview-20261105T043847Z` independently restored the encrypted preview image pointer before rollout; the prior image remains available. The live CSS SHA-256 matched the running image, and the server template contains the full-workspace wrapper. Preview and production storefront/sign-in returned 200 and both admin paths redirected to sign-in. Runtime settings, BasicAuth users, operator authenticator records, database schema and production image are unchanged; both preview gates remain disabled. Independent authenticated operator acceptance remains task 6.4.
