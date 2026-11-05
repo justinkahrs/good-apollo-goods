@@ -42,7 +42,7 @@ Implementation tasks are checked only after their recorded verification; externa
 
 - [x] 6.1 Reconcile overlapping capability requirements with `launch-physical-merchandise`, including manual-alt and staged-photo language, while preserving every existing feature and unchecked launch gate; verify coherent combined requirements and `openspec validate simplify-inventory-workflow --strict --no-interactive`, then publish the coherent artifact batch through the repository sync command.
 - [x] 6.2 Run `npm test`, `npm run check`, `npm run build:local`, and `npm run test:browser` in the required sequence against only isolated `_test` data, followed by the configured production adapter build; record results and verify the regression matrix covers fixed/option listings, failed actions, retained drafts, deletion, shared media, exports, and security.
-- [ ] 6.3 After separately authorized schema release/preview deployment, verify actual Garage upload/processing, published-photo visibility within five seconds, legacy review, delete/restore, copied-image safety, cleanup recovery, and held-payment settlement; record environment/revision/results in launch evidence and verify sales/newsletter gates remain disabled.
+- [x] 6.3 After separately authorized schema release/preview deployment, verify actual Garage upload/processing, published-photo visibility within five seconds, legacy review, delete/restore, copied-image safety, cleanup recovery, and held-payment settlement; record environment/revision/results in launch evidence and verify sales/newsletter gates remain disabled.
 - [ ] 6.4 Observe independent primary-operator desktop/mobile/keyboard acceptance: fixed listing with three photos/stock within five minutes excluding transfer, two-option listing within ten, edit within two, stock change within one; record timings and resolve failures before marking acceptance complete.
 
 ## Workflow follow-up
@@ -52,4 +52,4 @@ Implementation tasks are checked only after their recorded verification; externa
 
 ## Verification record
 
-Local evidence: `docs/inventory-workflow-validation.md` (93 domain/integration and 15 Chrome tests; both builds, migration fixtures and strict OpenSpec checks passed). Tasks 6.3 and 6.4 remain unchecked: preview/schema rollout requires the plan's separate authorization, and independent operator timings require the primary operator. No deployment or production migration was performed.
+Local and approved preview evidence: `docs/inventory-workflow-validation.md` (94 domain/integration and 15 Chrome tests; both builds, migration fixtures and strict OpenSpec checks passed). Task 6.3 passed on protected preview revision `4cf0ad0`, including actual Garage cleanup recovery and real Stripe Sandbox settlement after Trash. Task 6.4 remains unchecked for independent primary-operator timings. Production image/schema/data are unchanged; sales and newsletter gates remain disabled.

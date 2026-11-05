@@ -1,10 +1,10 @@
 # Inventory workflow verification
 
-Recorded November 04, 2026 at 09:53 PM EST. Change: `simplify-inventory-workflow`.
+Updated November 04, 2026 at 10:48 PM EST (November 05 UTC). Change: `simplify-inventory-workflow`.
 
 ## Result
 
-The inventory improvements are implemented and verified locally. The application has not been deployed and no production schema/content was changed. Sales and newsletter gates were not enabled. The two remaining OpenSpec tasks are authorized preview/schema rollout with actual Garage verification (6.3) and independent primary-operator timed acceptance (6.4).
+The inventory improvements are implemented, locally verified and deployed to the protected preview after Justin’s approval. Actual Garage uploads, cleanup recovery and Stripe Sandbox held-payment settlement passed. Production schema/content/image are unchanged. Sales and newsletter are disabled on both environments. OpenSpec is 24/25 tasks complete; independent primary-operator timed acceptance (6.4) remains open.
 
 ## Verified behavior
 
@@ -26,20 +26,40 @@ The inventory improvements are implemented and verified locally. The application
 | Strict OpenSpec validation | Both this change and `launch-physical-merchandise` passed |
 | `git diff --check` | Passed |
 
-Tests ran sequentially against localhost PostgreSQL with a database ending in `_test`; browser and integration tests were not run concurrently. Stripe behavior is deterministic provider fixtures, not a real hosted-provider acceptance claim. Photo processing and HTTP image serving used temporary local S3-compatible storage, not the actual Garage preview bucket. The existing eight-hour operator authentication checks remain in place.
+Tests ran sequentially against localhost PostgreSQL with a database ending in `_test`; browser and integration tests were not run concurrently. The local suite uses deterministic Stripe fixtures and temporary S3-compatible storage. Separate real Garage and Stripe Sandbox evidence is recorded below. The existing eight-hour operator authentication checks remain in place.
 
 ## Evidence and reproduction
 
-Base commit: `c1197bdeb92027dd096f62dfd6a64f748a01a206`. Application/configuration/migration/script/test source hash (sorted path + NUL + bytes + NUL): `4dff528afdf4875b8d9a6717721280be8ca9a3cb45c9c3eefa72394e5802a64a`. This describes an uncommitted implementation, not a deployed release. The ignored manifest `output/validation/inventory-source-manifest.json` enumerates 143 files.
+Base commit: `c1197bdeb92027dd096f62dfd6a64f748a01a206`. Application/configuration/migration/script/test source hash (sorted path + NUL + bytes + NUL): `aca955b682cbad18657d5b2885eab7751da4f39dcc31c72c45b7ac456f79ddc4`. This source is committed in preview application revision `4cf0ad091542c4aa8110c84c493c6c463a44a0f4` on `jk/simplify-inventory-workflow`. The ignored manifest `output/validation/inventory-source-manifest.json` enumerates 143 files.
 
 Ignored logs: `output/validation/inventory-tests.log`, `inventory-check.log`, `inventory-build.log`, `inventory-browser.log`, `inventory-production-build.log`, and `inventory-migration.log`. Synthetic screenshots include `output/playwright/inventory-baseline.png`, `inventory-editor-mobile.png`, and existing desktop/mobile editor/gallery evidence. Baseline code captured in `output/validation/inventory-baseline.spec.txt` reproduced the five reported workflow problems before rebuilding the application.
 
 The previously configured localhost photo service was absent. Verification used a temporary `s3rver@3.7.1` process bound to 127.0.0.1:19000, with its public fixture credentials injected only into test commands and an ignored local data directory. It is not an application dependency or an installed background service. Test commands require a running isolated S3 service with matching runtime environment settings. The temporary process is stopped after verification.
 
-## Remaining release boundary
+## Approved preview release and real runtime evidence
 
-The additive migration `20261105021500_inventory_workflow` is prepared and verified only on disposable/temporary fixtures. Follow `docs/deployment.md` for the separately approved preview/schema rollout and compatibility rollback. Do not roll back to code that ignores Trash state. Preserve existing launch gates; local tests do not establish actual Garage/provider readiness or Anna's independent five/ten/two/one-minute operator acceptance targets.
+Justin approved isolated preview migration/deployment on November 4. The protected site is https://preview.goodapollogoods.com. Application revision `4cf0ad091542c4aa8110c84c493c6c463a44a0f4` runs as `gag-commerce:inventory-preview-20261105-4cf0ad0`, image ID `sha256:46a4532cab65e18344331bba475ffd6aa74972031595948be98cafb7a36f567d`. The additive migration `20261105021500_inventory_workflow` was applied using the preview migrator; only the three new preview tables received runtime grants.
 
-## Approved preview rollout in progress
+Checkpoint `gag-inventory-preview-20261105T031552Z` was captured with preview paused and independently restored before migration: 27 database tables plus shared Garage media and private configuration, in disposable network-none containers without published ports or provider/production writes. Encrypted artifacts and the restore receipt are retained in the managed recovery ledger and ignored local mirror. Technical release acceptance was recorded in the checkpoint ledger after live verification; this does not claim independent operator acceptance. Rollback requires deletion-aware compatible code; never restore this checkpoint over newer orders.
 
-Justin approved the isolated preview schema migration and deployment on November 4. Checkpoint `gag-inventory-preview-20261105T031552Z` passed independent network-none restore of the preview database, shared Garage media and private configuration before migration. The preview migration preserved existing catalog/gallery/order/stock signatures and closed its previously enabled sandbox-sales gate. Production image/database remain unchanged. A release review added retention for media referenced by immutable order image snapshots; 94 domain/integration and 15 Chrome tests pass. Final preview acceptance is recorded after deploying that repair.
+| Actual preview check | Observed result |
+| --- | --- |
+| Real email-link sign-in and TOTP | Passed normal sign-in and authenticator enrollment/step-up in Google Chrome; delivery captured by preview Mailpit |
+| One editor and actual Garage uploads | Created a synthetic listing with two queued photos and five initial pieces; later uploads retained unsaved description/price, and inline stock increased to seven without a routine reload |
+| Published-photo visibility and alt | Four verified real uploads; fresh public media request returned 200 within 1.82 seconds including upload/processing; generated descriptions required no typing |
+| Hidden-photo recovery | Saved an explicitly hidden synthetic copy photo, reloaded, reviewed its retained preview, explicitly showed/saved it; owner photos untouched |
+| Duplication and shared media | Copy had independent zero stock; removing one reference retained the shared Garage objects |
+| Durable cleanup recovery | Removed the last synthetic gallery reference, simulated an unreachable storage endpoint only in the scoped verification process, verified durable retry, then restored the endpoint and deleted all four unreferenced objects successfully |
+| Trash/restore and held checkout | Trash blocked a new quote with 409; restore returned Draft; the already-reserved real Stripe Sandbox session paid after the listing returned to Trash |
+| Settlement and order retention | Exactly one consumption left six unsold/zero held; duplicate provider reconciliation caused no extra consumption; original $56 terms remained immutable; removing both gallery references retained the purchased image asset and all real Garage objects |
+| Synthetic cleanup and delivery | Full real Sandbox refund succeeded without implicit restocking; audited adjustment removed remaining synthetic stock; both synthetic listings retained safely in Trash; buyer/operator outbox rows delivered to isolated Mailpit |
+| Existing data and health | Original Product, Variant, StockBalance, StockMovement, Order, OrderItem and gallery signatures unchanged; maintenance completed with zero failures and zero drift, overdue holds or repeatedly failed mail |
+| Gates and production | Both sales/newsletter gates false; production image remains `gag-commerce:20261104T035933Z-c1197bdeb920`; public `/` and `/admin/sign-in/` return 200, `/admin` and `/admin/` redirect to sign-in |
+
+The deployed preview sales gate stayed false throughout. Creating the one exact synthetic reservation used `SALES_ENABLED=true` only inside an isolated, non-routed verification process guarded to the preview database/bucket, Stripe test key and Mailpit. No public checkout gate was opened, real card charged or external mail sent. There was no missed authorized delivery; both synthetic order messages delivered successfully.
+
+Private runtime evidence and scripts are ignored under `output/preview-release/` and `.local/`; server evidence is retained under `.runtime/good-apollo/inventory-preview-20261105`. Verification credentials and encrypted operator recovery were saved in the dedicated agent Vaultwarden account, separate from production authentication.
+
+## Remaining acceptance boundary
+
+Independent Anna desktop/mobile/keyboard timing remains unchecked: fixed listing with three photos/stock within five minutes excluding transfer, two-option listing within ten, edit within two, stock adjustment within one. These timings cannot be claimed from agent-operated Chrome checks. Production migration/deployment, launch activation and unrelated checklist gates remain separately authorized work. Keep the OpenSpec change active until operator acceptance is recorded.
