@@ -69,581 +69,614 @@ const available = defaults.variants
     </div>
     <div data-draft-notice role="status"></div>
     <div data-conflicts></div>
-    <form
-      class="product-form"
-      id="listing-editor"
-      data-product={JSON.stringify(defaults)}
-    >
-      {product && <input type="hidden" name="id" value={product.id} />}
-      <input type="hidden" name="revision" value={defaults.revision} />
-      <div class="editor-main">
-        <section class="editor-section" aria-label="Product details">
-          <label>
-            Product name
-            <input
-              name="name"
-              value={defaults.name}
-              maxlength="150"
-              placeholder="e.g. The watermelon hat"
-              required
-            />
-          </label>
-          <label>
-            <span id="description-label">Description</span>
-            <textarea
-              name="description"
-              maxlength="8000"
-              placeholder="Tell its story. What’s it made from? What makes it special?"
-              aria-describedby="description-hint"
-              aria-labelledby="description-label"
-            >{defaults.description}</textarea>
-            <span class="editor-hint" id="description-hint">
-              Describe this exact piece: its shape, exterior, lining, and
-              handmade details.
-            </span>
-          </label>
-          <label>
-            <span id="details-label">
-              Size & details{' '}
-              <span class="optional" aria-hidden="true">
-                optional
+    <div class="editor-workspace">
+      <form
+        class="product-form"
+        id="listing-editor"
+        data-product={JSON.stringify(defaults)}
+      >
+        {product && <input type="hidden" name="id" value={product.id} />}
+        <input type="hidden" name="revision" value={defaults.revision} />
+        <div class="editor-main">
+          <section class="editor-section" aria-label="Product details">
+            <label>
+              Product name
+              <input
+                name="name"
+                value={defaults.name}
+                maxlength="150"
+                placeholder="e.g. The watermelon hat"
+                required
+              />
+            </label>
+            <label>
+              <span id="description-label">Description</span>
+              <textarea
+                name="description"
+                maxlength="8000"
+                placeholder="Tell its story. What’s it made from? What makes it special?"
+                aria-describedby="description-hint"
+                aria-labelledby="description-label"
+              >{defaults.description}</textarea>
+              <span class="editor-hint" id="description-hint">
+                Describe this exact piece: its shape, exterior, lining, and
+                handmade details.
               </span>
-            </span>
-            <textarea
-              name="detail"
-              maxlength="4000"
-              placeholder="Large · diameter in cm · fit or other useful measurements"
-              aria-describedby="details-hint"
-              aria-labelledby="details-label"
-            >{defaults.detail}</textarea>
-            <span class="editor-hint" id="details-hint">
-              One fixed size or color belongs here. Add options below only if
-              shoppers have a choice.
-            </span>
-          </label>
-        </section>
-        <section class="editor-section" aria-label="Photos and stock">
-          <p>
-            <a href="#photos">Add or manage photos ↓</a> ·{' '}
-            <a href="#stock">Manage stock ↓</a>
+            </label>
+            <label>
+              <span id="details-label">
+                Size & details{' '}
+                <span class="optional" aria-hidden="true">
+                  optional
+                </span>
+              </span>
+              <textarea
+                name="detail"
+                maxlength="4000"
+                placeholder="Large · diameter in cm · fit or other useful measurements"
+                aria-describedby="details-hint"
+                aria-labelledby="details-label"
+              >{defaults.detail}</textarea>
+              <span class="editor-hint" id="details-hint">
+                One fixed size or color belongs here. Add options below only if
+                shoppers have a choice.
+              </span>
+            </label>
+          </section>
+          <section class="editor-section" aria-label="Photos and stock">
+            <p>
+              <a href="#photos">Add or manage photos ↓</a> ·{' '}
+              <a href="#stock">Manage stock ↓</a>
+            </p>
+            <label data-single-initial hidden={!isNew}>
+              Initial quantity
+              <input
+                data-initial-single
+                type="number"
+                min="0"
+                max="100000"
+                value="0"
+              />
+            </label>
+            <p class="editor-hint">
+              Choose photos and count your pieces here. Save a draft to upload,
+              then publish when ready.
+            </p>
+          </section>
+          <details class="editor-disclosure" data-variant-settings>
+            <summary>
+              <span>
+                <strong>Offer sizes or colors</strong>
+                <span class="editor-hint" data-variant-summary>
+                  Optional choices, each with its own price and stock.
+                </span>
+              </span>
+            </summary>
+            <div class="editor-section">
+              <p class="editor-hint">
+                Use options when a shopper can choose a different size or color.
+                A single piece already has everything it needs.
+              </p>
+              <details data-generator>
+                <summary>Generate sizes and colors</summary>
+                <div class="grid">
+                  <label>
+                    First option name
+                    <input data-option-name="1" placeholder="Size" />
+                  </label>
+                  <label>
+                    Values, separated by commas
+                    <input
+                      data-option-values="1"
+                      placeholder="Small, Medium, Large"
+                    />
+                  </label>
+                  <label>
+                    Second option name (optional)
+                    <input data-option-name="2" placeholder="Color" />
+                  </label>
+                  <label>
+                    Values, separated by commas
+                    <input data-option-values="2" placeholder="Moss, Oat" />
+                  </label>
+                  <label>
+                    Default price in dollars
+                    <input
+                      data-default-price
+                      inputmode="decimal"
+                      placeholder="Enter your price"
+                    />
+                  </label>
+                </div>
+                <button type="button" data-generate>
+                  Generate variants
+                </button>
+                <p class="muted">
+                  Matching variants keep their stock. Removed variants become
+                  inactive.
+                </p>
+              </details>
+              <div data-variants class="cards editor-variant-list"></div>
+              <input type="hidden" name="variants" data-variants-json />
+              <button type="button" data-add-variant>
+                Add a variant
+              </button>
+            </div>
+          </details>
+          <details class="editor-disclosure" data-product-settings>
+            <summary>
+              <span>
+                <strong>A little more detail</strong>
+                <span class="editor-hint">
+                  Materials, care, category, and the shop address.
+                </span>
+              </span>
+            </summary>
+            <div class="editor-section">
+              <div class="grid">
+                <label>
+                  Category
+                  <select name="category">
+                    {[['hat', 'Hat']].map(([value, label]) => (
+                      <option
+                        value={value}
+                        selected={defaults.category === value}
+                      >
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Made for
+                  <select name="audience">
+                    {[
+                      ['all', 'Everyone'],
+                      ['adult', 'Adults'],
+                      ['child', 'Children'],
+                    ].map(([value, label]) => (
+                      <option
+                        value={value}
+                        selected={defaults.audience === value}
+                      >
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label>
+                Materials
+                <textarea
+                  name="materials"
+                  maxlength="2000"
+                  placeholder="Fabric, yarn, lining…"
+                >{defaults.materials}</textarea>
+              </label>
+              <label>
+                Care instructions
+                <textarea
+                  name="care"
+                  maxlength="4000"
+                  placeholder="How to keep this piece looking good"
+                >{defaults.care}</textarea>
+              </label>
+              <label>
+                Web address
+                <input
+                  name="slug"
+                  value={defaults.slug}
+                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  maxlength="120"
+                  required
+                  aria-describedby="slug-hint"
+                />
+              </label>
+              <p class="editor-hint" id="slug-hint">
+                This becomes the listing’s web address. You can update it
+                whenever you like.
+              </p>
+              <label>
+                Tax category
+                <select name="taxClass">
+                  {[
+                    ['hats', 'Hats'],
+                    ['clothing', 'Clothing & footwear'],
+                    ['children', 'Children’s clothing & footwear'],
+                    ['general', 'General physical goods'],
+                  ].map(([value, label]) => (
+                    <option
+                      value={value}
+                      selected={defaults.taxClass === value}
+                    >
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p class="editor-hint">
+                Choose the category that applies to this product. Verify
+                classifications before launch.
+              </p>
+              <button
+                type="button"
+                data-duplicate={product?.id ?? ''}
+                hidden={!product}
+              >
+                Duplicate as a draft
+              </button>
+            </div>
+          </details>
+        </div>
+        <aside class="editor-sidebar" aria-label="Price and publishing">
+          <div class="editor-save">
+            <button class="primary" type="submit" data-save-listing>
+              {product ? 'Save changes' : 'Create listing'}
+            </button>
+            <p class="editor-hint">
+              Saves details and photo changes using the selected visibility.
+            </p>
+            <p role="status" data-product-status></p>
+            <ul data-publication-issues></ul>
+            <p data-persistence-state aria-live="polite">
+              Saved
+            </p>
+          </div>
+
+          <h2>In the shop</h2>
+          {!config().SALES_ENABLED && (
+            <p class="editor-hint">
+              Checkout is currently disabled for this store. Publishing manages
+              listing visibility.
+            </p>
+          )}
+          <div class="editor-price" data-single-product>
+            <label for="single-price">Price</label>
+            <div class="money-input">
+              <span aria-hidden="true">$</span>
+              <input
+                id="single-price"
+                data-single-price
+                inputmode="decimal"
+                placeholder="0.00"
+                required
+                aria-describedby="price-hint"
+              />
+            </div>
+            <p class="editor-hint" id="price-hint">
+              One price for this piece. Tax is added at checkout.
+            </p>
+          </div>
+          <p class="editor-hint" data-multiple-price hidden>
+            Prices are set for each option under{' '}
+            <button type="button" class="editor-text-button" data-open-variants>
+              Offer sizes or colors
+            </button>
+            .
           </p>
-          <label data-single-initial hidden={!isNew}>
+          <div class="editor-stock">
+            <div>
+              <span>Available to sell</span>
+              <strong>{available}</strong>
+            </div>
+            <a href="#stock" data-stock-link hidden={!product}>
+              Manage stock →
+            </a>
+            <p data-initial-hint hidden={!!product}>
+              Enter your starting quantity here; it is recorded with the draft.
+            </p>
+          </div>
+          <label>
+            <span id="visibility-label">Visibility</span>
+            <select name="status" aria-labelledby="visibility-label">
+              <option value="draft" selected={defaults.status === 'draft'}>
+                Draft — private
+              </option>
+              <option
+                value="published"
+                selected={defaults.status === 'published'}
+              >
+                Published — in the shop
+              </option>
+              <option
+                value="archived"
+                selected={defaults.status === 'archived'}
+              >
+                Archived — kept for history
+              </option>
+            </select>
+          </label>
+          <p class="editor-hint">
+            Choose Draft to keep work private, or Published when ready.
+            Publishing needs a description, price, and verified photos. Photo
+            descriptions are supplied automatically.
+          </p>
+        </aside>
+      </form>
+      <template id="photo-template">
+        <li class="photo-row" data-photo-id data-archived="false">
+          <div>
+            <img data-photo-preview alt="Product photo" />
+            <span class="muted" data-cover-label></span>
+          </div>
+          <div class="stack">
+            <label>
+              Describe the photo (alt text)
+              <input data-alt form="listing-editor" maxlength="400" />
+            </label>
+            <label data-association-label>
+              Show for variant
+              <select data-variant-association form="listing-editor">
+                <option value="">All variants</option>
+              </select>
+            </label>
+            <div class="actions">
+              <button type="button" data-toggle-visibility>
+                Hide photo
+              </button>
+              <button type="button" data-up aria-label="Move photo earlier">
+                Move up
+              </button>
+              <button type="button" data-down aria-label="Move photo later">
+                Move down
+              </button>
+              <button type="button" data-cover>
+                Make cover
+              </button>
+              <button type="button" data-delete>
+                Delete photo
+              </button>
+            </div>
+          </div>
+        </li>
+      </template>
+      <template id="variant-template">
+        <fieldset data-variant>
+          <legend data-variant-heading>Variant</legend>
+          <div class="grid">
+            <label>
+              Label
+              <input data-field="label" required />
+            </label>
+            <label>
+              Price in dollars
+              <input data-field="price" inputmode="decimal" required />
+            </label>
+          </div>
+          <label data-initial-label>
             Initial quantity
             <input
-              data-initial-single
+              data-field="initialQuantity"
               type="number"
               min="0"
               max="100000"
               value="0"
             />
           </label>
-          <p class="editor-hint">
-            Choose photos and count your pieces here. Save a draft to upload,
-            then publish when ready.
-          </p>
-        </section>
-        <details class="editor-disclosure" data-variant-settings>
-          <summary>
-            <span>
-              <strong>Offer sizes or colors</strong>
-              <span class="editor-hint" data-variant-summary>
-                Optional choices, each with its own price and stock.
-              </span>
-            </span>
-          </summary>
-          <div class="editor-section">
-            <p class="editor-hint">
-              Use options when a shopper can choose a different size or color. A
-              single piece already has everything it needs.
-            </p>
-            <details data-generator>
-              <summary>Generate sizes and colors</summary>
-              <div class="grid">
-                <label>
-                  First option name
-                  <input data-option-name="1" placeholder="Size" />
-                </label>
-                <label>
-                  Values, separated by commas
-                  <input
-                    data-option-values="1"
-                    placeholder="Small, Medium, Large"
-                  />
-                </label>
-                <label>
-                  Second option name (optional)
-                  <input data-option-name="2" placeholder="Color" />
-                </label>
-                <label>
-                  Values, separated by commas
-                  <input data-option-values="2" placeholder="Moss, Oat" />
-                </label>
-                <label>
-                  Default price in dollars
-                  <input
-                    data-default-price
-                    inputmode="decimal"
-                    placeholder="Enter your price"
-                  />
-                </label>
-              </div>
-              <button type="button" data-generate>
-                Generate variants
-              </button>
-              <p class="muted">
-                Matching variants keep their stock. Removed variants become
-                inactive.
-              </p>
-            </details>
-            <div data-variants class="cards editor-variant-list"></div>
-            <input type="hidden" name="variants" data-variants-json />
-            <button type="button" data-add-variant>
-              Add a variant
-            </button>
-          </div>
-        </details>
-        <details class="editor-disclosure" data-product-settings>
-          <summary>
-            <span>
-              <strong>A little more detail</strong>
-              <span class="editor-hint">
-                Materials, care, category, and the shop address.
-              </span>
-            </span>
-          </summary>
-          <div class="editor-section">
+          <details class="variant-advanced">
+            <summary>Option details & stock alerts</summary>
             <div class="grid">
               <label>
-                Category
-                <select name="category">
-                  {[['hat', 'Hat']].map(([value, label]) => (
-                    <option
-                      value={value}
-                      selected={defaults.category === value}
-                    >
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                SKU (optional)
+                <input data-field="sku" maxlength="80" />
               </label>
               <label>
-                Made for
-                <select name="audience">
-                  {[
-                    ['all', 'Everyone'],
-                    ['adult', 'Adults'],
-                    ['child', 'Children'],
-                  ].map(([value, label]) => (
-                    <option
-                      value={value}
-                      selected={defaults.audience === value}
-                    >
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                Low-stock alert at
+                <input
+                  data-field="threshold"
+                  type="number"
+                  min="0"
+                  max="1000"
+                />
+              </label>
+              <label>
+                First option name
+                <input data-field="key1" />
+              </label>
+              <label>
+                First option value
+                <input data-field="value1" />
+              </label>
+              <label>
+                Second option name
+                <input data-field="key2" />
+              </label>
+              <label>
+                Second option value
+                <input data-field="value2" />
               </label>
             </div>
-            <label>
-              Materials
-              <textarea
-                name="materials"
-                maxlength="2000"
-                placeholder="Fabric, yarn, lining…"
-              >{defaults.materials}</textarea>
+            <label class="check">
+              <input data-field="active" type="checkbox" /> Active for new sales
             </label>
-            <label>
-              Care instructions
-              <textarea
-                name="care"
-                maxlength="4000"
-                placeholder="How to keep this piece looking good"
-              >{defaults.care}</textarea>
-            </label>
-            <label>
-              Web address
-              <input
-                name="slug"
-                value={defaults.slug}
-                pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                maxlength="120"
-                required
-                aria-describedby="slug-hint"
-              />
-            </label>
-            <p class="editor-hint" id="slug-hint">
-              This becomes the listing’s web address. You can update it whenever
-              you like.
-            </p>
-            <label>
-              Tax category
-              <select name="taxClass">
-                {[
-                  ['hats', 'Hats'],
-                  ['clothing', 'Clothing & footwear'],
-                  ['children', 'Children’s clothing & footwear'],
-                  ['general', 'General physical goods'],
-                ].map(([value, label]) => (
-                  <option value={value} selected={defaults.taxClass === value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p class="editor-hint">
-              Choose the category that applies to this product. Verify
-              classifications before launch.
-            </p>
-            <button
-              type="button"
-              data-duplicate={product?.id ?? ''}
-              hidden={!product}
-            >
-              Duplicate as a draft
+            <button type="button" data-remove-variant>
+              Remove variant
             </button>
-          </div>
-        </details>
-      </div>
-      <aside class="editor-sidebar" aria-label="Price and publishing">
-        <h2>In the shop</h2>
-        {!config().SALES_ENABLED && (
-          <p class="editor-hint">
-            Checkout is currently disabled for this store. Publishing manages
-            listing visibility.
-          </p>
-        )}
-        <div class="editor-price" data-single-product>
-          <label for="single-price">Price</label>
-          <div class="money-input">
-            <span aria-hidden="true">$</span>
-            <input
-              id="single-price"
-              data-single-price
-              inputmode="decimal"
-              placeholder="0.00"
-              required
-              aria-describedby="price-hint"
-            />
-          </div>
-          <p class="editor-hint" id="price-hint">
-            One price for this piece. Tax is added at checkout.
-          </p>
-        </div>
-        <p class="editor-hint" data-multiple-price hidden>
-          Prices are set for each option under{' '}
-          <button type="button" class="editor-text-button" data-open-variants>
-            Offer sizes or colors
-          </button>
-          .
+          </details>
+        </fieldset>
+      </template>
+      <section
+        id="photos"
+        class="editor-photos"
+        data-photos
+        data-product-id={product?.id ?? ''}
+        data-revision={defaults.revision}
+      >
+        <h2>Photos</h2>
+        <p>
+          JPEG, PNG or WebP, up to 10 MB each. Export HEIC photos as JPEG first.
+          Use up to 12 visible photos. Descriptions are automatic and editable.
+          Verified uploads to published listings appear in the shop immediately.
         </p>
-        <div class="editor-stock">
-          <div>
-            <span>Available to sell</span>
-            <strong>{available}</strong>
-          </div>
-          <a href="#stock" data-stock-link hidden={!product}>
-            Manage stock →
-          </a>
-          <p data-initial-hint hidden={!!product}>
-            Enter your starting quantity here; it is recorded with the draft.
-          </p>
-        </div>
-        <label>
-          <span id="visibility-label">Visibility</span>
-          <select name="status" aria-labelledby="visibility-label">
-            <option value="draft" selected={defaults.status === 'draft'}>
-              Draft — private
-            </option>
-            <option
-              value="published"
-              selected={defaults.status === 'published'}
-            >
-              Published — in the shop
-            </option>
-            <option value="archived" selected={defaults.status === 'archived'}>
-              Archived — kept for history
-            </option>
-          </select>
-        </label>
-        <p class="editor-hint">
-          Choose Draft to keep work private, or Published when ready. Publishing
-          needs a description, price, and verified photos. Photo descriptions
-          are supplied automatically.
-        </p>
-        <div class="editor-save">
-          <button class="primary" type="submit" data-save-listing>
-            {product ? 'Save changes' : 'Create listing'}
-          </button>
-          <p class="editor-hint">
-            Saves details and photo changes using the selected visibility.
-          </p>
-          <p role="status" data-product-status></p>
-          <ul data-publication-issues></ul>
-          <p data-persistence-state aria-live="polite">
-            Saved
-          </p>
-        </div>
-      </aside>
-    </form>
-    <template id="photo-template">
-      <li class="photo-row" data-photo-id data-archived="false">
-        <div>
-          <img data-photo-preview alt="Product photo" />
-          <span class="muted" data-cover-label></span>
-        </div>
-        <div class="stack">
-          <label>
-            Describe the photo (alt text)
-            <input data-alt form="listing-editor" maxlength="400" />
-          </label>
-          <label data-association-label>
-            Show for variant
-            <select data-variant-association form="listing-editor">
-              <option value="">All variants</option>
-            </select>
-          </label>
-          <div class="actions">
-            <button type="button" data-toggle-visibility>
-              Hide photo
-            </button>
-            <button type="button" data-up aria-label="Move photo earlier">
-              Move up
-            </button>
-            <button type="button" data-down aria-label="Move photo later">
-              Move down
-            </button>
-            <button type="button" data-cover>
-              Make cover
-            </button>
-            <button type="button" data-delete>
-              Delete photo
-            </button>
-          </div>
-        </div>
-      </li>
-    </template>
-    <template id="variant-template">
-      <fieldset data-variant>
-        <legend data-variant-heading>Variant</legend>
-        <div class="grid">
-          <label>
-            Label
-            <input data-field="label" required />
-          </label>
-          <label>
-            Price in dollars
-            <input data-field="price" inputmode="decimal" required />
-          </label>
-        </div>
-        <label data-initial-label>
-          Initial quantity
+        <label class="editor-upload">
+          Add photos
           <input
-            data-field="initialQuantity"
-            type="number"
-            min="0"
-            max="100000"
-            value="0"
+            type="file"
+            data-upload
+            accept="image/jpeg,image/png,image/webp"
+            multiple
           />
         </label>
-        <details class="variant-advanced">
-          <summary>Option details & stock alerts</summary>
-          <div class="grid">
-            <label>
-              SKU (optional)
-              <input data-field="sku" maxlength="80" />
-            </label>
-            <label>
-              Low-stock alert at
-              <input data-field="threshold" type="number" min="0" max="1000" />
-            </label>
-            <label>
-              First option name
-              <input data-field="key1" />
-            </label>
-            <label>
-              First option value
-              <input data-field="value1" />
-            </label>
-            <label>
-              Second option name
-              <input data-field="key2" />
-            </label>
-            <label>
-              Second option value
-              <input data-field="value2" />
-            </label>
-          </div>
-          <label class="check">
-            <input data-field="active" type="checkbox" /> Active for new sales
-          </label>
-          <button type="button" data-remove-variant>
-            Remove variant
-          </button>
+        <progress data-progress max="100" value="0" hidden></progress>
+        <p role="status" data-upload-status></p>
+        <p
+          data-legacy-hidden
+          hidden={!defaults.images.some((i) => i.archivedAt)}
+        >
+          Some retained photos are hidden. Review their previews and choose Show
+          photo to include them.
+        </p>
+        <details data-upload-history>
+          <summary data-upload-summary>Upload activity</summary>
+          <ol data-upload-queue></ol>
         </details>
-      </fieldset>
-    </template>
-    <section
-      id="photos"
-      class="editor-photos"
-      data-photos
-      data-product-id={product?.id ?? ''}
-      data-revision={defaults.revision}
-    >
-      <h2>Photos</h2>
-      <p>
-        JPEG, PNG or WebP, up to 10 MB each. Export HEIC photos as JPEG first.
-        Use up to 12 visible photos. Descriptions are automatic and editable.
-        Verified uploads to published listings appear in the shop immediately.
-      </p>
-      <label class="editor-upload">
-        Add photos
-        <input
-          type="file"
-          data-upload
-          accept="image/jpeg,image/png,image/webp"
-          multiple
-        />
-      </label>
-      <progress data-progress max="100" value="0" hidden></progress>
-      <p role="status" data-upload-status></p>
-      <p data-legacy-hidden hidden={!defaults.images.some((i) => i.archivedAt)}>
-        Some retained photos are hidden. Review their previews and choose Show
-        photo to include them.
-      </p>
-      <details data-upload-history>
-        <summary data-upload-summary>Upload activity</summary>
-        <ol data-upload-queue></ol>
-      </details>
-      <div data-gallery>
-        <ol class="photo-list">
-          {defaults.images.map((image, index) => (
-            <li
-              class="photo-row"
-              data-photo-id={image.id}
-              data-archived={image.archivedAt ? 'true' : 'false'}
-            >
-              <div>
-                {image.placeholder ? (
-                  <p class="muted">Placeholder</p>
-                ) : (
-                  <img
-                    src={`/media/${image.id}/400/`}
-                    alt={effectiveAlt(image, defaults)}
-                  />
-                )}
-                <span class="muted" data-cover-label>
-                  {image.archivedAt
-                    ? 'Hidden from shop'
-                    : index === 0
-                      ? 'Cover'
-                      : ''}
-                </span>
-              </div>
-              <div class="stack">
-                <label>
-                  Describe the photo (alt text)
-                  <input
-                    data-alt
-                    form="listing-editor"
-                    value={image.altSource === 'generated' ? '' : image.alt}
-                    placeholder={effectiveAlt(
-                      { ...image, altSource: 'generated' },
-                      defaults,
-                    )}
-                    maxlength="400"
-                  />
-                </label>
-                <label
-                  hidden={
-                    defaults.variants.length === 1 &&
-                    Object.keys(defaults.variants[0].options ?? {}).length === 0
-                  }
-                >
-                  Show for variant
-                  <select data-variant-association form="listing-editor">
-                    <option value="">All variants</option>
-                    {defaults.variants.map((v) => (
-                      <option value={v.id} selected={image.variantId === v.id}>
-                        {v.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div class="actions">
-                  <button type="button" data-toggle-visibility>
-                    {image.archivedAt ? 'Show photo' : 'Hide photo'}
-                  </button>
-                  <button type="button" data-up aria-label="Move photo earlier">
-                    Move up
-                  </button>
-                  <button type="button" data-down aria-label="Move photo later">
-                    Move down
-                  </button>
-                  <button type="button" data-cover>
-                    Make cover
-                  </button>
-                  <button
-                    type="button"
-                    class="photo-delete"
-                    data-delete
-                    aria-label={`Delete photo ${index + 1}`}
-                  >
-                    Delete photo
-                  </button>
+        <div data-gallery>
+          <ol class="photo-list">
+            {defaults.images.map((image, index) => (
+              <li
+                class="photo-row"
+                data-photo-id={image.id}
+                data-archived={image.archivedAt ? 'true' : 'false'}
+              >
+                <div>
+                  {image.placeholder ? (
+                    <p class="muted">Placeholder</p>
+                  ) : (
+                    <img
+                      src={`/media/${image.id}/400/`}
+                      alt={effectiveAlt(image, defaults)}
+                    />
+                  )}
+                  <span class="muted" data-cover-label>
+                    {image.archivedAt
+                      ? 'Hidden from shop'
+                      : index === 0
+                        ? 'Cover'
+                        : ''}
+                  </span>
                 </div>
-              </div>
-            </li>
+                <div class="stack">
+                  <label>
+                    Describe the photo (alt text)
+                    <input
+                      data-alt
+                      form="listing-editor"
+                      value={image.altSource === 'generated' ? '' : image.alt}
+                      placeholder={effectiveAlt(
+                        { ...image, altSource: 'generated' },
+                        defaults,
+                      )}
+                      maxlength="400"
+                    />
+                  </label>
+                  <label
+                    hidden={
+                      defaults.variants.length === 1 &&
+                      Object.keys(defaults.variants[0].options ?? {}).length ===
+                        0
+                    }
+                  >
+                    Show for variant
+                    <select data-variant-association form="listing-editor">
+                      <option value="">All variants</option>
+                      {defaults.variants.map((v) => (
+                        <option
+                          value={v.id}
+                          selected={image.variantId === v.id}
+                        >
+                          {v.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div class="actions">
+                    <button type="button" data-toggle-visibility>
+                      {image.archivedAt ? 'Show photo' : 'Hide photo'}
+                    </button>
+                    <button
+                      type="button"
+                      data-up
+                      aria-label="Move photo earlier"
+                    >
+                      Move up
+                    </button>
+                    <button
+                      type="button"
+                      data-down
+                      aria-label="Move photo later"
+                    >
+                      Move down
+                    </button>
+                    <button type="button" data-cover>
+                      Make cover
+                    </button>
+                    <button
+                      type="button"
+                      class="photo-delete"
+                      data-delete
+                      aria-label={`Delete photo ${index + 1}`}
+                    >
+                      Delete photo
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <p role="status" data-photo-status></p>
+        </div>
+      </section>
+      <section id="stock" class="editor-photos" aria-label="Stock">
+        <h2>Stock</h2>
+        <p>
+          Available is unsold minus held at checkout. Paid pieces are already
+          excluded from unsold.
+        </p>
+        <div data-stock-host>
+          {defaults.variants.map((v) => (
+            <StockAdjustment variant={v} />
           ))}
-        </ol>
-        <p role="status" data-photo-status></p>
-      </div>
-    </section>
-    <section id="stock" class="editor-photos" aria-label="Stock">
-      <h2>Stock</h2>
-      <p>
-        Available is unsold minus held at checkout. Paid pieces are already
-        excluded from unsold.
-      </p>
-      <div data-stock-host>
-        {defaults.variants.map((v) => (
-          <StockAdjustment variant={v} />
-        ))}
-      </div>
-      <template id="stock-template">
-        <StockAdjustment />
-      </template>
-      <datalist id="stock-reasons">
-        {[
-          'New batch',
-          'In-person sale',
-          'Consignment',
-          'Damage',
-          'Count correction',
-        ].map((reason) => (
-          <option value={reason} />
-        ))}
-      </datalist>
-    </section>
-    <section class="editor-photos" aria-label="Listing actions" data-lifecycle>
-      <h2>Listing actions</h2>
-      <p data-deleted-message hidden={!defaults.deletedAt}>
-        This listing is in Trash. Orders and stock history are retained.
-      </p>
-      <button
-        type="button"
-        data-delete-listing
-        hidden={!product || !!defaults.deletedAt}
+        </div>
+        <template id="stock-template">
+          <StockAdjustment />
+        </template>
+        <datalist id="stock-reasons">
+          {[
+            'New batch',
+            'In-person sale',
+            'Consignment',
+            'Damage',
+            'Count correction',
+          ].map((reason) => (
+            <option value={reason} />
+          ))}
+        </datalist>
+      </section>
+      <section
+        class="editor-photos"
+        aria-label="Listing actions"
+        data-lifecycle
       >
-        Delete listing
-      </button>
-      <button type="button" data-restore-listing hidden={!defaults.deletedAt}>
-        Restore as draft
-      </button>
-      <button type="button" data-purge-listing hidden={!defaults.deletedAt}>
-        Delete permanently
-      </button>
-      <p role="status" data-lifecycle-status></p>
-    </section>
+        <h2>Listing actions</h2>
+        <p data-deleted-message hidden={!defaults.deletedAt}>
+          This listing is in Trash. Orders and stock history are retained.
+        </p>
+        <button
+          type="button"
+          data-delete-listing
+          hidden={!product || !!defaults.deletedAt}
+        >
+          Delete listing
+        </button>
+        <button type="button" data-restore-listing hidden={!defaults.deletedAt}>
+          Restore as draft
+        </button>
+        <button type="button" data-purge-listing hidden={!defaults.deletedAt}>
+          Delete permanently
+        </button>
+        <p role="status" data-lifecycle-status></p>
+      </section>
+    </div>
   </div>
 </AdminLayout>
 <script src="../../../client/product-editor.ts"></script>

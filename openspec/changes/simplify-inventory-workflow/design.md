@@ -39,6 +39,8 @@ The OpenSpec config contains historical Vercel and task-count statements. Curren
 
 Keep `/admin/` and `/admin/products/:id/`, plus the cross-product `/admin/inventory/` route. Present details, Photos, Price & stock, and optional Options/settings together. Existing Inventory remains valuable for batch counts, filters, exports, discrepancies, and uncertain holds.
 
+The desktop price/publishing panel remains sticky across the entire details/photo/stock/lifecycle workspace, with the save control first and panel overflow bounded to the viewport so short screens keep it reachable. Preserve normal single-column flow on phones.
+
 Use exactly one primary listing save control: **Create listing** before the first confirmed creation, **Save changes** for an existing identity, and **Saving…** while the operation runs. Visibility selects Draft, Published or Archived; there are no separate product, draft or photo-save buttons. The save commits details, variants and staged gallery edits together. Keep independently audited stock changes, file retry and confirmed photo deletion available.
 
 For a new listing, allow file selection/previews and initial per-variant quantities before saving. One click creates a private draft with stable stock identities, uploads the selected files, then applies the requested publication/archive state. A failed transfer or invalid publication retains the confirmed private draft and shows the remaining work. Never claim the requested publication succeeded after only draft creation. Existing publication changes wait for selected uploads and validate the complete intended gallery server-side. Retrying the same save reconciles earlier receipts before further work, without duplicate listings or initial movements.

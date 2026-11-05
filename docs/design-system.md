@@ -91,3 +91,5 @@ Collection introduction lines are separate block spans with an explicit text spa
 ## Inventory workspace
 
 The product editor retains the studio brand, optional advanced sections and existing routes. Details, photos and stock are reachable in one listing workspace. Save feedback identifies the committed scope; uploads and stock actions update in place. Photo descriptions default to the saved product name with optional custom text. Photo visibility is an explicit Hide/Show choice, and Trash is separate from Archive. Recovery notices and conflict comparisons are keyboard accessible; per-file status and stock balance changes use live announcements. Preserve entered content and focus during unrelated actions.
+
+The desktop editor’s publishing panel spans the full workspace and follows scrolling through photos, stock and listing actions. Its one save action appears first; a bounded scroll region keeps remaining controls reachable on short viewports. Phone layouts retain the single-column flow.

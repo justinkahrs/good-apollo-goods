@@ -44,17 +44,18 @@
   border-radius: 50%;
   background: currentColor;
 }
-.admin-main .product-editor .product-form {
+.admin-main .product-editor .editor-workspace {
   display: grid;
+  grid-template-rows: repeat(4, auto);
   grid-template-columns: minmax(0, 1fr) minmax(17rem, 19rem);
-  gap: 2.5rem;
+  column-gap: 2.5rem;
   align-items: start;
 }
-.admin-main .product-editor .product-form > button {
-  grid-column: 1 / -1;
-  justify-self: start;
+.admin-main .product-editor .product-form {
+  display: contents;
 }
 .admin-main .product-editor .editor-main {
+  grid-column: 1;
   display: grid;
   gap: 1.75rem;
   min-width: 0;
@@ -115,6 +116,8 @@
   line-height: 1.65;
 }
 .admin-main .product-editor .editor-sidebar {
+  grid-column: 2;
+  grid-row: 1 / -1;
   display: grid;
   gap: 1.5rem;
   padding: 1.6rem;
@@ -122,6 +125,10 @@
   background: var(--editor-surface);
   position: sticky;
   top: 1.5rem;
+  /* Keep the save control clear of the page footer at the end of scrolling. */
+  max-height: calc(100dvh - 8rem);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 .admin-main .product-editor .editor-price {
   display: grid;
@@ -170,6 +177,10 @@
   font-size: 0.875rem;
 }
 .admin-main .product-editor .editor-save {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--editor-surface);
   display: grid;
   gap: 0.65rem;
 }
@@ -311,7 +322,8 @@
   font-size: 0.875rem;
 }
 .admin-main .product-editor .editor-photos {
-  max-width: calc(100% - 21.5rem);
+  grid-column: 1;
+  min-width: 0;
   margin-top: 2rem;
   padding-top: 2rem;
   border-top: 1px solid var(--editor-line);
@@ -348,11 +360,16 @@
   transform: translateY(1px);
 }
 @media (max-width: 850px) {
-  .admin-main .product-editor .product-form {
-    grid-template-columns: 1fr;
-    gap: 2rem;
+  .admin-main .product-editor .editor-workspace {
+    display: block;
   }
   .admin-main .product-editor .editor-sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    margin-top: 2rem;
+  }
+  .admin-main .product-editor .editor-save {
     position: static;
   }
   .admin-main .product-editor .editor-photos {

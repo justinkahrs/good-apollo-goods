@@ -34,6 +34,8 @@ Implementation tasks are checked only after their recorded verification; externa
 
 - [x] 4.7 Replace separate product/draft/photo-save buttons with one Create listing / Save changes action; coordinate new draft creation, queued uploads and requested visibility, reconcile retries and old photo-save receipts, preserve later edits, and verify combined gallery/detail saves, draft fallback, failed uploads, keyboard submission and one-click publication in Chrome; update operator/design guidance and verify protected preview with sales/newsletter disabled.
 
+- [ ] 4.8 Keep the desktop right-side save panel visible through details, photos, stock and listing actions, including short viewports; verify actual Chrome scroll positions and screenshots, mobile flow, existing form workflows and the protected preview release.
+
 ## 5. Listing deletion and retained commerce
 
 - [x] 5.1 Add confirmed Delete listing, Trash/filter, Restore-as-draft, separate archive/unpublish, and pending-work save/discard/cancel handling; test normal list/inventory/public detail/quote/checkout exclusions and reserved slug restoration (Recoverable listing deletion).

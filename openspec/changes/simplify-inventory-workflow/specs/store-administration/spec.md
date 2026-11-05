@@ -72,3 +72,7 @@ The editor SHALL offer one primary save button, labeled Create listing for a new
 #### Scenario: Unified editing and draft saving
 - **WHEN** an operator changes details, photo descriptions/order/visibility and listing Visibility
 - **THEN** Save changes commits the submitted changes together, including saving privately when Draft is selected, and reports any incomplete files or later unsaved edits clearly
+
+#### Scenario: Save remains visible across desktop scrolling
+- **WHEN** the operator scrolls through details, photos, stock and listing actions in the desktop editor, including a short viewport
+- **THEN** the right-side panel follows the full editor, its single save control stays in view, and all panel fields remain reachable without overlapping the left-side work
