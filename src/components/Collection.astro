@@ -34,7 +34,7 @@ const visibleProducts = products.filter(
     <div>
       {showEyebrow && <p class="eyebrow">{eyebrowText}</p>}
       <h2 id="collection-title" class="display-heading">
-        {headingText ?? (compact ? 'From the small batch.' : 'Hats.')}
+        {headingText ?? (compact ? 'From the small batch.' : 'One of a kind, for one of a kind.')}
       </h2>
     </div>
     <p>
@@ -56,7 +56,7 @@ const visibleProducts = products.filter(
   )}
   {compact && (
     <a class="text-link shop-all" href="/shop/">
-      Shop the collection <span aria-hidden="true">↗</span>
+      Shop hats <span aria-hidden="true">↗</span>
     </a>
   )}
 </section>
