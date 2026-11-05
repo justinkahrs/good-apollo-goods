@@ -67,3 +67,11 @@ During operator handoff, Justin’s production phone code did not match the sepa
 ## Remaining acceptance boundary
 
 Independent Anna desktop/mobile/keyboard timing remains unchecked: fixed listing with three photos/stock within five minutes excluding transfer, two-option listing within ten, edit within two, stock adjustment within one. These timings cannot be claimed from agent-operated Chrome checks. Production migration/deployment, launch activation and unrelated checklist gates remain separately authorized work. Keep the OpenSpec change active until operator acceptance is recorded.
+
+## Single-save refinement — November 4, 2026
+
+Justin requested one save action after preview review. The editor now offers **Create listing** before creation and **Save changes** afterward, with Visibility selecting Draft, Published or Archived. There are no separate draft/product/photo-save buttons. The same action saves details and staged gallery metadata, creates the private identity before uploading new files, then applies the requested visibility. Upload failures retain the private identity and initial stock exactly once; later typing stays unsaved through the publication pipeline. Photo controls support submitting the same listing form from the keyboard. Previously uncertain photo-save receipts remain reconcilable.
+
+The revised local run passed 94 domain/integration tests and 18 Google Chrome tests, Astro checking and both adapter builds. Added Chrome cases cover one-click creation/publication with three photos/stock, keyboard combined detail/gallery saving back to Draft, failed-file recovery without duplicate identity/movements, and typing during upload without accidental publication. `output/validation/single-save-*.log` holds the final sequential validation logs. The first browser attempt exposed an older test that left an unsupported file queued before publishing; it now explicitly removes that failed file. A prematurely overlapping adapter build was stopped and the complete standalone build/browser/configured-build sequence rerun successfully.
+
+Preview application update and independent operator acceptance are recorded separately below.

@@ -10,6 +10,7 @@ Routine listing work currently spans separate product, photo, and inventory form
 - Preserve unsaved work across photo actions, stock changes, validation, connection loss, authentication, and revision conflicts; use explicit save feedback and no routine full-page reloads.
 - Make verified uploads visible by default, generate editable product-based alt text, expose intentional photo hide/show, and offer a reviewed repair for existing hidden uploads.
 - Add a clearly separated Delete listing action with confirmation, recoverable trash, restore, and safe permanent removal of eligible unused drafts. Retain order, reservation, stock, and audit identities whenever referenced.
+- Use one Create listing / Save changes button for details and photos, with Visibility choosing Draft, Published or Archived and uploads coordinated before publication.
 - Show a concrete publication checklist and truthful listing/photo/stock states rather than unexplained hidden states or trial-and-error saves.
 
 ## Capabilities

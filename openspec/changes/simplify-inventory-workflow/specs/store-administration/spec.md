@@ -26,7 +26,7 @@ Photo uploads, ordering, visibility, deletion, and stock actions SHALL preserve 
 
 #### Scenario: Save details with pending photo work
 - **WHEN** an operator saves details while photo order or alt-text edits are pending
-- **THEN** the editor preserves the photo work and truthfully distinguishes saved details from pending photo changes
+- **THEN** the same listing save commits both details and staged photo edits, while edits made after submission remain entered and unsaved
 
 ### Requirement: Recover editor drafts against current server state
 The editor SHALL retain non-file edits after validation failure, network failure, reload, navigation, or reauthentication in the same tab. Recovery SHALL compare against the current server revision and show conflicts without silently overwriting newer data. Unrecoverable file selections SHALL receive an explicit reselect prompt.
@@ -57,3 +57,18 @@ The editor SHALL show saved, unsaved, saving, failed, and uncertain outcomes; li
 #### Scenario: Keyboard and phone completion
 - **WHEN** an operator completes listing, photo, stock, delete, and recovery actions on a phone or by keyboard
 - **THEN** labels, focus, status announcements, error links, and confirmations remain readable and operable
+
+### Requirement: One listing save control
+The editor SHALL offer one primary save button, labeled Create listing for a new identity and Save changes afterward. Visibility SHALL choose Draft, Published or Archived without separate draft/product/photo-save controls. The same action SHALL save submitted details, variants and staged gallery metadata, wait for selected uploads before publishing, reconcile retries, and retain later keystrokes as unsaved.
+
+#### Scenario: Create and publish with selected photos
+- **WHEN** an operator selects photos, enters initial stock, chooses Published and clicks Create listing once
+- **THEN** the editor creates the private identity and stock once, processes the photos and publishes only after validation without requiring another save button
+
+#### Scenario: Interrupted creation or publication
+- **WHEN** uploading fails or publication is invalid after private creation
+- **THEN** the confirmed draft remains recoverable, the requested publication is not reported successful, and the same save control can retry without duplicate listings or initial stock
+
+#### Scenario: Unified editing and draft saving
+- **WHEN** an operator changes details, photo descriptions/order/visibility and listing Visibility
+- **THEN** Save changes commits the submitted changes together, including saving privately when Draft is selected, and reports any incomplete files or later unsaved edits clearly

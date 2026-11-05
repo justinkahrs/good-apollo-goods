@@ -69,7 +69,11 @@ const available = defaults.variants
     </div>
     <div data-draft-notice role="status"></div>
     <div data-conflicts></div>
-    <form class="product-form" data-product={JSON.stringify(defaults)}>
+    <form
+      class="product-form"
+      id="listing-editor"
+      data-product={JSON.stringify(defaults)}
+    >
       {product && <input type="hidden" name="id" value={product.id} />}
       <input type="hidden" name="revision" value={defaults.revision} />
       <div class="editor-main">
@@ -362,22 +366,22 @@ const available = defaults.variants
           </select>
         </label>
         <p class="editor-hint">
-          Keep it as a draft while you add photos and count stock. Publishing
+          Choose Draft to keep work private, or Published when ready. Publishing
           needs a description, price, and verified photos. Photo descriptions
           are supplied automatically.
         </p>
         <div class="editor-save">
-          <button class="primary" type="submit">
-            Save product
+          <button class="primary" type="submit" data-save-listing>
+            {product ? 'Save changes' : 'Create listing'}
           </button>
+          <p class="editor-hint">
+            Saves details and photo changes using the selected visibility.
+          </p>
           <p role="status" data-product-status></p>
           <ul data-publication-issues></ul>
           <p data-persistence-state aria-live="polite">
             Saved
           </p>
-          <button type="button" data-save-draft>
-            Save as draft
-          </button>
         </div>
       </aside>
     </form>
@@ -390,11 +394,11 @@ const available = defaults.variants
         <div class="stack">
           <label>
             Describe the photo (alt text)
-            <input data-alt maxlength="400" />
+            <input data-alt form="listing-editor" maxlength="400" />
           </label>
           <label data-association-label>
             Show for variant
-            <select data-variant-association>
+            <select data-variant-association form="listing-editor">
               <option value="">All variants</option>
             </select>
           </label>
@@ -510,7 +514,7 @@ const available = defaults.variants
         <summary data-upload-summary>Upload activity</summary>
         <ol data-upload-queue></ol>
       </details>
-      <form data-photo-form>
+      <div data-gallery>
         <ol class="photo-list">
           {defaults.images.map((image, index) => (
             <li
@@ -540,6 +544,7 @@ const available = defaults.variants
                   Describe the photo (alt text)
                   <input
                     data-alt
+                    form="listing-editor"
                     value={image.altSource === 'generated' ? '' : image.alt}
                     placeholder={effectiveAlt(
                       { ...image, altSource: 'generated' },
@@ -555,7 +560,7 @@ const available = defaults.variants
                   }
                 >
                   Show for variant
-                  <select data-variant-association>
+                  <select data-variant-association form="listing-editor">
                     <option value="">All variants</option>
                     {defaults.variants.map((v) => (
                       <option value={v.id} selected={image.variantId === v.id}>
@@ -590,11 +595,8 @@ const available = defaults.variants
             </li>
           ))}
         </ol>
-        <button class="primary" type="submit">
-          Save photos & order
-        </button>
         <p role="status" data-photo-status></p>
-      </form>
+      </div>
     </section>
     <section id="stock" class="editor-photos" aria-label="Stock">
       <h2>Stock</h2>

@@ -11,47 +11,34 @@ async function saveAndReload(
   page: import('@playwright/test').Page,
   name: string,
 ) {
-  const reloads = !['Save product', 'Save photos & order'].includes(name);
-  const loaded = reloads
-    ? page.waitForEvent('load', { timeout: 10000 })
-    : Promise.resolve();
+  const listing = name === 'Save listing';
+  const loaded = listing
+    ? Promise.resolve()
+    : page.waitForEvent('load', { timeout: 10000 });
   const response = page.waitForResponse(
     (r) =>
       new URL(r.url()).pathname === '/api/admin/action/' &&
       r.request().method() === 'POST' &&
       r.request().postDataJSON()?.action ===
-        (name === 'Save photos & order'
-          ? 'photo.save'
-          : name === 'Save product'
-            ? 'product.save'
-            : 'settings.save'),
+        (listing ? 'product.save' : 'settings.save'),
   );
-  await page.getByRole('button', { name, exact: true }).click();
+  await (
+    listing
+      ? page.locator('[data-save-listing]')
+      : page.getByRole('button', { name, exact: true })
+  ).click();
   const result = await response;
   if (!result.ok()) {
     await loaded.catch(() => {});
     throw new Error('Save failed: ' + (await result.text()));
   }
   await loaded;
-  if (!reloads) {
-    const body = await result.json();
-    if (name === 'Save product')
-      await expect(page.locator('[data-persistence-state]')).toHaveText(
-        'Saved',
-      );
-    else
-      await expect(page.locator('[name=revision]')).toHaveValue(
-        String(body.revision),
-      );
-    await expect(
-      page.locator(
-        name === 'Save product'
-          ? '[data-product-status]'
-          : '[data-photo-status]',
-      ),
-    ).toContainText('saved');
+  if (listing) {
+    await expect(page.locator('[data-save-listing]')).toBeEnabled();
+    await expect(page.locator('[data-product-status]')).toContainText('saved');
   }
 }
+
 test.beforeAll(async () => {
   const url = new URL(process.env.DATABASE_URL!);
   if (
@@ -262,7 +249,7 @@ test('creates an optionless piece with one price, recovers edits and preserves i
     .getByRole('textbox', { name: 'Size & details', exact: true })
     .fill('Large · 32 cm diameter (synthetic measurement).');
   await page.getByLabel('Price', { exact: true }).fill('58.01');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   const product = await db().product.findUniqueOrThrow({
     where: { slug: 'watermelon-studio-fixture' },
     include: { variants: { include: { stock: true } } },
@@ -297,7 +284,7 @@ test('creates an optionless piece with one price, recovers edits and preserves i
       new URL(r.url()).pathname === '/api/admin/action/' &&
       r.request().method() === 'POST',
   );
-  await page.getByRole('button', { name: 'Save product', exact: true }).click();
+  await page.locator('[data-save-listing]').click();
   expect((await invalidSave).ok()).toBe(false);
   await expect(page.locator('[data-product-status]')).not.toBeEmpty();
   await expect(page.getByLabel('Price', { exact: true })).toHaveValue('59.251');
@@ -316,7 +303,7 @@ test('creates an optionless piece with one price, recovers edits and preserves i
     .getByLabel('SKU (optional)', { exact: true })
     .fill('WATERMELON-FIXTURE');
   await page.getByLabel('Low-stock alert at', { exact: true }).fill('2');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   const edited = await db().variant.findUniqueOrThrow({
     where: { id: variant.id },
     include: { stock: true },
@@ -339,11 +326,11 @@ test('creates an optionless piece with one price, recovers edits and preserves i
   await page
     .getByLabel('Describe the photo (alt text)', { exact: true })
     .fill('Synthetic green hat photo');
-  await saveAndReload(page, 'Save photos & order');
+  await saveAndReload(page, 'Save listing');
   await page
     .getByLabel('Visibility', { exact: true })
     .selectOption('published');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   await page.goto('/shop/hats/watermelon-studio-fixture/');
   await expect(page.getByRole('radio')).toHaveCount(0);
   await expect(
@@ -409,7 +396,7 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
   await expect(
     page.getByLabel('Price in dollars', { exact: true }),
   ).toHaveCount(4);
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   await expect(page).toHaveURL(/\/admin\/products\/(?!new)[^/]+\//);
   const productUrl = page.url();
   await page
@@ -422,7 +409,7 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
   await expect(
     page.getByRole('textbox', { name: 'Description', exact: true }),
   ).toHaveValue('Recovered unsaved description from the browser fixture.');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   await page
     .getByLabel('Add photos', { exact: true })
     .setInputFiles([imagePath, imagePath]);
@@ -461,23 +448,24 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
     .getByRole('button', { name: 'Make cover', exact: true })
     .nth(1)
     .click();
-  await saveAndReload(page, 'Save photos & order');
+  await saveAndReload(page, 'Save listing');
+  await page
+    .getByRole('button', { name: 'Remove from upload queue', exact: true })
+    .click();
   await page
     .getByRole('combobox', { name: 'Visibility', exact: true })
     .selectOption('published');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   const other = await context.newPage();
   await other.goto(productUrl);
   await page
     .getByLabel('Product name', { exact: true })
     .fill('Browser workflow hat edited');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   await other
     .getByLabel('Product name', { exact: true })
     .fill('Stale name must not overwrite');
-  await other
-    .getByRole('button', { name: 'Save product', exact: true })
-    .click();
+  await other.locator('[data-save-listing]').click();
   await expect(other.locator('[data-draft-notice]')).toContainText(
     'newer version',
   );
@@ -488,14 +476,14 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
     .getByRole('button', { name: 'Keep my entries', exact: true })
     .first()
     .click();
-  await saveAndReload(other, 'Save product');
+  await saveAndReload(other, 'Save listing');
   await expect(other.getByLabel('Product name', { exact: true })).toHaveValue(
     'Stale name must not overwrite',
   );
   await other
     .getByLabel('Product name', { exact: true })
     .fill('Browser workflow hat edited');
-  await saveAndReload(other, 'Save product');
+  await saveAndReload(other, 'Save listing');
   await other.close();
   await page.goto('/shop/hats/browser-workflow-hat/');
   await expect(page.locator('#product-title')).toHaveText(
@@ -587,7 +575,7 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
   await page
     .getByRole('combobox', { name: 'Visibility', exact: true })
     .selectOption('archived');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   expect((await page.goto('/shop/hats/browser-workflow-hat/'))?.status()).toBe(
     404,
   );
@@ -886,7 +874,7 @@ test('finishes listing, photos, stock and deletion in one editor without losing 
     .getByLabel('Add photos', { exact: true })
     .setInputFiles([imagePath, imagePath, imagePath]);
   await expect(page.locator('[data-upload-queue] li')).toHaveCount(3);
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   await expect(page.locator('[data-photo-id]')).toHaveCount(3);
   await expect(page.locator('[data-upload-queue]')).toContainText(
     'Verified and saved',
@@ -930,11 +918,11 @@ test('finishes listing, photos, stock and deletion in one editor without losing 
   await expect(page.locator('[data-alt]').first()).toHaveValue(
     'Custom description retained during upload',
   );
-  await saveAndReload(page, 'Save photos & order');
+  await saveAndReload(page, 'Save listing');
   expect(
     (await db().product.findUniqueOrThrow({ where: { id: product.id } }))
       .description,
-  ).toBe('A synthetic one-place workflow fixture.');
+  ).toBe('Keep these unsaved description edits during photo actions.');
   await page.locator('#stock summary').click();
   await page.getByLabel('Number of pieces', { exact: true }).fill('2');
   await page.getByLabel('Reason', { exact: true }).fill('New batch');
@@ -951,7 +939,7 @@ test('finishes listing, photos, stock and deletion in one editor without losing 
   await page
     .getByLabel('Visibility', { exact: true })
     .selectOption('published');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   const publicBefore = await request.get('/shop/hats/one-place-fixture/');
   expect(publicBefore.status()).toBe(200);
   expect(await publicBefore.text()).toContain(
@@ -1052,14 +1040,14 @@ test('reconciles a lost creation response and preserves edits typed while saving
       await route.abort('failed');
     } else await route.continue();
   });
-  await page.getByRole('button', { name: 'Save product', exact: true }).click();
+  await page.locator('[data-save-listing]').click();
   await expect(page.locator('[data-persistence-state]')).toContainText(
     'failed',
   );
   await page
     .getByLabel('Description', { exact: true })
     .fill('Later typing must survive response reconciliation.');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
     'Later typing must survive response reconciliation.',
   );
@@ -1093,7 +1081,7 @@ test('reviews legacy hidden photos and permanently removes an unused draft', asy
     .getByLabel('Product name', { exact: true })
     .fill('Unused removable fixture');
   await page.getByLabel('Price', { exact: true }).fill('20.00');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   const p = await db().product.findUniqueOrThrow({
     where: { slug: 'unused-removable-fixture' },
   });
@@ -1106,7 +1094,7 @@ test('reviews legacy hidden photos and permanently removes an unused draft', asy
   await page.reload();
   await expect(page.locator('[data-legacy-hidden]')).toBeVisible();
   await page.getByRole('button', { name: 'Show photo', exact: true }).click();
-  await saveAndReload(page, 'Save photos & order');
+  await saveAndReload(page, 'Save listing');
   expect(
     (await db().productImage.findFirstOrThrow({ where: { productId: p.id } }))
       .archivedAt,
@@ -1228,7 +1216,7 @@ test('recovers unnamed option tools and keeps entries through authentication and
   await page
     .getByLabel('Description', { exact: true })
     .fill('These entries survive session expiry.');
-  await page.getByRole('button', { name: 'Save product', exact: true }).click();
+  await page.locator('[data-save-listing]').click();
   await expect(page.locator('[data-product-status] a')).toHaveAttribute(
     'href',
     '/admin/sign-in/',
@@ -1248,7 +1236,7 @@ test('recovers unnamed option tools and keeps entries through authentication and
   await expect(page.locator('[data-draft-notice]')).toContainText(
     'storage is unavailable',
   );
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
     'Saving also works with unavailable draft storage.',
   );
@@ -1288,7 +1276,7 @@ test('does not replace keystrokes entered while a save response is pending', asy
       await route.fulfill({ response });
     } else await route.continue();
   });
-  await page.getByRole('button', { name: 'Save product', exact: true }).click();
+  await page.locator('[data-save-listing]').click();
   await ready;
   await page
     .getByLabel('Description', { exact: true })
@@ -1305,7 +1293,7 @@ test('does not replace keystrokes entered while a save response is pending', asy
       })
     ).description,
   ).toBe('Description sent with the request.');
-  await saveAndReload(page, 'Save product');
+  await saveAndReload(page, 'Save listing');
   expect(
     (
       await db().product.findUniqueOrThrow({
@@ -1313,4 +1301,217 @@ test('does not replace keystrokes entered while a save response is pending', asy
       })
     ).description,
   ).toBe('Newer typing while the response is pending.');
+});
+
+test('one save creates and publishes selected photos, then saves details and gallery from the keyboard', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(60000);
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: sessionCookie,
+      url: config().APP_URL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/admin/products/new/');
+  await expect(
+    page.getByRole('button', { name: 'Create listing', exact: true }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole('button', {
+      name: /Save product|Save as draft|Save photos/,
+    }),
+  ).toHaveCount(0);
+  await page
+    .getByLabel('Product name', { exact: true })
+    .fill('Unified publish fixture');
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('All submitted listing details and photos publish together.');
+  await page.getByLabel('Price', { exact: true }).fill('55.00');
+  await page.locator('[data-initial-single]').fill('5');
+  await page
+    .getByLabel('Add photos', { exact: true })
+    .setInputFiles([imagePath, imagePath, imagePath]);
+  await page
+    .getByLabel('Visibility', { exact: true })
+    .selectOption('published');
+  await page
+    .getByRole('button', { name: 'Create listing', exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: 'Save changes', exact: true }),
+  ).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator('[data-product-status]')).toContainText('saved');
+  const product = await db().product.findUniqueOrThrow({
+    where: { slug: 'unified-publish-fixture' },
+    include: { images: true, variants: { include: { stock: true } } },
+  });
+  expect(product.status).toBe('published');
+  expect(product.images).toHaveLength(3);
+  expect(product.variants[0].stock?.unsoldQty).toBe(5);
+  expect(
+    await db().stockMovement.count({
+      where: { variantId: product.variants[0].id },
+    }),
+  ).toBe(1);
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Combined detail edits also save when submitting from a photo.');
+  await page
+    .locator('[data-alt]')
+    .first()
+    .fill('Custom photo description in the unified save');
+  await page
+    .getByRole('button', { name: 'Hide photo', exact: true })
+    .last()
+    .click();
+  await page.getByLabel('Visibility', { exact: true }).selectOption('draft');
+  await page.locator('[data-alt]').first().press('Enter');
+  await expect(page.locator('[data-persistence-state]')).toHaveText('Saved');
+  const saved = await db().product.findUniqueOrThrow({
+    where: { id: product.id },
+    include: { images: { orderBy: { position: 'asc' } } },
+  });
+  expect(saved.status).toBe('draft');
+  expect(saved.description).toContain('Combined detail edits');
+  expect(saved.images[0].alt).toBe(
+    'Custom photo description in the unified save',
+  );
+  expect(saved.images.at(-1)?.archivedAt).not.toBeNull();
+});
+
+test('one save retains the private identity after failed upload and retries without duplicate stock', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: sessionCookie,
+      url: config().APP_URL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/admin/products/new/');
+  await page
+    .getByLabel('Product name', { exact: true })
+    .fill('Unified retry fixture');
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Failed photos retain the private listing safely.');
+  await page.getByLabel('Price', { exact: true }).fill('42.00');
+  await page.locator('[data-initial-single]').fill('3');
+  await page
+    .getByLabel('Add photos', { exact: true })
+    .setInputFiles([
+      { name: 'bad.heic', mimeType: 'image/heic', buffer: Buffer.from('bad') },
+    ]);
+  await page
+    .getByLabel('Visibility', { exact: true })
+    .selectOption('published');
+  await page
+    .getByRole('button', { name: 'Create listing', exact: true })
+    .click();
+  await expect(page.locator('[data-product-status]')).toContainText(
+    'has not been published',
+  );
+  await expect(
+    page.getByRole('button', { name: 'Save changes', exact: true }),
+  ).toBeEnabled();
+  const initial = await db().product.findUniqueOrThrow({
+    where: { slug: 'unified-retry-fixture' },
+    include: { variants: true },
+  });
+  expect(initial.status).toBe('draft');
+  await page
+    .getByRole('button', { name: 'Remove from upload queue', exact: true })
+    .click();
+  await page.getByLabel('Add photos', { exact: true }).setInputFiles(imagePath);
+  await expect(page.locator('[data-photo-id]')).toHaveCount(1);
+  await saveAndReload(page, 'Save listing');
+  expect(
+    (await db().product.findUniqueOrThrow({ where: { id: initial.id } }))
+      .status,
+  ).toBe('published');
+  expect(
+    await db().product.count({ where: { slug: 'unified-retry-fixture' } }),
+  ).toBe(1);
+  expect(
+    await db().stockMovement.count({
+      where: { variantId: initial.variants[0].id },
+    }),
+  ).toBe(1);
+});
+
+test('publication after uploading never saves keystrokes entered during the upload', async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(60000);
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: sessionCookie,
+      url: config().APP_URL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/admin/products/new/');
+  await page
+    .getByLabel('Product name', { exact: true })
+    .fill('Unified in-flight fixture');
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Description explicitly submitted for publication.');
+  await page.getByLabel('Price', { exact: true }).fill('30.00');
+  await page.getByLabel('Add photos', { exact: true }).setInputFiles(imagePath);
+  await page
+    .getByLabel('Visibility', { exact: true })
+    .selectOption('published');
+  let release!: () => void, ready!: () => void;
+  const gate = new Promise<void>((r) => (release = r)),
+    committed = new Promise<void>((r) => (ready = r));
+  await page.route('**/api/admin/action/', async (route) => {
+    if (route.request().postDataJSON()?.action === 'photo.finalize') {
+      const response = await route.fetch();
+      ready();
+      await gate;
+      await route.fulfill({ response });
+    } else await route.continue();
+  });
+  await page
+    .getByRole('button', { name: 'Create listing', exact: true })
+    .click();
+  await committed;
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Newer private typing while photos finish.');
+  await page.getByLabel('Price', { exact: true }).fill('31.00');
+  release();
+  await expect(
+    page.getByRole('button', { name: 'Save changes', exact: true }),
+  ).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator('[data-persistence-state]')).toHaveText(
+    'Unsaved changes',
+  );
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
+    'Newer private typing while photos finish.',
+  );
+  await expect(page.getByLabel('Price', { exact: true })).toHaveValue('31.00');
+  const saved = await db().product.findUniqueOrThrow({
+    where: { slug: 'unified-in-flight-fixture' },
+    include: { variants: true },
+  });
+  expect(saved.status).toBe('published');
+  expect(saved.description).toBe(
+    'Description explicitly submitted for publication.',
+  );
+  expect(saved.variants[0].priceCents).toBe(3000);
 });

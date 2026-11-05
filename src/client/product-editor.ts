@@ -273,12 +273,24 @@ type Draft = {
 };
 const photos = document.querySelector<HTMLElement>('[data-photos]')!,
   list = photos.querySelector<HTMLOListElement>('.photo-list')!,
-  photoForm = photos.querySelector<HTMLFormElement>('form')!;
+  gallery = photos.querySelector<HTMLElement>('[data-gallery]')!;
 const productStatus = form.querySelector('[data-product-status]')!,
   photoStatus = photos.querySelector('[data-photo-status]')!,
   notice = document.querySelector('[data-draft-notice]')!,
   conflicts = document.querySelector('[data-conflicts]')!;
 const persistence = document.querySelector('[data-persistence-state]')!;
+const saveButton = form.querySelector<HTMLButtonElement>(
+  '[data-save-listing]',
+)!;
+let saving = false;
+function saveLabel() {
+  saveButton.textContent = saving
+    ? 'Saving…'
+    : product
+      ? 'Save changes'
+      : 'Create listing';
+  saveButton.disabled = saving || Boolean(product?.deletedAt);
+}
 let product: Product | undefined = defaults.id ? defaults : undefined,
   base: Draft,
   recovering = false,
@@ -396,9 +408,14 @@ function writeStored() {
     notice.textContent =
       'Browser recovery storage is unavailable. Keep this tab open until changes are saved.';
   }
-  persistence.textContent = equal(capture(), base)
-    ? 'Saved'
-    : 'Unsaved changes';
+  persistence.textContent = saving
+    ? 'Saving…'
+    : queue.some((q) => q.state !== 'done')
+      ? 'Photos need attention'
+      : equal(capture(), base)
+        ? 'Saved'
+        : 'Unsaved changes';
+  saveLabel();
 }
 function labels() {
   let cover = false;
@@ -612,6 +629,7 @@ async function serial<T>(run: () => Promise<T>): Promise<T> {
   pending++;
   const next = chain.then(async () => {
     await reconcileSave();
+    await reconcilePhotoSave();
     return run();
   });
   chain = next.then(
@@ -805,7 +823,7 @@ try {
     'Browser recovery could not be read. Current saved listing is loaded.';
 }
 form.addEventListener('input', writeStored);
-photoForm.addEventListener('input', () => {
+gallery.addEventListener('input', () => {
   labels();
   writeStored();
 });
@@ -854,20 +872,14 @@ async function reconcileSave() {
   if (latest.revision !== result.revision) reviewDraft(capture(), base, latest);
   status(productStatus, 'Previous save confirmed. Entries kept.');
 }
-async function save(asDraft = false) {
-  await reconcileSave();
-  if (conflicts.children.length)
-    throw new Error('Resolve the conflicting entries before saving.');
-  const submitted = capture(),
-    data = {
-      ...submitted.details,
-      id: product?.id,
-      revision: product?.revision,
-      variants: submitted.variants,
-      images: product ? submitted.images : undefined,
-      ...(asDraft ? { status: 'draft' } : {}),
-    };
-  persistence.textContent = 'Saving…';
+async function persistListing(submitted: Draft) {
+  const data = {
+    ...submitted.details,
+    id: product?.id,
+    revision: product?.revision,
+    variants: submitted.variants,
+    images: product ? submitted.images : undefined,
+  };
   const payload = { action: 'product.save', ...data };
   try {
     const result = await action<Product>('product.save', {
@@ -876,21 +888,67 @@ async function save(asDraft = false) {
     });
     operation.clear();
     adopt(result, submitted, ['details', 'variants', 'images']);
-    status(productStatus, 'Product saved.');
     document.querySelector('[data-publication-issues]')!.replaceChildren();
-    await uploadWaiting();
   } catch (error) {
     operation.rejected(error);
     throw error;
   }
 }
+async function save() {
+  await reconcileSave();
+  if (conflicts.children.length)
+    throw new Error('Resolve the conflicting entries before saving.');
+  const submitted = capture(),
+    creating = !product;
+  if (creating) {
+    // Uploads need an identity first; the requested visibility stays pending.
+    await persistListing({
+      ...submitted,
+      details: { ...submitted.details, status: 'draft' },
+    });
+    submitted.variants = canonical(product!).variants;
+  }
+  await uploadWaiting(true);
+  const incomplete = queue.filter((q) => q.state !== 'done');
+  if (submitted.details.status === 'published' && incomplete.length)
+    throw new Error(
+      'Photos still need attention. The listing has not been published with these changes. Retry or remove the failed files, then save again.',
+    );
+  // Add verified uploads without including gallery edits typed after submission.
+  const known = new Set(submitted.images.map((i) => i.id));
+  submitted.images.push(...base.images.filter((i) => !known.has(i.id)));
+  if (!creating || submitted.details.status !== 'draft')
+    await persistListing(submitted);
+  status(
+    productStatus,
+    incomplete.length
+      ? 'Listing saved. Some selected photos still need attention.'
+      : 'Listing saved.',
+  );
+  return incomplete.length === 0;
+}
+function submitListing() {
+  if (saving || !form.reportValidity()) return;
+  saving = true;
+  saveLabel();
+  persistence.textContent = 'Saving…';
+  let succeeded = false;
+  void serial(() => save())
+    .then((complete) => {
+      succeeded = complete;
+    })
+    .catch((error) => errors(productStatus, error))
+    .finally(() => {
+      saving = false;
+      saveLabel();
+      if (succeeded) writeStored();
+      else if (persistence.textContent === 'Saving…')
+        persistence.textContent = 'Photos need attention';
+    });
+}
 form.addEventListener('submit', (e) => {
   e.preventDefault();
-  void serial(() => save()).catch((e) => errors(productStatus, e));
-});
-form.querySelector('[data-save-draft]')!.addEventListener('click', () => {
-  if (form.reportValidity())
-    void serial(() => save(true)).catch((e) => errors(productStatus, e));
+  submitListing();
 });
 document.querySelector('[data-duplicate]')?.addEventListener('click', () => {
   void serial(async () => {
@@ -912,48 +970,36 @@ document.querySelector('[data-duplicate]')?.addEventListener('click', () => {
     location.assign(`/admin/products/${result.id}/`);
   }).catch((e) => errors(productStatus, e));
 });
-photoForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  void serial(async () => {
-    if (!product) throw new Error('Save the draft first to upload photos.');
-    const submitted = capture(),
-      payload = {
-        productId: product.id,
-        revision: product.revision,
-        images: submitted.images,
-      };
-    const key = persistentOperation('photos:' + product.id);
-    try {
-      const prior = key.pending();
-      const replay = prior
-        ? await action<{ result: Product | null }>('mutation.get', {
-            id: prior.id,
-          })
-        : null;
-      const next =
-        replay?.result ??
-        (await action<Product>('photo.save', {
-          ...(prior?.data ?? payload),
-          operationKey: prior?.id ?? key.get(payload),
-        }));
-      key.clear();
-      adopt(
-        next,
-        prior
-          ? {
-              ...submitted,
-              images: (prior.data as { images: Draft['images'] }).images,
-            }
-          : submitted,
-        ['images'],
-      );
-      status(photoStatus, 'Photos saved. Product entries are unchanged.');
-    } catch (e) {
-      key.rejected(e);
-      throw e;
-    }
-  }).catch((e) => errors(photoStatus, e));
-});
+async function reconcilePhotoSave() {
+  if (!product) return;
+  const key = persistentOperation('photos:' + product.id),
+    prior = key.pending();
+  if (!prior) return;
+  const submitted = capture();
+  try {
+    const receipt = await action<{ result: Product | null }>('mutation.get', {
+      id: prior.id,
+    });
+    const next =
+      receipt.result ??
+      (await action<Product>('photo.save', {
+        ...(prior.data as Record<string, unknown>),
+        operationKey: prior.id,
+      }));
+    key.clear();
+    adopt(
+      next,
+      {
+        ...submitted,
+        images: (prior.data as { images: Draft['images'] }).images,
+      },
+      ['images'],
+    );
+  } catch (error) {
+    key.rejected(error);
+    throw error;
+  }
+}
 list.addEventListener('click', (e) => {
   const target = e.target as HTMLElement,
     row = target.closest<HTMLElement>('[data-photo-id]');
@@ -1139,8 +1185,13 @@ async function uploadOne(item: Upload) {
       .forEach((b) => (b.disabled = false));
   }
 }
-async function uploadWaiting() {
-  for (const item of queue) if (item.state === 'waiting') await uploadOne(item);
+async function uploadWaiting(retryFailed = false) {
+  for (const item of [...queue])
+    if (
+      item.state === 'waiting' ||
+      (retryFailed && item.state === 'failed' && item.file)
+    )
+      await uploadOne(item);
 }
 uploadInput.addEventListener('change', () => {
   for (const file of [...(uploadInput.files ?? [])]) {
@@ -1198,7 +1249,7 @@ uploadInput.addEventListener('change', () => {
     photos.querySelector('[data-upload-queue]')!.append(row);
     uploadLabel(
       item,
-      product ? 'Waiting to upload' : 'Selected — save draft to upload',
+      product ? 'Waiting to upload' : 'Selected — create listing to upload',
     );
     button.onclick = () => {
       void serial(() => uploadOne(item)).catch((e) => errors(uploadStatus, e));
@@ -1207,7 +1258,8 @@ uploadInput.addEventListener('change', () => {
   uploadInput.value = '';
   writeStored();
   if (product) void serial(uploadWaiting).catch((e) => errors(uploadStatus, e));
-  else status(uploadStatus, 'Photos selected. Save the draft to upload them.');
+  else
+    status(uploadStatus, 'Photos selected. Create the listing to upload them.');
 });
 for (const [selector, actionName] of [
   ['[data-delete-listing]', 'product.delete'],
