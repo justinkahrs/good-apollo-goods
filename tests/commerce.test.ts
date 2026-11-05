@@ -191,6 +191,9 @@ import {
   duplicateProduct,
   publicCatalog,
 } from '../src/server/catalog';
+import { listingLifecycle } from '../src/server/listing-lifecycle';
+import { cleanupMedia } from '../src/server/media-cleanup';
+import { effectiveAlt } from '../src/server/catalog-state';
 import { adjustStock, stockDrift } from '../src/server/stock';
 import {
   quoteCart,
@@ -213,6 +216,8 @@ import {
   finalizePhoto,
   savePhotos,
   MAX_UPLOAD,
+  deletePhoto,
+  storage,
 } from '../src/server/photos';
 import { receiveEvent } from '../src/server/events';
 import { maintenance, monitor } from '../src/server/maintenance';
@@ -322,7 +327,7 @@ function pay(session: any) {
 }
 beforeEach(async () => {
   await db().$executeRawUnsafe(
-    'TRUNCATE TABLE "Product", "User", "Order", "StockMovement", "EmailOutbox", "Audit", "StripeEvent", "StoreSettings", "MaintenanceJob", "RequestLimit" RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE "Product", "User", "Order", "StockMovement", "EmailOutbox", "Audit", "StripeEvent", "StoreSettings", "MaintenanceJob", "RequestLimit", "AdminMutation", "MediaAsset" RESTART IDENTITY CASCADE',
   );
   await db().storeSettings.create({
     data: {
@@ -428,11 +433,19 @@ it('rejects invalid publication and stale saves; duplicate gets independent zero
     saveProduct(actor, { ...edit, revision: 2, description: '' }),
   ).rejects.toThrow();
   const renamed = await saveProduct(actor, {
-    ...edit, revision: 2, slug: 'changed-published-address',
+    ...edit,
+    revision: 2,
+    slug: 'changed-published-address',
   });
-  expect(renamed).toMatchObject({ slug: 'changed-published-address', status: 'published', revision: 3 });
+  expect(renamed).toMatchObject({
+    slug: 'changed-published-address',
+    status: 'published',
+    revision: 3,
+  });
   const collision = await fixture();
-  await expect(saveProduct(actor, { ...edit, revision: 3, slug: collision.p.slug })).rejects.toThrow('already in use');
+  await expect(
+    saveProduct(actor, { ...edit, revision: 3, slug: collision.p.slug }),
+  ).rejects.toThrow('already in use');
   expect(
     (await db().product.findUniqueOrThrow({ where: { id: p.id } })).description,
   ).toBe(edit.description);
@@ -838,7 +851,9 @@ it('runs a multi-product test-mode order through payment, delivery, refunds, dis
     [first.variants[1].id]: 5801,
     [second.variants[0].id]: 6000,
   });
-  expect(await db().emailOutbox.count({ where: { status: 'pending' } })).toBe(2);
+  expect(await db().emailOutbox.count({ where: { status: 'pending' } })).toBe(
+    2,
+  );
   expect((await deliverOutbox(10)).delivered).toBe(2);
   expect(fake.mail).toHaveLength(2);
   expect(fake.mail.map((message) => message.subject).sort()).toEqual([
@@ -919,9 +934,8 @@ it('runs a multi-product test-mode order through payment, delivery, refunds, dis
   expect(returnedBalance.unsoldQty).toBe(2);
   expect(returnedBalance.heldQty).toBe(0);
   expect(
-    (
-      await db().orderItem.findUniqueOrThrow({ where: { id: returnItem.id } })
-    ).restockedQty,
+    (await db().orderItem.findUniqueOrThrow({ where: { id: returnItem.id } }))
+      .restockedQty,
   ).toBe(1);
   expect(
     await db().stockMovement.count({ where: { reason: 'checkout.consume' } }),
@@ -1417,35 +1431,71 @@ it('expires stale sign-in retries without contacting the mail provider', async (
   });
 });
 it('delivers a fresh sign-in after expiring older requests within a one-message budget', async () => {
-  await db().emailOutbox.createMany({ data: [1, 2].map((n) => ({
-    dedupeKey: `old-signin-${n}-${randomUUID()}`, kind: 'signin',
-    payload: { email: 'fixture@example.invalid', url: 'https://example.invalid/expired' },
-    createdAt: new Date(Date.now() - 16 * 60_000),
-  })) });
-  const fresh = await db().emailOutbox.create({ data: {
-    dedupeKey: `fresh-signin-${randomUUID()}`, kind: 'signin',
-    payload: { email: 'fixture@example.invalid', url: 'https://example.invalid/fresh' },
-  } });
+  await db().emailOutbox.createMany({
+    data: [1, 2].map((n) => ({
+      dedupeKey: `old-signin-${n}-${randomUUID()}`,
+      kind: 'signin',
+      payload: {
+        email: 'fixture@example.invalid',
+        url: 'https://example.invalid/expired',
+      },
+      createdAt: new Date(Date.now() - 16 * 60_000),
+    })),
+  });
+  const fresh = await db().emailOutbox.create({
+    data: {
+      dedupeKey: `fresh-signin-${randomUUID()}`,
+      kind: 'signin',
+      payload: {
+        email: 'fixture@example.invalid',
+        url: 'https://example.invalid/fresh',
+      },
+    },
+  });
   expect(await deliverOutbox(1, 'signin')).toEqual({ delivered: 1, failed: 0 });
   expect(fake.mail).toHaveLength(1);
   expect(fake.mail[0].messageId).toBe(`<${fresh.id}@goodapollogoods.com>`);
-  expect(await db().emailOutbox.count({ where: { status: 'expired' } })).toBe(2);
+  expect(await db().emailOutbox.count({ where: { status: 'expired' } })).toBe(
+    2,
+  );
 });
 it('delivers the requested sign-in without retrying older queued links or duplicating delivery', async () => {
-  const older = await db().emailOutbox.create({ data: {
-    dedupeKey: `older-signin-${randomUUID()}`, kind: 'signin', status: 'retry', attempts: 2,
-    createdAt: new Date(Date.now() - 60_000),
-    payload: { email: 'fixture@example.invalid', url: 'https://example.invalid/older' },
-  } });
-  const fresh = await db().emailOutbox.create({ data: {
-    dedupeKey: `target-signin-${randomUUID()}`, kind: 'signin',
-    payload: { email: 'fixture@example.invalid', url: 'https://example.invalid/target' },
-  } });
-  expect(await deliverOutbox(1, 'signin', undefined, fresh.id)).toEqual({ delivered: 1, failed: 0 });
-  expect(await deliverOutbox(1, 'signin', undefined, fresh.id)).toEqual({ delivered: 0, failed: 0 });
+  const older = await db().emailOutbox.create({
+    data: {
+      dedupeKey: `older-signin-${randomUUID()}`,
+      kind: 'signin',
+      status: 'retry',
+      attempts: 2,
+      createdAt: new Date(Date.now() - 60_000),
+      payload: {
+        email: 'fixture@example.invalid',
+        url: 'https://example.invalid/older',
+      },
+    },
+  });
+  const fresh = await db().emailOutbox.create({
+    data: {
+      dedupeKey: `target-signin-${randomUUID()}`,
+      kind: 'signin',
+      payload: {
+        email: 'fixture@example.invalid',
+        url: 'https://example.invalid/target',
+      },
+    },
+  });
+  expect(await deliverOutbox(1, 'signin', undefined, fresh.id)).toEqual({
+    delivered: 1,
+    failed: 0,
+  });
+  expect(await deliverOutbox(1, 'signin', undefined, fresh.id)).toEqual({
+    delivered: 0,
+    failed: 0,
+  });
   expect(fake.mail).toHaveLength(1);
   expect(fake.mail[0].text).toContain('https://example.invalid/target');
-  expect(await db().emailOutbox.findUniqueOrThrow({ where: { id: older.id } })).toMatchObject({ status: 'retry', attempts: 2 });
+  expect(
+    await db().emailOutbox.findUniqueOrThrow({ where: { id: older.id } }),
+  ).toMatchObject({ status: 'retry', attempts: 2 });
 });
 it('preserves durable mail during failure and leases concurrent recovery', async () => {
   const { variants } = await fixture(),
@@ -1493,26 +1543,92 @@ it('delivers the durable outbox through the signed private commerce route', asyn
   });
   await new Promise<void>((resolve) => route.listen(0, '127.0.0.1', resolve));
   const address = route.address();
-  if (!address || typeof address === 'string') throw new Error('fixture_route_address_missing');
+  if (!address || typeof address === 'string')
+    throw new Error('fixture_route_address_missing');
   vi.stubEnv('COMMERCE_EMAIL_API_URL', `http://127.0.0.1:${address.port}/`);
   vi.stubEnv('COMMERCE_EMAIL_HMAC_SECRET', secret);
   vi.stubEnv('SMTP_HOST', '');
   try {
     const messages = [
-      { kind: 'signin', type: 'signin', recipient: 'buyer@example.invalid', payload: { email: 'buyer@example.invalid', url: 'https://goodapollogoods.com/signin?token=fixture' } },
-      { kind: 'buyer', type: 'order', recipient: 'buyer@example.invalid', payload: { email: 'buyer@example.invalid', number: 'GAG-100', items: [{ name: 'Fixture hat', label: '60 cm', quantity: 1 }], totalCents: 8500, processingWindow: '3–5 business days' } },
-      { kind: 'shipment', type: 'shipment', recipient: 'buyer@example.invalid', payload: { email: 'buyer@example.invalid', number: 'GAG-100', carrier: 'USPS', trackingNumber: 'fixture-123', trackingUrl: 'https://tools.usps.com/track' } },
-      { kind: 'operator', type: 'operator', recipient: 'hello@annakahrs.com', payload: { number: 'GAG-100', items: [{ name: 'Fixture hat', label: '60 cm', quantity: 1 }], totalCents: 8500, processingWindow: '3–5 business days' } },
-      { kind: 'alert', type: 'alert', recipient: 'hello@annakahrs.com', payload: { reason: 'Stock ledger drift detected' } },
+      {
+        kind: 'signin',
+        type: 'signin',
+        recipient: 'buyer@example.invalid',
+        payload: {
+          email: 'buyer@example.invalid',
+          url: 'https://goodapollogoods.com/signin?token=fixture',
+        },
+      },
+      {
+        kind: 'buyer',
+        type: 'order',
+        recipient: 'buyer@example.invalid',
+        payload: {
+          email: 'buyer@example.invalid',
+          number: 'GAG-100',
+          items: [{ name: 'Fixture hat', label: '60 cm', quantity: 1 }],
+          totalCents: 8500,
+          processingWindow: '3–5 business days',
+        },
+      },
+      {
+        kind: 'shipment',
+        type: 'shipment',
+        recipient: 'buyer@example.invalid',
+        payload: {
+          email: 'buyer@example.invalid',
+          number: 'GAG-100',
+          carrier: 'USPS',
+          trackingNumber: 'fixture-123',
+          trackingUrl: 'https://tools.usps.com/track',
+        },
+      },
+      {
+        kind: 'operator',
+        type: 'operator',
+        recipient: 'hello@annakahrs.com',
+        payload: {
+          number: 'GAG-100',
+          items: [{ name: 'Fixture hat', label: '60 cm', quantity: 1 }],
+          totalCents: 8500,
+          processingWindow: '3–5 business days',
+        },
+      },
+      {
+        kind: 'alert',
+        type: 'alert',
+        recipient: 'hello@annakahrs.com',
+        payload: { reason: 'Stock ledger drift detected' },
+      },
     ];
-    const queued = await Promise.all(messages.map((message, index) => db().emailOutbox.create({
-      data: { dedupeKey: `commerce-route-fixture-${index}`, kind: message.kind, payload: message.payload },
-    })));
+    const queued = await Promise.all(
+      messages.map((message, index) =>
+        db().emailOutbox.create({
+          data: {
+            dedupeKey: `commerce-route-fixture-${index}`,
+            kind: message.kind,
+            payload: message.payload,
+          },
+        }),
+      ),
+    );
     expect(await deliverOutbox(5)).toEqual({ delivered: 5, failed: 0 });
-    expect(received.map((message) => message.type).sort()).toEqual(['alert', 'operator', 'order', 'shipment', 'signin']);
-    for (const item of queued) expect((await db().emailOutbox.findUniqueOrThrow({ where: { id: item.id } })).status).toBe('delivered');
+    expect(received.map((message) => message.type).sort()).toEqual([
+      'alert',
+      'operator',
+      'order',
+      'shipment',
+      'signin',
+    ]);
+    for (const item of queued)
+      expect(
+        (await db().emailOutbox.findUniqueOrThrow({ where: { id: item.id } }))
+          .status,
+      ).toBe('delivered');
   } finally {
-    await new Promise<void>((resolve, reject) => route.close((error) => error ? reject(error) : resolve()));
+    await new Promise<void>((resolve, reject) =>
+      route.close((error) => (error ? reject(error) : resolve())),
+    );
     vi.unstubAllEnvs();
   }
 });
@@ -1606,7 +1722,7 @@ it('keeps unknown holds recoverable during outages and detects ledger drift', as
   expect(await stockDrift()).toHaveLength(1);
   expect((await healthReport()).ready).toBe(false);
 });
-it('rejects oversized, mismatched and excessive-pixel uploads, and keeps archived photos editable', async () => {
+it('rejects oversized, mismatched and excessive-pixel uploads, and supplies generated descriptions for blank alt', async () => {
   const { p } = await fixture();
   await expect(
     uploadIntent(actor, {
@@ -1641,8 +1757,584 @@ it('rejects oversized, mismatched and excessive-pixel uploads, and keeps archive
         archived: false,
       })),
     }),
-  ).rejects.toThrow();
+  ).resolves.toMatchObject({ revision: 2 });
   expect(
     (await db().product.findUniqueOrThrow({ where: { id: p.id } })).revision,
+  ).toBe(2);
+});
+
+it('creates initial stock atomically and replays the same creation without duplicate identities', async () => {
+  const operationKey = randomUUID(),
+    input = {
+      operationKey,
+      name: 'Initial piece',
+      slug: 'initial-piece',
+      description: '',
+      category: 'hat',
+      audience: 'all',
+      materials: '',
+      care: '',
+      detail: '',
+      status: 'draft',
+      variants: [
+        {
+          label: 'As described',
+          sku: '',
+          price: '55.00',
+          options: {},
+          active: true,
+          lowStockThreshold: 3,
+          initialQuantity: 4,
+        },
+      ],
+    };
+  const [a, b] = await Promise.all([
+    saveProduct(actor, input),
+    saveProduct(actor, input),
+  ]);
+  expect(a.id).toBe(b.id);
+  expect(await db().product.count()).toBe(1);
+  expect(a.variants[0].stock?.unsoldQty).toBe(4);
+  expect(
+    await db().stockMovement.count({ where: { reason: 'Initial stock' } }),
   ).toBe(1);
+  await expect(
+    saveProduct(actor, { ...input, name: 'Different payload' }),
+  ).rejects.toMatchObject({ code: 'operation' });
+  await expect(
+    saveProduct(actor, {
+      ...input,
+      operationKey: randomUUID(),
+      slug: 'invalid-initial',
+      variants: [{ ...input.variants[0], initialQuantity: -1 }],
+    }),
+  ).rejects.toThrow();
+  expect(await db().product.count()).toBe(1);
+  expect(await stockDrift()).toEqual([]);
+});
+it('makes verified published uploads visible, preserves generated/custom alt, and protects copied media', async () => {
+  const { p } = await fixture();
+  const bytes = await sharp({
+    create: { width: 100, height: 150, channels: 3, background: 'green' },
+  })
+    .jpeg()
+    .toBuffer();
+  const intent = await uploadIntent(actor, {
+    operationKey: randomUUID(),
+    productId: p.id,
+    type: 'image/jpeg',
+    bytes: bytes.length,
+  });
+  await storePhotoUpload(actor, intent.id, 'image/jpeg', bytes);
+  const results = await Promise.all([
+    finalizePhoto(actor, intent.id),
+    finalizePhoto(actor, intent.id),
+  ]);
+  expect(results[0].id).toBe(results[1].id);
+  expect(results[0].archivedAt).toBeNull();
+  expect(effectiveAlt(results[0], p)).toBe(p.name);
+  expect(effectiveAlt(results[0], { name: 'Renamed piece' })).toBe(
+    'Renamed piece',
+  );
+  expect(
+    effectiveAlt(
+      { alt: 'Custom', altSource: 'custom' },
+      { name: 'Renamed piece' },
+    ),
+  ).toBe('Custom');
+  const copy = await duplicateProduct(actor, p.id);
+  let current = await db().product.findUniqueOrThrow({ where: { id: p.id } });
+  await deletePhoto(actor, {
+    productId: p.id,
+    imageId: results[0].id,
+    revision: current.revision,
+    operationKey: randomUUID(),
+  });
+  expect((await cleanupMedia()).cleaned).toBe(0);
+  const copyImage = await db().productImage.findFirstOrThrow({
+    where: { productId: copy.id, originalKey: results[0].originalKey },
+  });
+  expect(copyImage.assetId).toBe(results[0].assetId);
+  expect(
+    await db().mediaAsset.count({ where: { id: copyImage.assetId! } }),
+  ).toBe(1);
+  await deletePhoto(actor, {
+    productId: copy.id,
+    imageId: copyImage.id,
+    revision: copy.revision,
+    operationKey: randomUUID(),
+  });
+  expect((await cleanupMedia()).cleaned).toBe(1);
+  expect(
+    await db().mediaAsset.count({ where: { id: copyImage.assetId! } }),
+  ).toBe(0);
+});
+it('shows and hides retained images explicitly without sacrificing the last published photo', async () => {
+  const { p } = await fixture();
+  const hidden = await db().productImage.create({
+    data: {
+      productId: p.id,
+      verified: true,
+      archivedAt: new Date(),
+      derivatives: [{ width: 400, key: 'synthetic/retained.webp' }],
+    },
+  });
+  let images = await db().productImage.findMany({
+    where: { productId: p.id },
+    orderBy: { position: 'asc' },
+  });
+  let next = await savePhotos(actor, {
+    productId: p.id,
+    revision: p.revision,
+    images: images.map((i) => ({
+      id: i.id,
+      alt: '',
+      variantId: null,
+      hidden: i.id !== hidden.id,
+    })),
+  });
+  expect(next.images.find((i) => i.id === hidden.id)?.archivedAt).toBeNull();
+  expect((await publicCatalog())[0].images[0].alt).toBe(p.name);
+  await expect(
+    savePhotos(actor, {
+      productId: p.id,
+      revision: next.revision,
+      images: images.map((i) => ({
+        id: i.id,
+        alt: '',
+        variantId: null,
+        hidden: true,
+      })),
+    }),
+  ).rejects.toThrow('visible photos');
+  next = await savePhotos(actor, {
+    productId: p.id,
+    revision: next.revision,
+    images: next.images.map((i) => ({
+      id: i.id,
+      alt: 'A detailed custom description',
+      variantId: null,
+      hidden: Boolean(i.archivedAt),
+    })),
+  });
+  expect((await publicCatalog())[0].images[0].alt).toBe(
+    'A detailed custom description',
+  );
+});
+it('retains paid settlement and order history after deletion while refusing new quotes', async () => {
+  const { p, variants } = await fixture();
+  const result = await checkout(variants[0].id);
+  const deleted = await listingLifecycle(actor, 'product.delete', {
+    id: p.id,
+    revision: p.revision,
+    operationKey: randomUUID(),
+    confirmed: true,
+  });
+  expect(await publicCatalog()).toHaveLength(0);
+  await expect(
+    quoteCart(guest, [{ variantId: variants[0].id, quantity: 1 }]),
+  ).rejects.toMatchObject({ code: 'unavailable' });
+  const session = result.session;
+  pay(session);
+  await reconcileSession(session.id);
+  await reconcileSession(session.id);
+  expect(
+    await db().stockMovement.count({ where: { reason: 'checkout.consume' } }),
+  ).toBe(1);
+  expect(
+    (await db().order.findUniqueOrThrow({ where: { id: result.order.id } }))
+      .paymentStatus,
+  ).toBe('paid');
+  await expect(
+    listingLifecycle(actor, 'product.purge', {
+      id: p.id,
+      revision: (deleted as any).revision,
+      operationKey: randomUUID(),
+      confirmed: true,
+    }),
+  ).rejects.toThrow('history');
+  const restored = await listingLifecycle(actor, 'product.restore', {
+    id: p.id,
+    revision: (deleted as any).revision,
+    operationKey: randomUUID(),
+    confirmed: true,
+  });
+  expect(restored).toMatchObject({
+    id: p.id,
+    status: 'draft',
+    deletedAt: null,
+  });
+  expect(await stockDrift()).toEqual([]);
+});
+it('permanently removes only an unused trashed draft and retains its audit', async () => {
+  const input = {
+    name: 'Unused',
+    slug: 'unused',
+    description: '',
+    category: 'hat',
+    audience: 'all',
+    materials: '',
+    care: '',
+    detail: '',
+    status: 'draft',
+    variants: [
+      {
+        label: 'As described',
+        sku: '',
+        price: '12.00',
+        active: true,
+        lowStockThreshold: 3,
+        options: {},
+      },
+    ],
+  };
+  const p = await saveProduct(actor, input),
+    key = randomUUID();
+  const trashed = await listingLifecycle(actor, 'product.delete', {
+    id: p.id,
+    revision: p.revision,
+    operationKey: key,
+    confirmed: true,
+  });
+  expect(
+    await listingLifecycle(actor, 'product.delete', {
+      id: p.id,
+      revision: p.revision,
+      operationKey: key,
+      confirmed: true,
+    }),
+  ).toMatchObject({ id: p.id });
+  const payload = {
+    id: p.id,
+    revision: (trashed as any).revision,
+    operationKey: randomUUID(),
+    confirmed: true,
+  };
+  await listingLifecycle(actor, 'product.purge', payload);
+  await listingLifecycle(actor, 'product.purge', payload);
+  expect(await db().product.count()).toBe(0);
+  expect(
+    await db().audit.count({
+      where: { entityId: p.id, action: 'product.purge' },
+    }),
+  ).toBe(1);
+});
+
+it('serializes checkout and upload eligibility against deletion without resurrecting a listing', async () => {
+  const { p, variants } = await fixture();
+  const quote = await quoteCart(guest, [
+    { variantId: variants[0].id, quantity: 1 },
+  ]);
+  const [reservation, deletion] = await Promise.allSettled([
+    beginCheckout(guest, quote.token),
+    listingLifecycle(actor, 'product.delete', {
+      id: p.id,
+      revision: p.revision,
+      confirmed: true,
+      operationKey: randomUUID(),
+    }),
+  ]);
+  expect(deletion.status).toBe('fulfilled');
+  expect(
+    (await db().product.findUniqueOrThrow({ where: { id: p.id } })).deletedAt,
+  ).not.toBeNull();
+  const held = (
+    await db().stockBalance.findUniqueOrThrow({
+      where: { variantId: variants[0].id },
+    })
+  ).heldQty;
+  expect(held).toBe(reservation.status === 'fulfilled' ? 1 : 0);
+  await expect(
+    uploadIntent(actor, { productId: p.id, type: 'image/jpeg', bytes: 100 }),
+  ).rejects.toMatchObject({ code: 'deleted' });
+  await expect(
+    saveProduct(actor, {
+      ...p,
+      id: p.id,
+      revision: p.revision,
+      variants: p.variants.map((v) => ({
+        ...v,
+        price: (v.priceCents / 100).toFixed(2),
+      })),
+    }),
+  ).rejects.toMatchObject({ code: 'deleted' });
+  expect(await stockDrift()).toEqual([]);
+});
+
+it('keeps failed cleanup durable and accounts bytes until provider deletion succeeds', async () => {
+  const { p } = await fixture();
+  const bytes = await sharp({
+    create: { width: 80, height: 100, channels: 3, background: 'blue' },
+  })
+    .jpeg()
+    .toBuffer();
+  const intent = await uploadIntent(actor, {
+    productId: p.id,
+    type: 'image/jpeg',
+    bytes: bytes.length,
+  });
+  await storePhotoUpload(actor, intent.id, 'image/jpeg', bytes);
+  const image = await finalizePhoto(actor, intent.id);
+  const current = await db().product.findUniqueOrThrow({ where: { id: p.id } });
+  await deletePhoto(actor, {
+    productId: p.id,
+    imageId: image.id,
+    revision: current.revision,
+  });
+  const { client } = storage();
+  const spy = vi.spyOn(client, 'send').mockImplementationOnce(async () => {
+    throw new Error('Synthetic storage outage');
+  });
+  try {
+    expect((await cleanupMedia()).failed).toBe(1);
+  } finally {
+    spy.mockRestore();
+  }
+  expect(
+    await db().mediaCleanup.count({ where: { assetId: image.assetId! } }),
+  ).toBe(1);
+  expect(
+    (await db().mediaAsset.findUniqueOrThrow({ where: { id: image.assetId! } }))
+      .storageBytes,
+  ).toBeGreaterThan(0n);
+  expect((await cleanupMedia()).cleaned).toBe(1);
+  expect(
+    await db().mediaCleanup.count({ where: { assetId: image.assetId! } }),
+  ).toBe(0);
+});
+
+it('enforces the visible gallery limit under concurrent finalize and cleans abandoned uploads', async () => {
+  const { p } = await fixture();
+  for (let n = 0; n < 10; n++)
+    await db().productImage.create({
+      data: {
+        productId: p.id,
+        verified: true,
+        derivatives: [{ key: `fixture/${n}.webp`, width: 400 }],
+      },
+    });
+  const bytes = await sharp({
+    create: { width: 20, height: 20, channels: 3, background: 'red' },
+  })
+    .jpeg()
+    .toBuffer();
+  const a = await uploadIntent(actor, {
+      productId: p.id,
+      type: 'image/jpeg',
+      bytes: bytes.length,
+    }),
+    b = await uploadIntent(actor, {
+      productId: p.id,
+      type: 'image/jpeg',
+      bytes: bytes.length,
+    });
+  await storePhotoUpload(actor, a.id, 'image/jpeg', bytes);
+  await storePhotoUpload(actor, b.id, 'image/jpeg', bytes);
+  const results = await Promise.allSettled([
+    finalizePhoto(actor, a.id),
+    finalizePhoto(actor, b.id),
+  ]);
+  expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+  expect(
+    await db().productImage.count({
+      where: { productId: p.id, archivedAt: null },
+    }),
+  ).toBe(12);
+  const unfinished = await db().uploadIntent.findFirstOrThrow({
+    where: { imageId: null },
+  });
+  await db().uploadIntent.update({
+    where: { id: unfinished.id },
+    data: { expiresAt: new Date(0) },
+  });
+  expect((await cleanupMedia()).cleaned).toBe(1);
+});
+
+it('reports all publication blockers while retaining an incomplete draft', async () => {
+  const input = {
+    name: 'Incomplete piece',
+    slug: 'incomplete-piece',
+    description: '',
+    category: 'hat',
+    audience: 'all',
+    materials: '',
+    care: '',
+    detail: '',
+    status: 'draft',
+    variants: [
+      {
+        label: 'As described',
+        sku: '',
+        price: '20.00',
+        active: true,
+        options: {},
+        lowStockThreshold: 3,
+      },
+    ],
+  };
+  const p = await saveProduct(actor, input);
+  await expect(
+    saveProduct(actor, {
+      ...input,
+      id: p.id,
+      revision: p.revision,
+      status: 'published',
+    }),
+  ).rejects.toMatchObject({
+    code: 'publication',
+    details: {
+      fields: expect.arrayContaining([
+        expect.objectContaining({ path: 'description' }),
+        expect.objectContaining({ path: 'photos' }),
+      ]),
+    },
+  });
+  expect(
+    (await db().product.findUniqueOrThrow({ where: { id: p.id } })).status,
+  ).toBe('draft');
+});
+it('reconciles unknown and expired holds and separate refunds after a listing is deleted', async () => {
+  const { p, variants } = await fixture(),
+    { session, order } = await checkout(variants[0].id);
+  await listingLifecycle(actor, 'product.delete', {
+    id: p.id,
+    revision: p.revision,
+    confirmed: true,
+    operationKey: randomUUID(),
+  });
+  fake.providerOffline = true;
+  await expect(reconcileSession(session.id)).rejects.toThrow();
+  expect(await db().reservation.count({ where: { state: 'held' } })).toBe(1);
+  fake.providerOffline = false;
+  session.status = 'expired';
+  await maintenance();
+  expect(await db().reservation.count({ where: { state: 'held' } })).toBe(0);
+  pay(session);
+  await reconcileSession(session.id);
+  const paid = await db().order.findUniqueOrThrow({ where: { id: order.id } });
+  await shipOrder(actor, {
+    orderId: order.id,
+    revision: paid.revision,
+    carrier: 'USPS',
+    trackingNumber: '9400111899223857000000',
+    operationKey: randomUUID(),
+  });
+  await requestRefund(actor, {
+    orderId: order.id,
+    amountCents: 100,
+    reason: 'Synthetic returned item',
+    operationKey: randomUUID(),
+  });
+  expect(
+    (
+      await db().stockBalance.findUniqueOrThrow({
+        where: { variantId: variants[0].id },
+      })
+    ).unsoldQty,
+  ).toBe(2);
+  await restockOrder(actor, {
+    orderId: order.id,
+    itemId: order.items[0].id,
+    operationKey: randomUUID(),
+    quantity: 1,
+    presence: 'return_received',
+    condition: true,
+    reason: 'Returned piece physically received',
+  });
+  expect(
+    (
+      await db().stockBalance.findUniqueOrThrow({
+        where: { variantId: variants[0].id },
+      })
+    ).unsoldQty,
+  ).toBe(3);
+  expect(
+    await db().stockMovement.count({ where: { reason: 'checkout.consume' } }),
+  ).toBe(1);
+  expect(await stockDrift()).toEqual([]);
+});
+
+it('returns price, description and photo publication issues in one failed atomic save', async () => {
+  const input = {
+    name: 'Publication issues',
+    slug: 'publication-issues',
+    description: '',
+    category: 'hat',
+    audience: 'all',
+    materials: '',
+    care: '',
+    detail: '',
+    status: 'published',
+    variants: [
+      {
+        label: 'Piece',
+        sku: '',
+        price: '12.001',
+        options: {},
+        active: true,
+        lowStockThreshold: 3,
+      },
+    ],
+  };
+  await expect(saveProduct(actor, input)).rejects.toMatchObject({
+    code: 'publication',
+    details: {
+      fields: expect.arrayContaining([
+        expect.objectContaining({ path: 'variants.0.price' }),
+        expect.objectContaining({ path: 'description' }),
+        expect.objectContaining({ path: 'photos' }),
+      ]),
+    },
+  });
+  expect(await db().product.count()).toBe(0);
+});
+
+it('serializes duplication, source photo removal and cleanup without a broken copied reference', async () => {
+  const { p } = await fixture();
+  await db().product.update({ where: { id: p.id }, data: { status: 'draft' } });
+  const bytes = await sharp({
+    create: { width: 30, height: 40, channels: 3, background: 'green' },
+  })
+    .jpeg()
+    .toBuffer();
+  const intent = await uploadIntent(actor, {
+    productId: p.id,
+    type: 'image/jpeg',
+    bytes: bytes.length,
+  });
+  await storePhotoUpload(actor, intent.id, 'image/jpeg', bytes);
+  const image = await finalizePhoto(actor, intent.id);
+  const current = await db().product.findUniqueOrThrow({ where: { id: p.id } });
+  await db().mediaCleanup.upsert({
+    where: { assetId: image.assetId! },
+    create: { assetId: image.assetId! },
+    update: {},
+  });
+  const results = await Promise.allSettled([
+    duplicateProduct(actor, p.id),
+    deletePhoto(actor, {
+      productId: p.id,
+      imageId: image.id,
+      revision: current.revision,
+    }),
+    cleanupMedia(),
+  ]);
+  expect(results.every((r) => r.status === 'fulfilled')).toBe(true);
+  await cleanupMedia();
+  const copy = (
+    results[0] as PromiseFulfilledResult<
+      Awaited<ReturnType<typeof duplicateProduct>>
+    >
+  ).value;
+  const copied = await db().productImage.findFirst({
+    where: { productId: copy.id, assetId: image.assetId },
+  });
+  if (copied) {
+    expect(
+      await db().mediaAsset.findUnique({ where: { id: image.assetId! } }),
+    ).not.toBeNull();
+  } else
+    expect(
+      await db().mediaAsset.findUnique({ where: { id: image.assetId! } }),
+    ).toBeNull();
 });

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { atomic, db, Prisma, type Tx } from './db';
 import { DomainError } from './domain';
+import { mutation } from './catalog-state';
 export async function lockStock(tx: Tx, ids: string[]) {
   const sorted = [...new Set(ids)].sort();
   if (!sorted.length) return;
@@ -53,63 +54,81 @@ export const adjustmentSchema = z.object({
 });
 export async function adjustStock(actorId: string, input: unknown) {
   const value = adjustmentSchema.parse(input);
-  return atomic(async (tx) => {
-    await lockStock(tx, [value.variantId]);
-    const previous = await tx.stockMovement.findUnique({
-      where: { operationKey: value.operationKey },
-    });
-    if (previous) {
-      if (
-        previous.variantId !== value.variantId ||
-        previous.actorId !== actorId
-      )
-        throw new DomainError(
-          'This operation belongs to another adjustment.',
-          409,
-        );
-      return tx.stockBalance.findUniqueOrThrow({
-        where: { variantId: value.variantId },
-      });
-    }
-    const balance = await tx.stockBalance.findUniqueOrThrow({
-      where: { variantId: value.variantId },
-    });
-    if (balance.revision !== value.revision)
-      throw new DomainError(
-        'Stock changed while this form was open. Refresh the count and review your adjustment.',
-        409,
-        'revision',
-      );
-    const delta =
-      value.mode === 'set'
-        ? value.quantity - balance.unsoldQty
-        : value.mode === 'add'
-          ? value.quantity
-          : -value.quantity;
-    await movement(tx, {
-      variantId: value.variantId,
-      unsoldDelta: delta,
-      heldDelta: 0,
-      reason: value.reason,
-      operationKey: value.operationKey,
+  await atomic(async (tx) =>
+    mutation(
+      tx,
       actorId,
-    });
-    await tx.audit.create({
-      data: {
-        actorId,
+      value.operationKey,
+      {
         action: 'stock.adjust',
-        entityId: value.variantId,
-        metadata: {
-          mode: value.mode,
-          quantity: value.quantity,
-          delta,
-          reason: value.reason,
-        },
+        variantId: value.variantId,
+        mode: value.mode,
+        quantity: value.quantity,
+        reason: value.reason,
       },
-    });
-    return tx.stockBalance.findUniqueOrThrow({
-      where: { variantId: value.variantId },
-    });
+      async () => {
+        await lockStock(tx, [value.variantId]);
+        const previous = await tx.stockMovement.findUnique({
+          where: { operationKey: value.operationKey },
+        });
+        if (previous) {
+          if (
+            previous.variantId !== value.variantId ||
+            previous.actorId !== actorId
+          )
+            throw new DomainError(
+              'This operation belongs to another adjustment.',
+              409,
+            );
+          return tx.stockBalance.findUniqueOrThrow({
+            where: { variantId: value.variantId },
+          });
+        }
+        const balance = await tx.stockBalance.findUniqueOrThrow({
+          where: { variantId: value.variantId },
+        });
+        if (balance.revision !== value.revision)
+          throw new DomainError(
+            'Stock changed while this form was open. Refresh the count and review your adjustment.',
+            409,
+            'revision',
+            { current: balance },
+          );
+        const delta =
+          value.mode === 'set'
+            ? value.quantity - balance.unsoldQty
+            : value.mode === 'add'
+              ? value.quantity
+              : -value.quantity;
+        await movement(tx, {
+          variantId: value.variantId,
+          unsoldDelta: delta,
+          heldDelta: 0,
+          reason: value.reason,
+          operationKey: value.operationKey,
+          actorId,
+        });
+        await tx.audit.create({
+          data: {
+            actorId,
+            action: 'stock.adjust',
+            entityId: value.variantId,
+            metadata: {
+              mode: value.mode,
+              quantity: value.quantity,
+              delta,
+              reason: value.reason,
+            },
+          },
+        });
+        return tx.stockBalance.findUniqueOrThrow({
+          where: { variantId: value.variantId },
+        });
+      },
+    ),
+  );
+  return db().stockBalance.findUniqueOrThrow({
+    where: { variantId: value.variantId },
   });
 }
 export async function settleStock(

@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import {
-  DeleteObjectCommand,
   S3Client,
   GetObjectCommand,
   PutObjectCommand,
@@ -8,7 +7,11 @@ import {
 import sharp from 'sharp';
 import { z } from 'zod';
 import { config } from './config';
-import { atomic, db } from './db';
+import { atomic, db, Prisma } from './db';
+import { lockProducts, mutation, usableImage } from './catalog-state';
+import { applyPhotos, photoInput } from './gallery';
+import { editorProduct } from './catalog';
+import { detachMedia } from './media-cleanup';
 import { DomainError } from './domain';
 export const MAX_UPLOAD = 10 * 1024 * 1024;
 let cachedStorageClient: { signature: string; client: S3Client } | undefined;
@@ -40,25 +43,56 @@ export function storage() {
 export async function uploadIntent(actorId: string, input: unknown) {
   const v = z
     .object({
+      operationKey: z.uuid().optional(),
       productId: z.uuid(),
       type: z.enum(['image/jpeg', 'image/png', 'image/webp']),
       bytes: z.number().int().positive().max(MAX_UPLOAD),
     })
     .parse(input);
-  await db().product.findUniqueOrThrow({ where: { id: v.productId } });
-  const id = randomUUID(),
-    key = `originals/${v.productId}/${id}`;
-  const intent = await db().uploadIntent.create({
-    data: {
-      id,
-      productId: v.productId,
+  const intent = await atomic((tx) =>
+    mutation(
+      tx,
       actorId,
-      key,
-      contentType: v.type,
-      expectedBytes: v.bytes,
-      expiresAt: new Date(Date.now() + 600000),
-    },
-  });
+      v.operationKey,
+      { action: 'photo.intent', ...v },
+      async () => {
+        await lockProducts(tx, [v.productId]);
+        const product = await tx.product.findUniqueOrThrow({
+          where: { id: v.productId },
+        });
+        if (product.deletedAt)
+          throw new DomainError('This listing is in Trash.', 409, 'deleted');
+        const id = randomUUID();
+        const key = `originals/${v.productId}/${id}`;
+        await tx.mediaAsset.create({
+          data: {
+            id,
+            identity: key,
+            keys: [
+              key,
+              ...[400, 800, 1200].map(
+                (w) => `photos/${v.productId}/${id}/${w}.webp`,
+              ),
+            ],
+            storageBytes: BigInt(v.bytes),
+            state: 'uploading',
+            cleanup: { create: {} },
+          },
+        });
+        return tx.uploadIntent.create({
+          data: {
+            id,
+            productId: v.productId,
+            actorId,
+            key,
+            contentType: v.type,
+            expectedBytes: v.bytes,
+            expiresAt: new Date(Date.now() + 600000),
+          },
+        });
+      },
+    ),
+  );
   return { id: intent.id, url: `/api/admin/photo-upload/${intent.id}` };
 }
 export async function storePhotoUpload(
@@ -72,8 +106,12 @@ export async function storePhotoUpload(
     throw new DomainError('This upload belongs to another operator.', 403);
   if (intent.imageId || intent.completedAt)
     throw new DomainError('This upload has already been completed.', 409);
-  if (intent.expiresAt.getTime() < Date.now())
-    throw new DomainError('Upload expired. Please retry the photo.');
+  if (new Date(intent.expiresAt).getTime() < Date.now())
+    throw new DomainError(
+      'Upload expired. Please retry the photo.',
+      400,
+      'upload_expired',
+    );
   if (
     contentType !== intent.contentType ||
     bytes.length !== intent.expectedBytes ||
@@ -132,11 +170,17 @@ export async function finalizePhoto(actorId: string, id: string) {
   if (intent.actorId !== actorId)
     throw new DomainError('This upload belongs to another operator.', 403);
   if (intent.imageId)
-    return db().productImage.findUniqueOrThrow({
-      where: { id: intent.imageId },
-    });
-  if (intent.expiresAt.getTime() < Date.now())
-    throw new DomainError('Upload expired. Please retry the photo.');
+    return publicPhoto(
+      await db().productImage.findUniqueOrThrow({
+        where: { id: intent.imageId },
+      }),
+    );
+  if (new Date(intent.expiresAt).getTime() < Date.now())
+    throw new DomainError(
+      'Upload expired. Please retry the photo.',
+      400,
+      'upload_expired',
+    );
   const { client, bucket } = storage();
   const file = await client.send(
     new GetObjectCommand({ Bucket: bucket, Key: intent.key }),
@@ -151,7 +195,7 @@ export async function finalizePhoto(actorId: string, id: string) {
   }
   const bytes = await file.Body.transformToByteArray();
   const derivatives = await normalizePhoto(bytes, intent.contentType);
-  const imageId = randomUUID();
+  const imageId = intent.id;
   const keys: Array<{ width: number; key: string }> = [];
   for (const d of derivatives) {
     const key = `photos/${intent.productId}/${imageId}/${d.width}.webp`;
@@ -171,6 +215,7 @@ export async function finalizePhoto(actorId: string, id: string) {
   );
   try {
     return await atomic(async (tx) => {
+      await lockProducts(tx, [intent.productId]);
       const fresh = await tx.uploadIntent.findUniqueOrThrow({ where: { id } });
       if (fresh.imageId)
         return publicPhoto(
@@ -181,6 +226,8 @@ export async function finalizePhoto(actorId: string, id: string) {
       const p = await tx.product.findUniqueOrThrow({
         where: { id: intent.productId },
       });
+      if (p.deletedAt)
+        throw new DomainError('This listing is in Trash.', 409, 'deleted');
       const count = await tx.productImage.count({
         where: { productId: p.id, archivedAt: null },
       });
@@ -190,7 +237,11 @@ export async function finalizePhoto(actorId: string, id: string) {
         );
       if (count >= 12)
         throw new DomainError('Use up to 12 photos per product.');
-      const used = await tx.productImage.aggregate({
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(67424035)::text`,
+      );
+      const used = await tx.mediaAsset.aggregate({
+        where: { id: { not: intent.id } },
         _sum: { storageBytes: true },
       });
       const totalBytes = (used._sum.storageBytes ?? 0n) + storageBytes;
@@ -200,16 +251,46 @@ export async function finalizePhoto(actorId: string, id: string) {
           413,
           'media_budget_exceeded',
         );
+      await tx.$queryRaw(
+        Prisma.sql`SELECT id FROM "MediaAsset" WHERE id=${intent.id} FOR UPDATE`,
+      );
+      const asset = await tx.mediaAsset.findUniqueOrThrow({
+        where: { id: intent.id },
+      });
+      if (asset.state === 'deleting')
+        throw new DomainError(
+          'Upload expired during processing. Choose this file again.',
+        );
+      await tx.mediaAsset.update({
+        where: { id: intent.id },
+        data: { state: 'active', storageBytes },
+      });
+      await tx.mediaCleanup.deleteMany({ where: { assetId: intent.id } });
       const image = await tx.productImage.create({
         data: {
           id: imageId,
-          productId: p.id,
+          product: { connect: { id: p.id } },
           originalKey: intent.key,
           derivatives: keys,
           storageBytes,
-          position: count,
+          position:
+            (
+              await tx.productImage.aggregate({
+                where: { productId: p.id },
+                _max: { position: true },
+              })
+            )._max.position === null
+              ? 0
+              : (
+                  await tx.productImage.aggregate({
+                    where: { productId: p.id },
+                    _max: { position: true },
+                  })
+                )._max.position! + 1,
           verified: true,
-          archivedAt: p.status === 'published' ? new Date() : null,
+          archivedAt: null,
+          altSource: 'generated',
+          asset: { connect: { id: intent.id } },
         },
       });
       await tx.uploadIntent.update({
@@ -231,19 +312,13 @@ export async function finalizePhoto(actorId: string, id: string) {
       return publicPhoto(image);
     });
   } catch (error) {
-    if (
-      error instanceof DomainError &&
-      error.code === 'media_budget_exceeded'
-    ) {
-      await Promise.all([
-        client.send(
-          new DeleteObjectCommand({ Bucket: bucket, Key: intent.key }),
-        ),
-        ...keys.map(({ key }) =>
-          client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key })),
-        ),
-      ]);
-    }
+    // The original and deterministic derivative keys remain tracked even when
+    // processing fails. Cleanup waits for intent expiry, allowing a safe retry.
+    await db().mediaCleanup.upsert({
+      where: { assetId: intent.id },
+      create: { assetId: intent.id },
+      update: {},
+    });
     throw error;
   }
 }
@@ -252,164 +327,93 @@ export async function savePhotos(actorId: string, input: unknown) {
     .object({
       productId: z.uuid(),
       revision: z.number().int(),
-      images: z
-        .array(
-          z.object({
-            id: z.uuid(),
-            alt: z.string().trim().max(400),
-            variantId: z.uuid().nullable(),
-          }),
-        )
-        .max(200),
+      operationKey: z.uuid().optional(),
+      images: z.array(photoInput).max(200),
     })
     .parse(input);
-  return atomic(async (tx) => {
-    const p = await tx.product.findUniqueOrThrow({
-      where: { id: v.productId },
-      include: { images: true, variants: true },
-    });
-    if (p.revision !== v.revision)
-      throw new DomainError(
-        'The product changed. Reload before changing photos.',
-        409,
-        'revision',
-      );
-    if (
-      new Set(v.images.map((i) => i.id)).size !== v.images.length ||
-      v.images.some(
-        (i) =>
-          !p.images.some((x) => x.id === i.id) ||
-          (i.variantId && !p.variants.some((x) => x.id === i.variantId)),
-      )
-    )
-      throw new DomainError('Photo or variant belongs to another product.');
-    const currentImages = new Map(p.images.map((image) => [image.id, image]));
-    const visible = v.images.filter(
-      (image) => !currentImages.get(image.id)?.archivedAt,
-    );
-    if (
-      p.images.some(
-        (i) => !i.archivedAt && !v.images.some((x) => x.id === i.id),
-      )
-    )
-      throw new DomainError('Reload the complete photo list before saving.');
-    if (visible.length > 12)
-      throw new DomainError('Use up to 12 visible photos per product.');
-    if (
-      p.status === 'published' &&
-      (!visible.length ||
-        visible.some((i) => {
-          const image = currentImages.get(i.id)!;
-          return (
-            !i.alt ||
-            image.placeholder ||
-            !image.verified ||
-            !Array.isArray(image.derivatives) ||
-            !image.derivatives.length
+  return atomic((tx) =>
+    mutation(
+      tx,
+      actorId,
+      v.operationKey,
+      { action: 'photo.save', ...v },
+      async () => {
+        await lockProducts(tx, [v.productId]);
+        const p = await editorProduct(tx, v.productId);
+        if (p.deletedAt)
+          throw new DomainError('This listing is in Trash.', 409, 'deleted');
+        if (p.revision !== v.revision)
+          throw new DomainError(
+            'Someone saved a newer version. Review the current photos.',
+            409,
+            'revision',
+            { current: p },
           );
-        }))
-    )
-      throw new DomainError('Published products need real, described photos.');
-    for (const [position, image] of v.images.entries())
-      await tx.productImage.update({
-        where: { id: image.id },
-        data: {
-          alt: image.alt,
-          variantId: image.variantId,
-          position,
-        },
-      });
-    await tx.product.update({
-      where: { id: p.id },
-      data: { revision: { increment: 1 } },
-    });
-    await tx.audit.create({
-      data: {
-        actorId,
-        action: 'photo.save',
-        entityId: p.id,
-        metadata: { count: visible.length },
+        await applyPhotos(tx, p.id, v.images, p.status);
+        await tx.product.update({
+          where: { id: p.id },
+          data: { revision: { increment: 1 } },
+        });
+        await tx.audit.create({
+          data: { actorId, action: 'photo.save', entityId: p.id },
+        });
+        return editorProduct(tx, p.id);
       },
-    });
-  });
+    ),
+  );
 }
-
 export async function deletePhoto(actorId: string, input: unknown) {
   const v = z
     .object({
       productId: z.uuid(),
       imageId: z.uuid(),
       revision: z.number().int(),
+      operationKey: z.uuid().optional(),
     })
     .parse(input);
-  const { client, bucket } = storage();
-  await atomic(async (tx) => {
-    const p = await tx.product.findUniqueOrThrow({
-      where: { id: v.productId },
-      include: { images: { orderBy: { position: 'asc' } } },
-    });
-    if (p.revision !== v.revision)
-      throw new DomainError(
-        'The product changed. Reload before deleting a photo.',
-        409,
-        'revision',
-      );
-    const image = p.images.find((item) => item.id === v.imageId);
-    if (!image)
-      throw new DomainError('That photo no longer exists. Reload the product.', 404);
-
-    const remaining = p.images.filter((item) => item.id !== image.id);
-    const visible = remaining.filter(
-      (item) =>
-        !item.archivedAt &&
-        !item.placeholder &&
-        item.verified &&
-        Boolean(item.alt.trim()) &&
-        Array.isArray(item.derivatives) &&
-        item.derivatives.length > 0,
-    );
-    if (p.status === 'published' && !visible.length)
-      throw new DomainError(
-        'A published product needs at least one visible photo. Add another photo before deleting this one.',
-      );
-
-    const derivativeKeys = Array.isArray(image.derivatives)
-      ? (image.derivatives as Array<{ key?: unknown }>).flatMap((item) =>
-          typeof item.key === 'string' ? [item.key] : [],
+  return atomic((tx) =>
+    mutation(
+      tx,
+      actorId,
+      v.operationKey,
+      { action: 'photo.delete', ...v },
+      async () => {
+        await lockProducts(tx, [v.productId]);
+        const p = await editorProduct(tx, v.productId);
+        if (p.deletedAt)
+          throw new DomainError('This listing is in Trash.', 409, 'deleted');
+        if (p.revision !== v.revision)
+          throw new DomainError(
+            'Someone saved a newer version. Review the current photos.',
+            409,
+            'revision',
+            { current: p },
+          );
+        const image = p.images.find((i) => i.id === v.imageId);
+        if (!image) throw new DomainError('That photo no longer exists.', 404);
+        if (
+          p.status === 'published' &&
+          !p.images.some((i) => i.id !== image.id && usableImage(i))
         )
-      : [];
-    const keys = [
-      ...new Set(
-        [image.originalKey, ...derivativeKeys].filter(
-          (key): key is string => Boolean(key),
-        ),
-      ),
-    ];
-    await Promise.all(
-      keys.map((key) =>
-        client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key })),
-      ),
-    );
-
-    await tx.productImage.delete({ where: { id: image.id } });
-    for (const [position, item] of remaining.entries()) {
-      if (item.position !== position)
-        await tx.productImage.update({
-          where: { id: item.id },
-          data: { position },
+          throw new DomainError(
+            'A published product needs at least one visible photo. Add another photo or change Visibility to Draft.',
+          );
+        await detachMedia(tx, image);
+        await tx.productImage.delete({ where: { id: image.id } });
+        await tx.product.update({
+          where: { id: p.id },
+          data: { revision: { increment: 1 } },
         });
-    }
-    await tx.product.update({
-      where: { id: p.id },
-      data: { revision: { increment: 1 } },
-    });
-    await tx.audit.create({
-      data: {
-        actorId,
-        action: 'photo.delete',
-        entityId: p.id,
-        metadata: { imageId: image.id },
+        await tx.audit.create({
+          data: {
+            actorId,
+            action: 'photo.delete',
+            entityId: p.id,
+            metadata: { imageId: image.id },
+          },
+        });
+        return editorProduct(tx, p.id);
       },
-    });
-  });
+    ),
+  );
 }

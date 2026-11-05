@@ -100,6 +100,7 @@ model Product {
   detail String @default("")
   status String @default("draft")
   publishedAt DateTime?
+  deletedAt DateTime?
   revision Int @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -107,6 +108,7 @@ model Product {
   images ProductImage[]
   uploads UploadIntent[]
   @@index([status, updatedAt])
+  @@index([deletedAt])
 }
 model Variant {
   id String @id @default(uuid())
@@ -135,6 +137,9 @@ model ProductImage {
   derivatives Json @default("[]")
   storageBytes BigInt @default(0)
   alt String @default("")
+  altSource String @default("generated")
+  assetId String?
+  asset MediaAsset? @relation(fields: [assetId], references: [id])
   position Int @default(0)
   variantId String?
   verified Boolean @default(false)
@@ -142,6 +147,31 @@ model ProductImage {
   archivedAt DateTime?
   createdAt DateTime @default(now())
   @@index([productId, archivedAt, position])
+  @@index([assetId])
+}
+model MediaAsset {
+  id String @id @default(uuid())
+  identity String @unique
+  keys Json
+  storageBytes BigInt @default(0)
+  state String @default("active")
+  images ProductImage[]
+  cleanup MediaCleanup?
+}
+model MediaCleanup {
+  assetId String @id
+  asset MediaAsset @relation(fields: [assetId], references: [id])
+  attempts Int @default(0)
+  leaseUntil DateTime?
+  lastError String?
+  createdAt DateTime @default(now())
+}
+model AdminMutation {
+  id String @id
+  actorId String
+  fingerprint String
+  result Json
+  createdAt DateTime @default(now())
 }
 model UploadIntent {
   id String @id @default(uuid())

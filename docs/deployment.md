@@ -41,3 +41,13 @@ Anna's VPS key is restricted to this Good Apollo deploy command. It does not pro
 For dated release records and obsolete hosting/DNS details, see [deployment history](deployment-history.md).
 
 The deploy script automatically fast-forwards a clean main checkout when it is behind origin/main. The private runtime image setting contains only the tag suffix; Compose supplies `gag-commerce:`. Server-script changes must also be installed using Justin’s existing `senna-infra` access at `/home/senna/Projects/infra/.runtime/good-apollo/deploy-remote.sh`; Anna’s restricted deploy key does not grant this administration capability.
+
+## Inventory editor migration and compatibility
+
+The `20261105021500_inventory_workflow` migration adds product Trash state, generated/custom alt metadata, mutation receipts, shared media references and durable cleanup jobs. It does not change existing visibility or balances. Backfill groups already-shared originals into one asset and preserves nonempty legacy alt as custom; blank alt uses generated descriptions. Review legacy hidden photos explicitly rather than publishing them during migration.
+
+Before production migration, validate a disposable copy for image/reference counts, distinct original/derivative keys, unique storage bytes, custom alt, hidden state, orders and append-only stock. Production schema rollout remains a separate approval boundary. Keep sales and newsletter gates disabled and retain existing maintenance/payment/email reconciliation.
+
+Media cleanup runs through the existing maintenance lifecycle, without a new scheduler. Listing/photo removal commits reference changes first. Cleanup claims unreferenced assets and retries provider failures outside catalog transactions; copies and Trash references retain files. Keep byte accounting until cleanup succeeds. Inspect MediaCleanup retry status for a storage failure.
+
+Rollback must retain deletion-aware public catalog, media and checkout filters. Do not deploy a historical binary that ignores deletedAt, because it can expose trashed listings. Use a compatibility release enforcing deletion filters while disabling editor mutations if necessary; preserve additive schema, mutation receipts, stock/order history and cleanup recovery. Never restore a pre-sale database over accepted orders.

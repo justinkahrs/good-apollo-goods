@@ -4,6 +4,10 @@ export class DomainError extends Error {
     message: string,
     public status = 400,
     public code = 'invalid',
+    public details?: {
+      fields?: Array<{ path: string; message: string }>;
+      current?: unknown;
+    },
   ) {
     super(message);
   }

@@ -40,10 +40,10 @@ The system SHALL support up to two operator-named options per product, initially
 
 ### Requirement: Manageable verified photo galleries
 
-The system SHALL accept multiple JPEG, PNG, or WebP photos up to 10 MB each, display upload progress/previews, support keyboard-accessible ordering and cover selection, require nonempty alt text for published images, and allow optional variant association. Only verified, orientation-corrected, sanitized images SHALL become publishable. Photo replacement SHALL preserve the previous valid gallery if upload or processing fails.
+The system SHALL accept multiple JPEG, PNG, or WebP photos up to 10 MB each, display upload progress/previews, support keyboard-accessible ordering and cover selection, supply nonempty editable product-based alt text by default for published images, and allow optional variant association. Only verified, orientation-corrected, sanitized images SHALL become publishable. Photo replacement SHALL preserve the previous valid gallery if upload or processing fails.
 
 #### Scenario: Publish a gallery
-- **WHEN** an operator uploads three supported photos, adds alt text, orders them, and chooses a cover
+- **WHEN** an operator uploads three supported photos, optionally customizes alt text, orders them, and chooses a cover
 - **THEN** the saved gallery appears in that order with responsive images and the selected cover on public listings
 
 #### Scenario: Unsupported or failed phone upload

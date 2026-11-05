@@ -168,6 +168,8 @@ export async function post<T = Record<string, unknown>>(
     throw Object.assign(new Error(v.error ?? 'Please try again shortly.'), {
       code: v.code,
       status: r.status,
+      fields: v.fields,
+      current: v.current,
     });
   return v;
 }

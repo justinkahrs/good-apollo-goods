@@ -87,3 +87,7 @@ The remaining studio pages share `StudioHeading` and `src/styles/studio.css`, sc
 The public collection has one category, Hats. Legacy art, wearables, adult and child collection URLs redirect to `/shop/hats/`. Product galleries show one photo at a time from the initial render, with overlaid dot controls, keyboard and touch navigation, and a screen-reader photo count; no arrows or thumbnail strip appears. The square frame uses a bottom-aligned cover crop, without colored padding or rounded image corners. Size/details sit in the product metadata table. Piece-choice controls retain touch-sized targets and horizontal padding.
 
 Collection introduction lines are separate block spans with an explicit text space so both visual layout and extracted text keep the sentences distinct.
+
+## Inventory workspace
+
+The product editor retains the studio brand, optional advanced sections and existing routes. Details, photos and stock are reachable in one listing workspace. Save feedback identifies the committed scope; uploads and stock actions update in place. Photo descriptions default to the saved product name with optional custom text. Photo visibility is an explicit Hide/Show choice, and Trash is separate from Archive. Recovery notices and conflict comparisons are keyboard accessible; per-file status and stock balance changes use live announcements. Preserve entered content and focus during unrelated actions.

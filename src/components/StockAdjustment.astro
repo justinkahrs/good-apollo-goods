@@ -1,0 +1,69 @@
+---
+interface Props {
+  variant?: {
+    id: string;
+    label: string;
+    active?: boolean;
+    lowStockThreshold?: number;
+    stock?: { revision: number; unsoldQty: number; heldQty: number } | null;
+  };
+}
+const { variant } = Astro.props;
+---
+
+<section data-stock-card>
+  <h3 data-stock-label>{variant?.label ?? 'Stock'}</h3>
+  <p data-balances aria-live="polite">
+    {variant
+      ? `${variant.stock?.unsoldQty ?? 0} unsold · ${variant.stock?.heldQty ?? 0} held · ${(variant.stock?.unsoldQty ?? 0) - (variant.stock?.heldQty ?? 0)} available`
+      : ''}
+  </p>
+  <details class="studio-disclosure">
+    <summary>Record a stock change</summary>
+    <form
+      class="grid"
+      data-stock
+      data-variant-id={variant?.id}
+      data-active={variant?.active ?? true}
+      data-threshold={variant?.lowStockThreshold ?? 3}
+      data-revision={variant?.stock?.revision}
+      data-unsold={variant?.stock?.unsoldQty ?? 0}
+      data-held={variant?.stock?.heldQty ?? 0}
+    >
+      <label>
+        Action
+        <select name="mode">
+          <option value="add">Add new stock</option>
+          <option value="remove">Remove stock</option>
+          <option value="set">Set actual unsold count</option>
+        </select>
+      </label>
+      <label>
+        Number of pieces
+        <input name="quantity" type="number" min="0" max="100000" required />
+      </label>
+      <label>
+        Reason
+        <input
+          name="reason"
+          required
+          minlength="3"
+          maxlength="300"
+          list="stock-reasons"
+          placeholder="Choose or enter a reason"
+        />
+      </label>
+      <p data-preview class="full" aria-live="polite"></p>
+      <button type="submit" class="primary">
+        Record stock change
+      </button>
+      <p role="status" data-status></p>
+    </form>
+  </details>
+  <a
+    data-history
+    href={variant ? `/admin/history/?variant=${variant.id}` : '#'}
+  >
+    Stock history
+  </a>
+</section>

@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { lockProducts } from './catalog-state';
 import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { atomic, db, Prisma, type Tx } from './db';
@@ -100,7 +101,12 @@ export async function quoteCart(guest: string, input: unknown) {
   });
   const rows = cart.map((line) => {
     const v = variants.find((v) => v.id === line.variantId);
-    if (!v || !v.active || v.product.status !== 'published')
+    if (
+      !v ||
+      !v.active ||
+      v.product.status !== 'published' ||
+      v.product.deletedAt !== null
+    )
       throw new DomainError(
         'A piece is no longer available. Remove it from your cart.',
         409,
@@ -206,6 +212,14 @@ export async function beginCheckout(guest: string, token: string) {
         where: { id: q.id },
       });
       if (prior) return prior;
+      const identities = await tx.variant.findMany({
+        where: { id: { in: q.rows.map((r) => r.variantId) } },
+        select: { productId: true },
+      });
+      await lockProducts(
+        tx,
+        identities.map((v) => v.productId),
+      );
       await lockStock(
         tx,
         q.rows.map((r) => r.variantId),
@@ -246,6 +260,7 @@ export async function beginCheckout(guest: string, token: string) {
           !v ||
           !v.active ||
           v.product.status !== 'published' ||
+          v.product.deletedAt !== null ||
           v.revision !== row.variantRevision ||
           v.product.revision !== row.productRevision ||
           v.priceCents !== row.unitPriceCents

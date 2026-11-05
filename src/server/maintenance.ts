@@ -1,4 +1,5 @@
 import { db } from './db';
+import { cleanupMedia } from './media-cleanup';
 import { createSession, reconcileSession } from './payments';
 import { performRefund } from './orders';
 import { processEvent } from './events';
@@ -95,6 +96,8 @@ export async function maintenance() {
         failures++;
       }
     }
+    const cleanup = await cleanupMedia(deadline);
+    failures += cleanup.failed;
     await monitor();
     const mail =
       Date.now() < deadline

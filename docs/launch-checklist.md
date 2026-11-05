@@ -91,3 +91,7 @@ No checklist box should be checked from a plausible configuration alone. Record 
 ## Rollback
 
 Disable `SALES_ENABLED` and redeploy/restart the affected environment to close new checkout and public discovery. Retain the current database, shared-account Stripe key, dedicated webhook endpoint and authenticated maintenance so existing checkouts reconcile safely. Do not restore a pre-sale database snapshot over accepted orders. Confirm public checkout is disabled, private order/history remains available, and webhook/maintenance/alerts still operate. [Deployment](deployment.md) and [operations](store-operations.md) contain the release/recovery procedure; this has not been exercised on a cloud preview yet.
+
+## November 4, 2026 inventory workflow local verification
+
+`simplify-inventory-workflow` implements the combined listing/photo/stock editor, recoverable entries, automatic editable image descriptions, explicit photo visibility, Trash/Restore and guarded permanent removal. The local run passed 93 domain/integration tests, 15 Google Chrome tests, Astro diagnostics, standalone and configured adapter builds, migration fixture verification and strict OpenSpec validation. [Inventory workflow evidence](inventory-workflow-validation.md) records exact source identity, scope and limitations. No production migration or deployment is claimed. Actual Garage preview verification and independent primary-operator timings remain open; existing sales, newsletter and release gates remain unchanged.

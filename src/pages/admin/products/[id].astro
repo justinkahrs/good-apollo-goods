@@ -1,4 +1,7 @@
 ---
+import { config } from '../../../server/config';
+import StockAdjustment from '../../../components/StockAdjustment.astro';
+import { effectiveAlt } from '../../../server/catalog-state';
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { db } from '../../../server/db';
 import { productImageSelect } from '../../../server/catalog';
@@ -32,6 +35,7 @@ const defaults = product ?? {
   revision: 1,
   variants: [],
   images: [],
+  deletedAt: null,
 };
 const available = defaults.variants
   .filter((v) => v.active)
@@ -39,9 +43,6 @@ const available = defaults.variants
     (total, v) => total + (v.stock?.unsoldQty ?? 0) - (v.stock?.heldQty ?? 0),
     0,
   );
-const visibleImages = defaults.images.filter(
-  (image) => !image.archivedAt && !image.placeholder,
-);
 ---
 
 <AdminLayout title={isNew ? 'Add a product' : `Edit ${product!.name}`}>
@@ -52,7 +53,7 @@ const visibleImages = defaults.images.filter(
     <div class="row editor-heading">
       <div>
         <h1>{isNew ? 'Add a good thing.' : product!.name}</h1>
-        <p>
+        <p data-editor-intro>
           {isNew
             ? 'Give it a name, a story, and a price. Keep it private until you’re ready.'
             : 'The details that make this piece yours. Saved edits update the shop.'}
@@ -66,6 +67,8 @@ const visibleImages = defaults.images.filter(
             : 'Private draft'}
       </span>
     </div>
+    <div data-draft-notice role="status"></div>
+    <div data-conflicts></div>
     <form class="product-form" data-product={JSON.stringify(defaults)}>
       {product && <input type="hidden" name="id" value={product.id} />}
       <input type="hidden" name="revision" value={defaults.revision} />
@@ -115,58 +118,26 @@ const visibleImages = defaults.images.filter(
             </span>
           </label>
         </section>
-        {isNew ? (
-          <section class="editor-photo-empty" aria-label="Photos">
-            <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-              <rect
-                x="5"
-                y="8"
-                width="30"
-                height="25"
-                rx="4"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <circle
-                cx="14"
-                cy="16"
-                r="3"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <path
-                d="m6 29 10-9 6 5 6-7 7 9"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <div>
-              <h2>Photos come next.</h2>
-              <p>
-                Save this draft, then add your photos and choose a cover.
-                Nothing goes into the shop yet.
-              </p>
-            </div>
-          </section>
-        ) : (
-          <section class="editor-section" aria-label="Photo preview">
-            <h2>Photos</h2>
-            <div class="editor-photo-preview">
-              {visibleImages.slice(0, 4).map((image) => (
-                <img
-                  src={`/media/${image.id}/400/`}
-                  alt={image.alt || 'Photo awaiting description'}
-                />
-              ))}
-              <a href="#photos">
-                {visibleImages.length
-                  ? `Manage ${visibleImages.length} photo${visibleImages.length === 1 ? '' : 's'} →`
-                  : 'Add your photos →'}
-              </a>
-            </div>
-          </section>
-        )}
+        <section class="editor-section" aria-label="Photos and stock">
+          <p>
+            <a href="#photos">Add or manage photos ↓</a> ·{' '}
+            <a href="#stock">Manage stock ↓</a>
+          </p>
+          <label data-single-initial hidden={!isNew}>
+            Initial quantity
+            <input
+              data-initial-single
+              type="number"
+              min="0"
+              max="100000"
+              value="0"
+            />
+          </label>
+          <p class="editor-hint">
+            Choose photos and count your pieces here. Save a draft to upload,
+            then publish when ready.
+          </p>
+        </section>
         <details class="editor-disclosure" data-variant-settings>
           <summary>
             <span>
@@ -297,8 +268,8 @@ const visibleImages = defaults.images.filter(
               />
             </label>
             <p class="editor-hint" id="slug-hint">
-              This becomes the listing’s web address. You can update it
-              whenever you like.
+              This becomes the listing’s web address. You can update it whenever
+              you like.
             </p>
             <label>
               Tax category
@@ -319,16 +290,24 @@ const visibleImages = defaults.images.filter(
               Choose the category that applies to this product. Verify
               classifications before launch.
             </p>
-            {product && (
-              <button type="button" data-duplicate={product.id}>
-                Duplicate as a draft
-              </button>
-            )}
+            <button
+              type="button"
+              data-duplicate={product?.id ?? ''}
+              hidden={!product}
+            >
+              Duplicate as a draft
+            </button>
           </div>
         </details>
       </div>
       <aside class="editor-sidebar" aria-label="Price and publishing">
         <h2>In the shop</h2>
+        {!config().SALES_ENABLED && (
+          <p class="editor-hint">
+            Checkout is currently disabled for this store. Publishing manages
+            listing visibility.
+          </p>
+        )}
         <div class="editor-price" data-single-product>
           <label for="single-price">Price</label>
           <div class="money-input">
@@ -358,13 +337,12 @@ const visibleImages = defaults.images.filter(
             <span>Available to sell</span>
             <strong>{available}</strong>
           </div>
-          {product ? (
-            <a href={`/admin/inventory/?q=${encodeURIComponent(product.name)}`}>
-              Manage stock →
-            </a>
-          ) : (
-            <p>After saving, record how many pieces you have in Inventory.</p>
-          )}
+          <a href="#stock" data-stock-link hidden={!product}>
+            Manage stock →
+          </a>
+          <p data-initial-hint hidden={!!product}>
+            Enter your starting quantity here; it is recorded with the draft.
+          </p>
         </div>
         <label>
           <span id="visibility-label">Visibility</span>
@@ -385,16 +363,61 @@ const visibleImages = defaults.images.filter(
         </label>
         <p class="editor-hint">
           Keep it as a draft while you add photos and count stock. Publishing
-          needs a description, price, and real photos with descriptions.
+          needs a description, price, and verified photos. Photo descriptions
+          are supplied automatically.
         </p>
         <div class="editor-save">
           <button class="primary" type="submit">
             Save product
           </button>
           <p role="status" data-product-status></p>
+          <ul data-publication-issues></ul>
+          <p data-persistence-state aria-live="polite">
+            Saved
+          </p>
+          <button type="button" data-save-draft>
+            Save as draft
+          </button>
         </div>
       </aside>
     </form>
+    <template id="photo-template">
+      <li class="photo-row" data-photo-id data-archived="false">
+        <div>
+          <img data-photo-preview alt="Product photo" />
+          <span class="muted" data-cover-label></span>
+        </div>
+        <div class="stack">
+          <label>
+            Describe the photo (alt text)
+            <input data-alt maxlength="400" />
+          </label>
+          <label data-association-label>
+            Show for variant
+            <select data-variant-association>
+              <option value="">All variants</option>
+            </select>
+          </label>
+          <div class="actions">
+            <button type="button" data-toggle-visibility>
+              Hide photo
+            </button>
+            <button type="button" data-up aria-label="Move photo earlier">
+              Move up
+            </button>
+            <button type="button" data-down aria-label="Move photo later">
+              Move down
+            </button>
+            <button type="button" data-cover>
+              Make cover
+            </button>
+            <button type="button" data-delete>
+              Delete photo
+            </button>
+          </div>
+        </div>
+      </li>
+    </template>
     <template id="variant-template">
       <fieldset data-variant>
         <legend data-variant-heading>Variant</legend>
@@ -408,6 +431,16 @@ const visibleImages = defaults.images.filter(
             <input data-field="price" inputmode="decimal" required />
           </label>
         </div>
+        <label data-initial-label>
+          Initial quantity
+          <input
+            data-field="initialQuantity"
+            type="number"
+            min="0"
+            max="100000"
+            value="0"
+          />
+        </label>
         <details class="variant-advanced">
           <summary>Option details & stock alerts</summary>
           <div class="grid">
@@ -445,118 +478,170 @@ const visibleImages = defaults.images.filter(
         </details>
       </fieldset>
     </template>
-    {product && (
-      <section
-        id="photos"
-        class="editor-photos"
-        data-photos
-        data-product-id={product.id}
-        data-revision={product.revision}
-      >
-        <h2>Photos</h2>
-        <p>
-          JPEG, PNG or WebP, up to 10 MB each. Export HEIC photos as JPEG first.
-          Use up to 12 photos. Save product changes before uploading.
-        </p>
-        <label class="editor-upload">
-          Add photos
-          <input
-            type="file"
-            data-upload
-            accept="image/jpeg,image/png,image/webp"
-            multiple
-          />
-        </label>
-        <progress data-progress max="100" value="0" hidden></progress>
-        <p role="status" data-upload-status></p>
-        <form data-photo-form>
-          <ol class="photo-list">
-            {product.images.map((image, index) => (
-              <li
-                class="photo-row"
-                data-photo-id={image.id}
-                data-archived={image.archivedAt ? 'true' : 'false'}
-              >
-                <div>
-                  {image.placeholder ? (
-                    <p class="muted">Placeholder</p>
-                  ) : (
-                    <img
-                      src={`/media/${image.id}/400/`}
-                      alt={image.alt || 'Photo awaiting description'}
-                    />
-                  )}
-                  <span class="muted" data-cover-label>
-                    {image.archivedAt
-                      ? 'Hidden from shop'
-                      : index === 0
-                        ? 'Cover'
-                        : ''}
-                  </span>
-                </div>
-                <div class="stack">
-                  <label>
-                    Describe the photo (alt text)
-                    <input data-alt value={image.alt} maxlength="400" />
-                  </label>
-                  <label
-                    hidden={
-                      defaults.variants.length === 1 &&
-                      Object.keys(defaults.variants[0].options ?? {}).length ===
-                        0
-                    }
+    <section
+      id="photos"
+      class="editor-photos"
+      data-photos
+      data-product-id={product?.id ?? ''}
+      data-revision={defaults.revision}
+    >
+      <h2>Photos</h2>
+      <p>
+        JPEG, PNG or WebP, up to 10 MB each. Export HEIC photos as JPEG first.
+        Use up to 12 visible photos. Descriptions are automatic and editable.
+        Verified uploads to published listings appear in the shop immediately.
+      </p>
+      <label class="editor-upload">
+        Add photos
+        <input
+          type="file"
+          data-upload
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+        />
+      </label>
+      <progress data-progress max="100" value="0" hidden></progress>
+      <p role="status" data-upload-status></p>
+      <p data-legacy-hidden hidden={!defaults.images.some((i) => i.archivedAt)}>
+        Some retained photos are hidden. Review their previews and choose Show
+        photo to include them.
+      </p>
+      <details data-upload-history>
+        <summary data-upload-summary>Upload activity</summary>
+        <ol data-upload-queue></ol>
+      </details>
+      <form data-photo-form>
+        <ol class="photo-list">
+          {defaults.images.map((image, index) => (
+            <li
+              class="photo-row"
+              data-photo-id={image.id}
+              data-archived={image.archivedAt ? 'true' : 'false'}
+            >
+              <div>
+                {image.placeholder ? (
+                  <p class="muted">Placeholder</p>
+                ) : (
+                  <img
+                    src={`/media/${image.id}/400/`}
+                    alt={effectiveAlt(image, defaults)}
+                  />
+                )}
+                <span class="muted" data-cover-label>
+                  {image.archivedAt
+                    ? 'Hidden from shop'
+                    : index === 0
+                      ? 'Cover'
+                      : ''}
+                </span>
+              </div>
+              <div class="stack">
+                <label>
+                  Describe the photo (alt text)
+                  <input
+                    data-alt
+                    value={image.altSource === 'generated' ? '' : image.alt}
+                    placeholder={effectiveAlt(
+                      { ...image, altSource: 'generated' },
+                      defaults,
+                    )}
+                    maxlength="400"
+                  />
+                </label>
+                <label
+                  hidden={
+                    defaults.variants.length === 1 &&
+                    Object.keys(defaults.variants[0].options ?? {}).length === 0
+                  }
+                >
+                  Show for variant
+                  <select data-variant-association>
+                    <option value="">All variants</option>
+                    {defaults.variants.map((v) => (
+                      <option value={v.id} selected={image.variantId === v.id}>
+                        {v.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div class="actions">
+                  <button type="button" data-toggle-visibility>
+                    {image.archivedAt ? 'Show photo' : 'Hide photo'}
+                  </button>
+                  <button type="button" data-up aria-label="Move photo earlier">
+                    Move up
+                  </button>
+                  <button type="button" data-down aria-label="Move photo later">
+                    Move down
+                  </button>
+                  <button type="button" data-cover>
+                    Make cover
+                  </button>
+                  <button
+                    type="button"
+                    class="photo-delete"
+                    data-delete
+                    aria-label={`Delete photo ${index + 1}`}
                   >
-                    Show for variant
-                    <select data-variant-association>
-                      <option value="">All variants</option>
-                      {product.variants.map((v) => (
-                        <option
-                          value={v.id}
-                          selected={image.variantId === v.id}
-                        >
-                          {v.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <div class="actions">
-                    <button
-                      type="button"
-                      data-up
-                      aria-label="Move photo earlier"
-                    >
-                      Move up
-                    </button>
-                    <button
-                      type="button"
-                      data-down
-                      aria-label="Move photo later"
-                    >
-                      Move down
-                    </button>
-                    <button type="button" data-cover>
-                      Make cover
-                    </button>
-                    <button
-                      type="button"
-                      class="photo-delete"
-                      data-delete
-                      aria-label={`Delete photo ${index + 1}`}
-                    >
-                      Delete photo
-                    </button>
-                  </div>
+                    Delete photo
+                  </button>
                 </div>
-              </li>
-            ))}
-          </ol>
-          <button class="primary" type="submit">
-            Save photos & order
-          </button>
-          <p role="status" data-photo-status></p>
-        </form>
-      </section>
-    )}
+              </div>
+            </li>
+          ))}
+        </ol>
+        <button class="primary" type="submit">
+          Save photos & order
+        </button>
+        <p role="status" data-photo-status></p>
+      </form>
+    </section>
+    <section id="stock" class="editor-photos" aria-label="Stock">
+      <h2>Stock</h2>
+      <p>
+        Available is unsold minus held at checkout. Paid pieces are already
+        excluded from unsold.
+      </p>
+      <div data-stock-host>
+        {defaults.variants.map((v) => (
+          <StockAdjustment variant={v} />
+        ))}
+      </div>
+      <template id="stock-template">
+        <StockAdjustment />
+      </template>
+      <datalist id="stock-reasons">
+        {[
+          'New batch',
+          'In-person sale',
+          'Consignment',
+          'Damage',
+          'Count correction',
+        ].map((reason) => (
+          <option value={reason} />
+        ))}
+      </datalist>
+    </section>
+    <section class="editor-photos" aria-label="Listing actions" data-lifecycle>
+      <h2>Listing actions</h2>
+      <p data-deleted-message hidden={!defaults.deletedAt}>
+        This listing is in Trash. Orders and stock history are retained.
+      </p>
+      <button
+        type="button"
+        data-delete-listing
+        hidden={!product || !!defaults.deletedAt}
+      >
+        Delete listing
+      </button>
+      <button type="button" data-restore-listing hidden={!defaults.deletedAt}>
+        Restore as draft
+      </button>
+      <button type="button" data-purge-listing hidden={!defaults.deletedAt}>
+        Delete permanently
+      </button>
+      <p role="status" data-lifecycle-status></p>
+    </section>
   </div>
 </AdminLayout>
 <script src="../../../client/product-editor.ts"></script>

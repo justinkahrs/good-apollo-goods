@@ -20,7 +20,10 @@ export function json(value: unknown, status = 200, extra?: HeadersInit) {
 }
 export function failure(error: unknown) {
   if (error instanceof DomainError)
-    return json({ error: error.message, code: error.code }, error.status);
+    return json(
+      { error: error.message, code: error.code, ...error.details },
+      error.status,
+    );
   if (error instanceof z.ZodError)
     return json(
       {
@@ -58,7 +61,8 @@ export function originGuard(request: Request, additionalOrigin?: string) {
   const allowed = [new URL(config().APP_URL).origin];
   if (additionalOrigin) allowed.push(new URL(additionalOrigin).origin);
   if (
-    !origin || !allowed.includes(origin) ||
+    !origin ||
+    !allowed.includes(origin) ||
     request.headers.get('sec-fetch-site') === 'cross-site'
   )
     throw new DomainError(

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID, createHmac } from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { db, atomic } from '../../src/server/db';
 import { movement, lockStock, adjustStock } from '../../src/server/stock';
@@ -11,13 +11,20 @@ async function saveAndReload(
   page: import('@playwright/test').Page,
   name: string,
 ) {
-  const loaded = page.waitForEvent('load', { timeout: 10000 }).catch(() => {
-    throw new Error('A successful save did not reload the form');
-  });
+  const reloads = !['Save product', 'Save photos & order'].includes(name);
+  const loaded = reloads
+    ? page.waitForEvent('load', { timeout: 10000 })
+    : Promise.resolve();
   const response = page.waitForResponse(
     (r) =>
       new URL(r.url()).pathname === '/api/admin/action/' &&
-      r.request().method() === 'POST',
+      r.request().method() === 'POST' &&
+      r.request().postDataJSON()?.action ===
+        (name === 'Save photos & order'
+          ? 'photo.save'
+          : name === 'Save product'
+            ? 'product.save'
+            : 'settings.save'),
   );
   await page.getByRole('button', { name, exact: true }).click();
   const result = await response;
@@ -26,6 +33,24 @@ async function saveAndReload(
     throw new Error('Save failed: ' + (await result.text()));
   }
   await loaded;
+  if (!reloads) {
+    const body = await result.json();
+    if (name === 'Save product')
+      await expect(page.locator('[data-persistence-state]')).toHaveText(
+        'Saved',
+      );
+    else
+      await expect(page.locator('[name=revision]')).toHaveValue(
+        String(body.revision),
+      );
+    await expect(
+      page.locator(
+        name === 'Save product'
+          ? '[data-product-status]'
+          : '[data-photo-status]',
+      ),
+    ).toContainText('saved');
+  }
 }
 test.beforeAll(async () => {
   const url = new URL(process.env.DATABASE_URL!);
@@ -35,7 +60,7 @@ test.beforeAll(async () => {
   )
     throw new Error('Unsafe browser fixture database');
   await db().$executeRawUnsafe(
-    'TRUNCATE TABLE "Product", "User", "Order", "StockMovement", "EmailOutbox", "Audit", "StripeEvent", "StoreSettings", "MaintenanceJob", "RequestLimit" RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE "Product", "User", "Order", "StockMovement", "EmailOutbox", "Audit", "StripeEvent", "StoreSettings", "MaintenanceJob", "RequestLimit", "AdminMutation", "MediaAsset" RESTART IDENTITY CASCADE',
   );
   await db().storeSettings.create({ data: {} });
   const user = await db().user.create({
@@ -75,6 +100,9 @@ test.beforeAll(async () => {
   })
     .jpeg()
     .toFile(imagePath);
+});
+test.beforeEach(async () => {
+  await db().requestLimit.deleteMany();
 });
 test.afterAll(async () => db().$disconnect());
 test('authenticator setup button displays its QR image and recovery instructions', async ({
@@ -260,9 +288,9 @@ test('creates an optionless piece with one price, recovers edits and preserves i
   await expect(page.locator('.editor-stock strong')).toHaveText('4');
   await page.getByLabel('Price', { exact: true }).fill('59.251');
   await page.reload();
-  await page
-    .getByRole('button', { name: 'Restore unsaved entries', exact: true })
-    .click();
+  await expect(page.locator('[data-draft-notice]')).toContainText(
+    /restored|Recovered/,
+  );
   await expect(page.getByLabel('Price', { exact: true })).toHaveValue('59.251');
   const invalidSave = page.waitForResponse(
     (r) =>
@@ -388,9 +416,9 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
     .getByRole('textbox', { name: 'Description', exact: true })
     .fill('Recovered unsaved description from the browser fixture.');
   await page.reload();
-  await page
-    .getByRole('button', { name: 'Restore unsaved entries', exact: true })
-    .click();
+  await expect(page.locator('[data-draft-notice]')).toContainText(
+    /restored|Recovered/,
+  );
   await expect(
     page.getByRole('textbox', { name: 'Description', exact: true }),
   ).toHaveValue('Recovered unsaved description from the browser fixture.');
@@ -450,12 +478,24 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
   await other
     .getByRole('button', { name: 'Save product', exact: true })
     .click();
-  await expect(other.getByRole('status').first()).toContainText(
+  await expect(other.locator('[data-draft-notice]')).toContainText(
     'newer version',
   );
   await expect(other.getByLabel('Product name', { exact: true })).toHaveValue(
     'Stale name must not overwrite',
   );
+  await other
+    .getByRole('button', { name: 'Keep my entries', exact: true })
+    .first()
+    .click();
+  await saveAndReload(other, 'Save product');
+  await expect(other.getByLabel('Product name', { exact: true })).toHaveValue(
+    'Stale name must not overwrite',
+  );
+  await other
+    .getByLabel('Product name', { exact: true })
+    .fill('Browser workflow hat edited');
+  await saveAndReload(other, 'Save product');
   await other.close();
   await page.goto('/shop/hats/browser-workflow-hat/');
   await expect(page.locator('#product-title')).toHaveText(
@@ -521,12 +561,16 @@ test('creates variants/photos, recovers edits, detects stale saves, publishes so
   await expect(page.locator('[data-preview]').first()).toContainText(
     '4 available',
   );
-  const reload = page.waitForEvent('load');
+  const recorded = page.waitForResponse(
+    (r) =>
+      r.url().includes('/api/admin/action/') && r.request().method() === 'POST',
+  );
   await page
     .getByRole('button', { name: 'Record stock change', exact: true })
     .first()
     .click();
-  await reload;
+  expect((await recorded).ok()).toBe(true);
+  await expect(page.locator('[data-status]').first()).toContainText('recorded');
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -809,4 +853,464 @@ test('clears legacy/corrupt carts without rendering stored HTML', async ({
   await expect(page.getByRole('status').first()).toContainText(
     'could not be read',
   );
+});
+
+test('finishes listing, photos, stock and deletion in one editor without losing entries', async ({
+  page,
+  context,
+  request,
+}) => {
+  test.setTimeout(60000);
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: sessionCookie,
+      url: config().APP_URL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/admin/products/new/');
+  let loads = 0;
+  page.on('load', () => loads++);
+  await page
+    .getByLabel('Product name', { exact: true })
+    .fill('One-place fixture');
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('A synthetic one-place workflow fixture.');
+  await page.getByLabel('Price', { exact: true }).fill('55.00');
+  await page.locator('[data-initial-single]').fill('4');
+  await page
+    .getByLabel('Add photos', { exact: true })
+    .setInputFiles([imagePath, imagePath, imagePath]);
+  await expect(page.locator('[data-upload-queue] li')).toHaveCount(3);
+  await saveAndReload(page, 'Save product');
+  await expect(page.locator('[data-photo-id]')).toHaveCount(3);
+  await expect(page.locator('[data-upload-queue]')).toContainText(
+    'Verified and saved',
+  );
+  const product = await db().product.findUniqueOrThrow({
+    where: { slug: 'one-place-fixture' },
+    include: { variants: { include: { stock: true } } },
+  });
+  expect(product.variants[0].stock?.unsoldQty).toBe(4);
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Keep these unsaved description edits during photo actions.');
+  await page.getByLabel('Price', { exact: true }).fill('56.00');
+  await page
+    .locator('[data-alt]')
+    .first()
+    .fill('Custom description retained during upload');
+  await page.getByLabel('Add photos', { exact: true }).setInputFiles([
+    {
+      name: 'unsupported.heic',
+      mimeType: 'image/heic',
+      buffer: Buffer.from('unsupported fixture'),
+    },
+    {
+      name: 'mixed-success.jpg',
+      mimeType: 'image/jpeg',
+      buffer: await readFile(imagePath),
+    },
+  ]);
+  await expect(page.locator('[data-photo-id]')).toHaveCount(4);
+  await expect(page.locator('[data-upload-queue]')).toContainText(
+    'Export HEIC',
+  );
+  await page
+    .getByRole('button', { name: 'Remove from upload queue', exact: true })
+    .click();
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
+    'Keep these unsaved description edits during photo actions.',
+  );
+  await expect(page.getByLabel('Price', { exact: true })).toHaveValue('56.00');
+  await expect(page.locator('[data-alt]').first()).toHaveValue(
+    'Custom description retained during upload',
+  );
+  await saveAndReload(page, 'Save photos & order');
+  expect(
+    (await db().product.findUniqueOrThrow({ where: { id: product.id } }))
+      .description,
+  ).toBe('A synthetic one-place workflow fixture.');
+  await page.locator('#stock summary').click();
+  await page.getByLabel('Number of pieces', { exact: true }).fill('2');
+  await page.getByLabel('Reason', { exact: true }).fill('New batch');
+  await page
+    .getByRole('button', { name: 'Record stock change', exact: true })
+    .click();
+  await expect(page.locator('#stock [data-status]')).toContainText('recorded');
+  await expect(page.locator('#stock [data-balances]')).toContainText(
+    '6 available',
+  );
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
+    'Keep these unsaved description edits during photo actions.',
+  );
+  await page
+    .getByLabel('Visibility', { exact: true })
+    .selectOption('published');
+  await saveAndReload(page, 'Save product');
+  const publicBefore = await request.get('/shop/hats/one-place-fixture/');
+  expect(publicBefore.status()).toBe(200);
+  expect(await publicBefore.text()).toContain(
+    'Custom description retained during upload',
+  );
+  await page.getByLabel('Add photos', { exact: true }).setInputFiles(imagePath);
+  await expect(page.locator('[data-photo-id]')).toHaveCount(5);
+  await expect(page.getByText('Hidden from shop', { exact: true })).toHaveCount(
+    0,
+  );
+  const images = await db().productImage.findMany({
+    where: { productId: product.id },
+  });
+  expect(images.every((i) => !i.archivedAt)).toBe(true);
+  expect((await request.get(`/media/${images[4].id}/400/`)).status()).toBe(200);
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Pending edits survive deletion of a photo.');
+  page.once('dialog', (d) => d.accept());
+  await page.locator('[data-delete]').last().click();
+  await expect(page.locator('[data-photo-id]')).toHaveCount(4);
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
+    'Pending edits survive deletion of a photo.',
+  );
+  expect(loads).toBe(0);
+  await page.screenshot({
+    path: 'output/playwright/inventory-editor-mobile.png',
+    fullPage: true,
+  });
+  await page
+    .getByRole('button', { name: 'Delete listing', exact: true })
+    .click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  page.once('dialog', (d) => d.accept());
+  await page
+    .getByRole('button', { name: 'Discard changes', exact: true })
+    .click();
+  await expect(page.locator('[data-lifecycle-status]')).toContainText('Trash');
+  expect((await request.get('/shop/hats/one-place-fixture/')).status()).toBe(
+    404,
+  );
+  const overview = await context.newPage();
+  await overview.goto('/admin/?q=One-place');
+  await expect(
+    overview.locator(`a[href="/admin/products/${product.id}/"]`),
+  ).toHaveCount(0);
+  await overview.goto('/admin/inventory/?q=One-place');
+  await expect(overview.locator('[data-stock]')).toHaveCount(0);
+  await overview.goto('/admin/?status=trash&q=One-place');
+  await expect(
+    overview.locator(`a[href="/admin/products/${product.id}/"]`).first(),
+  ).toBeVisible();
+  await overview.close();
+  page.once('dialog', (d) => d.accept());
+  await page
+    .getByRole('button', { name: 'Restore as draft', exact: true })
+    .click();
+  await expect(page.getByLabel('Visibility', { exact: true })).toHaveValue(
+    'draft',
+  );
+  expect(
+    (
+      await db().variant.findUniqueOrThrow({
+        where: { id: product.variants[0].id },
+        include: { stock: true },
+      })
+    ).stock?.unsoldQty,
+  ).toBe(6);
+});
+
+test('reconciles a lost creation response and preserves edits typed while saving', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: sessionCookie,
+      url: config().APP_URL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/admin/products/new/');
+  await page
+    .getByLabel('Product name', { exact: true })
+    .fill('Lost creation fixture');
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Original description submitted with creation.');
+  await page.getByLabel('Price', { exact: true }).fill('45.00');
+  let lost = false;
+  await page.route('**/api/admin/action/', async (route) => {
+    const body = route.request().postDataJSON();
+    if (body.action === 'product.save' && !lost) {
+      lost = true;
+      await route.fetch();
+      await route.abort('failed');
+    } else await route.continue();
+  });
+  await page.getByRole('button', { name: 'Save product', exact: true }).click();
+  await expect(page.locator('[data-persistence-state]')).toContainText(
+    'failed',
+  );
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Later typing must survive response reconciliation.');
+  await saveAndReload(page, 'Save product');
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
+    'Later typing must survive response reconciliation.',
+  );
+  expect(
+    await db().product.count({ where: { slug: 'lost-creation-fixture' } }),
+  ).toBe(1);
+  expect(
+    (
+      await db().product.findUniqueOrThrow({
+        where: { slug: 'lost-creation-fixture' },
+      })
+    ).description,
+  ).toBe('Later typing must survive response reconciliation.');
+});
+
+test('reviews legacy hidden photos and permanently removes an unused draft', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: sessionCookie,
+      url: config().APP_URL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/admin/products/new/');
+  await page
+    .getByLabel('Product name', { exact: true })
+    .fill('Unused removable fixture');
+  await page.getByLabel('Price', { exact: true }).fill('20.00');
+  await saveAndReload(page, 'Save product');
+  const p = await db().product.findUniqueOrThrow({
+    where: { slug: 'unused-removable-fixture' },
+  });
+  await page.getByLabel('Add photos', { exact: true }).setInputFiles(imagePath);
+  await expect(page.locator('[data-photo-id]')).toHaveCount(1);
+  await db().productImage.updateMany({
+    where: { productId: p.id },
+    data: { archivedAt: new Date() },
+  });
+  await page.reload();
+  await expect(page.locator('[data-legacy-hidden]')).toBeVisible();
+  await page.getByRole('button', { name: 'Show photo', exact: true }).click();
+  await saveAndReload(page, 'Save photos & order');
+  expect(
+    (await db().productImage.findFirstOrThrow({ where: { productId: p.id } }))
+      .archivedAt,
+  ).toBeNull();
+  page.once('dialog', (d) => d.accept());
+  await page
+    .getByRole('button', { name: 'Delete listing', exact: true })
+    .click();
+  await expect(page.locator('[data-lifecycle-status]')).toContainText('Trash');
+  page.once('dialog', (d) => d.accept());
+  await page
+    .getByRole('button', { name: 'Delete permanently', exact: true })
+    .click();
+  await expect(page).toHaveURL(/status=trash/);
+  expect(await db().product.findUnique({ where: { id: p.id } })).toBeNull();
+  expect(
+    await db().audit.count({
+      where: { action: 'product.purge', entityId: p.id },
+    }),
+  ).toBe(1);
+});
+
+test('keeps another stock row and pending product entries after one stock save', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: sessionCookie,
+      url: config().APP_URL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  const suffix = randomUUID();
+  const product = await db().product.create({
+    data: {
+      name: 'Stock rows ' + suffix,
+      slug: 'stock-rows-' + suffix,
+      variants: {
+        create: ['A', 'B'].map((label) => ({
+          label,
+          sku: suffix + label,
+          combination: label,
+          options: { Size: label },
+          priceCents: 2000,
+          stock: { create: {} },
+        })),
+      },
+    },
+  });
+  await page.goto('/admin/inventory/?q=' + encodeURIComponent(product.name));
+  const forms = page.locator('[data-stock]');
+  expect(await forms.count()).toBeGreaterThan(1);
+  await page
+    .locator('[data-stock-card] details')
+    .first()
+    .evaluate((e) => ((e as HTMLDetailsElement).open = true));
+  await forms.nth(0).locator('[name=quantity]').fill('1');
+  await forms.nth(0).locator('[name=reason]').fill('New batch');
+  await forms
+    .nth(1)
+    .locator('..')
+    .evaluate((e) => ((e as HTMLDetailsElement).open = true));
+  await forms.nth(1).locator('[name=quantity]').fill('7');
+  await forms.nth(1).locator('[name=reason]').fill('Pending separate row');
+  await forms
+    .nth(0)
+    .getByRole('button', { name: 'Record stock change', exact: true })
+    .click();
+  await expect(forms.nth(0).locator('[data-status]')).toContainText('recorded');
+  await expect(forms.nth(1).locator('[name=quantity]')).toHaveValue('7');
+  await page.reload();
+  await expect(
+    page.locator('[data-stock]').nth(1).locator('[name=quantity]'),
+  ).toHaveValue('7');
+});
+
+test('recovers unnamed option tools and keeps entries through authentication and storage failure', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: sessionCookie,
+      url: config().APP_URL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/admin/products/new/');
+  await page
+    .getByLabel('Product name', { exact: true })
+    .fill('Recovery boundary fixture');
+  await page.getByLabel('Price', { exact: true }).fill('30.00');
+  await page.locator('[data-variant-settings] > summary').click();
+  await page.locator('[data-generator] > summary').click();
+  await page.locator('[data-option-name="1"]').fill('Size');
+  await page.locator('[data-option-values="1"]').fill('Small, Large');
+  await page.reload();
+  await expect(page.locator('[data-option-name="1"]')).toHaveValue('Size');
+  await expect(page.locator('[data-option-values="1"]')).toHaveValue(
+    'Small, Large',
+  );
+  await page.route('**/api/admin/action/', async (route) => {
+    if (route.request().postDataJSON().action === 'product.save')
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: 'Sign in again to save.',
+          code: 'signin',
+        }),
+      });
+    else await route.continue();
+  });
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('These entries survive session expiry.');
+  await page.getByRole('button', { name: 'Save product', exact: true }).click();
+  await expect(page.locator('[data-product-status] a')).toHaveAttribute(
+    'href',
+    '/admin/sign-in/',
+  );
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
+    'These entries survive session expiry.',
+  );
+  await page.unroute('**/api/admin/action/');
+  await page.evaluate(() => {
+    Storage.prototype.setItem = function () {
+      throw new DOMException('Synthetic storage quota', 'QuotaExceededError');
+    };
+  });
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Saving also works with unavailable draft storage.');
+  await expect(page.locator('[data-draft-notice]')).toContainText(
+    'storage is unavailable',
+  );
+  await saveAndReload(page, 'Save product');
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
+    'Saving also works with unavailable draft storage.',
+  );
+});
+
+test('does not replace keystrokes entered while a save response is pending', async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: 'better-auth.session_token',
+      value: sessionCookie,
+      url: config().APP_URL,
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await page.goto('/admin/products/new/');
+  await page
+    .getByLabel('Product name', { exact: true })
+    .fill('In-flight typing fixture');
+  await page.getByLabel('Price', { exact: true }).fill('25.00');
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Description sent with the request.');
+  let release!: () => void, committed!: () => void;
+  const gate = new Promise<void>((r) => (release = r)),
+    ready = new Promise<void>((r) => (committed = r));
+  let delayed = false;
+  await page.route('**/api/admin/action/', async (route) => {
+    if (route.request().postDataJSON().action === 'product.save' && !delayed) {
+      delayed = true;
+      const response = await route.fetch();
+      committed();
+      await gate;
+      await route.fulfill({ response });
+    } else await route.continue();
+  });
+  await page.getByRole('button', { name: 'Save product', exact: true }).click();
+  await ready;
+  await page
+    .getByLabel('Description', { exact: true })
+    .fill('Newer typing while the response is pending.');
+  release();
+  await expect(page.locator('[data-product-status]')).toContainText('saved');
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue(
+    'Newer typing while the response is pending.',
+  );
+  expect(
+    (
+      await db().product.findUniqueOrThrow({
+        where: { slug: 'in-flight-typing-fixture' },
+      })
+    ).description,
+  ).toBe('Description sent with the request.');
+  await saveAndReload(page, 'Save product');
+  expect(
+    (
+      await db().product.findUniqueOrThrow({
+        where: { slug: 'in-flight-typing-fixture' },
+      })
+    ).description,
+  ).toBe('Newer typing while the response is pending.');
 });

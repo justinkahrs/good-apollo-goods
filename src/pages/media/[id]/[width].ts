@@ -17,20 +17,21 @@ export const GET: APIRoute = async ({ request, params }) => {
         placeholder: true,
         archivedAt: true,
         derivatives: true,
-        product: { select: { status: true } },
+        product: { select: { status: true, deletedAt: true } },
       },
     });
     if (!image || !image.verified || image.placeholder)
       return new Response('Not found', { status: 404 });
-    const published = image.product.status === 'published' && !image.archivedAt;
+    const published =
+      image.product.status === 'published' &&
+      !image.product.deletedAt &&
+      !image.archivedAt;
     if (!published) await adminSession(request);
     const key = (
       image.derivatives as Array<{ width: number; key: string }>
     ).find((d) => d.width === Number(params.width))?.key;
     if (!key) return new Response('Not found', { status: 404 });
-    const cacheControl = published
-      ? 'public,max-age=5'
-      : 'private,no-store';
+    const cacheControl = published ? 'public,max-age=5' : 'private,no-store';
     const etag = `"${image.id}-${params.width}"`;
     const headers = {
       ...privateHeaders,
@@ -43,7 +44,7 @@ export const GET: APIRoute = async ({ request, params }) => {
     const { client, bucket } = storage(),
       object = await client.send(
         new GetObjectCommand({ Bucket: bucket, Key: key }),
-    );
+      );
     if (!object.Body) return new Response('Unavailable', { status: 503 });
     return new Response(object.Body.transformToWebStream(), {
       headers: {
