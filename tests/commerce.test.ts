@@ -1565,7 +1565,7 @@ it('delivers the durable outbox through the signed private commerce route', asyn
         recipient: 'buyer@example.invalid',
         payload: {
           email: 'buyer@example.invalid',
-          number: 'GAG-100',
+          number: 100,
           items: [{ name: 'Fixture hat', label: '60 cm', quantity: 1 }],
           totalCents: 8500,
           processingWindow: '3–5 business days',
@@ -1577,7 +1577,7 @@ it('delivers the durable outbox through the signed private commerce route', asyn
         recipient: 'buyer@example.invalid',
         payload: {
           email: 'buyer@example.invalid',
-          number: 'GAG-100',
+          number: 100,
           carrier: 'USPS',
           trackingNumber: 'fixture-123',
           trackingUrl: 'https://tools.usps.com/track',
@@ -1588,7 +1588,8 @@ it('delivers the durable outbox through the signed private commerce route', asyn
         type: 'operator',
         recipient: 'hello@annakahrs.com',
         payload: {
-          number: 'GAG-100',
+          email: 'buyer@example.invalid',
+          number: 100,
           items: [{ name: 'Fixture hat', label: '60 cm', quantity: 1 }],
           totalCents: 8500,
           processingWindow: '3–5 business days',
@@ -1620,6 +1621,11 @@ it('delivers the durable outbox through the signed private commerce route', asyn
       'shipment',
       'signin',
     ]);
+    for (const message of received.filter((m) => ['order', 'operator', 'shipment'].includes(m.type)))
+      expect(message.payload.number).toBe('100');
+    expect(received.find((m) => m.type === 'operator').payload).not.toHaveProperty('email');
+    expect((await db().emailOutbox.findUniqueOrThrow({ where: { id: queued[3].id } })).payload)
+      .toHaveProperty('email', 'buyer@example.invalid');
     for (const item of queued)
       expect(
         (await db().emailOutbox.findUniqueOrThrow({ where: { id: item.id } }))

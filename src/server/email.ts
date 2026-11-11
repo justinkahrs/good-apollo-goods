@@ -134,7 +134,11 @@ export async function deliverOutbox(
         const nonce = randomUUID();
         const path = '/v1/good-apollo/commerce/send';
         const type = candidate.kind === 'buyer' ? 'order' : candidate.kind;
-        const body = JSON.stringify({ messageId: candidate.id, type, recipient: message.to, payload: candidate.payload });
+        const payload = { ...(candidate.payload as Record<string, unknown>) };
+        if (['order', 'operator', 'shipment'].includes(type))
+          payload.number = String(payload.number);
+        if (type === 'operator') delete payload.email;
+        const body = JSON.stringify({ messageId: candidate.id, type, recipient: message.to, payload });
         const bodyHash = createHash('sha256').update(body).digest('hex');
         const signature = createHmac('sha256', e.COMMERCE_EMAIL_HMAC_SECRET!)
           .update([timestamp, nonce, 'POST', path, bodyHash].join('\n')).digest('hex');
