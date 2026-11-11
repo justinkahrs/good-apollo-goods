@@ -39,7 +39,7 @@ Tests migrate and truncate only a localhost database whose name ends in `_test`.
 
 Products, Inventory, Orders and Settings are the main admin workflows. Upload JPEG/PNG/WebP photos, generate up to two variant options, enter dollar prices, count unsold stock and publish verified listings. Checkout reserves whole carts atomically, reconciles signed Stripe events and queues durable notifications. Packing, tracking, refunds and deliberate physical restocking preserve immutable purchase history.
 
-Defaults are $6.95 uniform U.S. shipping including Alaska/Hawaii and 3–5 business day processing; both are configurable. Automatic tax is proposed-on but requires recorded verification. Shared Stripe routing is independently scoped to Good Apollo. The current Vesper `.env` Stripe entry was empty, so its real provider credentials still need to be located.
+Defaults are $6.95 uniform U.S. shipping including Alaska/Hawaii and 3–5 business day processing; both are configurable. Automatic tax is proposed-on but requires recorded verification. Shared Stripe routing is independently scoped to Good Apollo. The approved live key and dedicated Good Apollo webhook are configured and verified; the shared Stripe account remains named Senna Automation by owner decision. Sales remain disabled. Five-minute production maintenance and independent TrueNAS monitoring are active.
 
 Read the [operator guide](docs/store-operator-guide.md), [Stripe setup](docs/stripe-setup.md), [operations](docs/store-operations.md), [backup/restore](docs/backup-restore.md) and [launch checklist](docs/launch-checklist.md).
 
